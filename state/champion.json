@@ -22,13 +22,13 @@
   "test": {
     "total_return_pct": 5.4597,
     "max_drawdown_pct": 3.4385,
-    "sharpe": 10.979,
+    "sharpe": 10.983,
     "trades": 14
   },
   "stress": {
     "total_return_pct": 3.2629,
     "max_drawdown_pct": 3.9875,
-    "sharpe": 6.553,
+    "sharpe": 6.555,
     "trades": 14
   },
   "score": 2.7408249999999996,
