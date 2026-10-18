@@ -374,6 +374,8 @@ def run_once() -> dict[str, Any]:
             "max_drawdown_pct": MAX_TOTAL_DRAWDOWN_PCT, "drawdown_now_pct": round(drawdown_pct, 4),
             "max_gross_exposure_multiple": MAX_GROSS_EXPOSURE_MULTIPLE,
             "risk_halt": bool(risk_halt or state.get("risk_halt_day_utc") == today),
+            "liquidation_triggered": bool(liquidation_triggered),
+            "exposure_limit_breached": bool(exposure_limit_breached),
         },
         "open_position": ({
             "symbol": current_symbol, "side": "long" if int(state.get("side", 0)) == 1 else "short",
