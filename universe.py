@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from functools import lru_cache
+import math
 import re
 from typing import Any
 
@@ -17,6 +18,7 @@ COINGECKO_MARKETS_URL = "https://api.coingecko.com/api/v3/coins/markets"
 COINBASE_PRODUCTS_URL = "https://api.exchange.coinbase.com/products"
 TOP_MARKET_CAP_LIMIT = 100
 RESEARCH_BATCH_SIZE = 5
+MIN_GLOBAL_24H_VOLUME_USD = 5_000_000.0
 STABLECOIN_SYMBOLS = {
     "USDT", "USDC", "DAI", "FDUSD", "TUSD", "USDE", "USDS", "USDD",
     "PYUSD", "USDP", "EURC", "EURT", "UST", "USTC", "FRAX",
@@ -81,9 +83,12 @@ def get_top100_coinbase_universe() -> tuple[dict[str, Any], ...]:
             continue
         base = str(item.get("symbol", "")).upper()
         rank = item.get("market_cap_rank")
+        volume = item.get("total_volume")
         if (not isinstance(rank, int) or rank < 1 or base in STABLECOIN_SYMBOLS
                 or base not in products or base in seen_bases
-                or not re.fullmatch(r"[A-Z0-9]{2,15}", base)):
+                or not re.fullmatch(r"[A-Z0-9]{2,15}", base)
+                or not isinstance(volume, (int, float)) or not math.isfinite(float(volume))
+                or float(volume) < MIN_GLOBAL_24H_VOLUME_USD):
             continue
         seen_bases.add(base)
         eligible.append({
@@ -92,6 +97,7 @@ def get_top100_coinbase_universe() -> tuple[dict[str, Any], ...]:
             "product_id": products[base],
             "market_cap_rank": rank,
             "market_cap_usd": item.get("market_cap"),
+            "global_24h_volume_usd": float(volume),
             "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets",
         })
     return tuple(sorted(eligible, key=lambda item: item["market_cap_rank"]))
