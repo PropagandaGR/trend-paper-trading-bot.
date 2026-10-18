@@ -197,8 +197,9 @@ def performance(returns: pd.Series, interval: str = "5m",
     if returns.empty:
         return {"total_return_pct": 0.0, "max_drawdown_pct": 0.0,
                 "sharpe": 0.0, "trades": int(trades)}
-    equity = (1 + returns).cumprod()
-    drawdown = equity / equity.cummax() - 1
+    equity_values = np.concatenate(([1.0], (1 + returns).cumprod().to_numpy()))
+    running_peak = np.maximum.accumulate(equity_values)
+    drawdown = equity_values / running_peak - 1
     std = float(returns.std(ddof=0))
     sharpe = (float(returns.mean() / std * math.sqrt(bars_per_year(interval)))
               if std > 0 else 0.0)
@@ -423,5 +424,8 @@ def run_research(days: int = 90) -> dict[str, Any]:
         if not version_file.exists():
             version_file.write_text(json.dumps(champion, indent=2))
         (STATE / "champion.json").write_text(json.dumps(champion, indent=2))
+    else:
+        # Clear the active pointer rather than leaving a stale champion tradable.
+        (STATE / "champion.json").write_text("null")
     return summary
 
