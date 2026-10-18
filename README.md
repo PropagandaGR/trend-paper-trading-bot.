@@ -28,7 +28,7 @@ Python 3.11+ recommended.
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python research_engine.py --days 90
-python paper_trader.py --once
+python paper_trader.py
 ```
 
 ## Reports and state
