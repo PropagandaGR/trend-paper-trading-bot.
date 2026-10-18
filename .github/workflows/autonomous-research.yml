@@ -1,6 +1,14 @@
 name: Autonomous Strategy Research
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "research_engine.py"
+      - "portfolio_accounting.py"
+      - "requirements.txt"
+      - ".github/workflows/autonomous-research.yml"
+      - "tests/test_research*.py"
   schedule:
     # Run away from the top of the hour to reduce schedule congestion.
     - cron: "23 * * * *"
