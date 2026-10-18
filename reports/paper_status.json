@@ -1,28 +1,48 @@
 {
-  "updated_at": "2026-10-18T22:45:11.845389+00:00",
+  "updated_at": "2026-10-18T23:18:01.345251+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
-  "cash_usdt": 0.0,
-  "equity_usdt": 15.14631336,
-  "unrealized_pnl_usdt": 0.14631336,
+  "cash_usdt": 15.08402666,
+  "equity_usdt": 15.08402666,
+  "unrealized_pnl_usdt": 0.0,
   "realized_pnl_usdt": 0.0,
   "completed_trades": 0,
-  "open_position": {
-    "symbol": "ETHUSDT",
-    "quantity": 0.0063178584,
-    "mark_price": 2397.38096192,
-    "entry_price": 2374.22226561
-  },
-  "champion_available": false,
-  "champion_rejection_reason": "Champion version is missing.",
-  "actions": [],
+  "open_position": null,
+  "champion_available": true,
+  "champion_rejection_reason": null,
+  "actions": [
+    {
+      "action": "PAPER_SELL",
+      "symbol": "ETHUSDT",
+      "price": 2389.91204209,
+      "quantity": 0.00631785836452632,
+      "fee_usdt": 0.01509913,
+      "slippage_usdt": 0.00755334,
+      "net_proceeds_usdt": 15.08402666,
+      "realized_pnl_usdt": 0.08402666,
+      "reason": "risk circuit breaker: position_exposure_limit"
+    }
+  ],
   "data_errors": [],
   "safety": {
     "real_orders": false,
     "exchange_credentials_used": false,
     "leverage": false,
-    "short_selling": false
+    "short_selling": false,
+    "max_position_fraction": 0.5,
+    "max_daily_loss_pct": 5.0,
+    "max_drawdown_pct": 10.0,
+    "max_price_age_seconds": 900
   },
-  "total_pnl_usdt": 0.14631336,
-  "message": "Champion version is missing."
+  "total_pnl_usdt": 0.08402666,
+  "risk": {
+    "daily_loss_pct": 0.14995,
+    "drawdown_pct": 0.14995,
+    "daily_loss_limit_pct": 5.0,
+    "drawdown_limit_pct": 10.0,
+    "max_position_fraction": 0.5,
+    "halted": true,
+    "halt_reason": "position_exposure_limit"
+  },
+  "message": "Risk circuit breaker is latched; no new simulated buys are allowed. Manual review/reset required."
 }

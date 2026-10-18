@@ -1,20 +1,28 @@
 {
-  "cash": 0.0,
-  "quantity": 0.00631785836452632,
-  "symbol": "ETHUSDT",
-  "entry_price": 2374.2222656054464,
+  "cash": 15.084026659810116,
+  "quantity": 0.0,
+  "symbol": null,
+  "entry_price": null,
   "last_processed_bars": {
     "ETHUSDT": "2026-10-18T22:00:00+00:00",
     "SOLUSDT": "2026-10-18T22:00:00+00:00"
   },
   "starting_cash": 15.0,
-  "completed_trades": 0,
-  "realized_pnl": 0.0,
-  "last_checked_at": "2026-10-18T22:45:16.829040+00:00",
+  "completed_trades": 1,
+  "realized_pnl": 0.08402665981011737,
+  "last_checked_at": "2026-10-18T23:18:06.663022+00:00",
   "last_price": 2370.666266206137,
   "last_prices": {
-    "BTCUSDT": 81807.25641744424,
-    "ETHUSDT": 2397.3809619158224,
-    "SOLUSDT": 103.67025749869849
-  }
+    "SOLUSDT": 103.83148283491684,
+    "ETHUSDT": 2391.107595887188
+  },
+  "last_price_timestamps": {
+    "SOLUSDT": "2026-10-18T23:15:00+00:00",
+    "ETHUSDT": "2026-10-18T23:15:00+00:00"
+  },
+  "risk_day": "2026-10-18",
+  "daily_start_equity": 15.106679125158289,
+  "peak_equity": 15.106679125158289,
+  "risk_halt": true,
+  "risk_halt_reason": "position_exposure_limit"
 }
