@@ -17,7 +17,7 @@ class ResearchCliTests(unittest.TestCase):
         report = {
             "started_at": now,
             "completed_at": now,
-            "run_status": "completed" if evaluations else "failed",
+            "run_status": "completed",
             "validation_status": status,
             "validation_result": {
                 "status": status,
