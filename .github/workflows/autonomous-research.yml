@@ -1,0 +1,51 @@
+name: Autonomous Strategy Research
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+    - cron: "31 4 * * 0"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Historical days to research (30–365)"
+        required: false
+        default: "90"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: autonomous-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Choose research window
+        id: window
+        shell: bash
+        run: |
+          DAYS="${{ github.event.inputs.days }}"
+          if [ -z "$DAYS" ]; then DAYS=90; fi
+          if [ "$DAYS" -lt 30 ] || [ "$DAYS" -gt 365 ]; then DAYS=90; fi
+          echo "days=$DAYS" >> "$GITHUB_OUTPUT"
+      - name: Search and validate strategies
+        run: python research_engine.py --days "${{ steps.window.outputs.days }}"
+      - name: Commit research evidence and champion
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/research_latest.json reports/experiments.jsonl state/champion.json
+          git diff --cached --quiet || git commit -m "Update autonomous strategy research"
+          git pull --rebase origin main
+          git push origin HEAD:main
