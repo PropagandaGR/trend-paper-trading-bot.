@@ -40,3 +40,12 @@ All generated state is simulated. Do not add exchange credentials. The system de
 ## Validation
 
 Pull requests run `python -m unittest discover -s tests -v` through the GitHub Actions Tests workflow. The Coinbase Public Data Smoke Test also checks recent public candles and USDT price conversion; it requires public network access and no exchange credentials.
+## Research validation and backtest contract
+
+- Research uses chronological **60% training / 20% validation / 20% final test** periods per symbol and timeframe.
+- Candidate eligibility and ranking use validation metrics only, including a validation-only stressed-cost run. The final test is evaluated only after a champion is selected and is report-only; it is never used to rank candidates or decide validation eligibility.
+- Backtests execute at the closed candle close after the strategy's one-candle signal shift, matching the paper trader's timing. Both use per-side slippage-adjusted execution prices and fees on executed notional.
+- Sharpe annualization uses the timeframe's bars per calendar year (365 days), recorded with the champion metadata.
+- `state/champion.json` includes a unique `champion_version` and `validation_metadata`: data-period boundaries, train/validation/test metrics, validation criteria, cost convention, test-isolation flag and Sharpe annualization details.
+- If no candidate meets validation gates, the active champion pointer is cleared rather than retaining a stale strategy. Immutable champion snapshots remain in version history.\n- A final-test result is not a guarantee of future performance. Repeatedly inspecting the same test period and then changing strategy rules can contaminate it; use a new, later holdout for any subsequent research cycle.
+- Regression tests cover split ordering, final-test isolation, cost convention and timeframe-specific Sharpe. A test is considered passed only when a recorded CI run or reproducible local output confirms it.
