@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from research_engine import backtest, desired_signal, performance
+from research_engine import backtest, desired_signal, performance, resample_ohlcv
 
 
 def sample_frame(n=500):
@@ -20,6 +20,23 @@ class ResearchTests(unittest.TestCase):
         self.params = {"fast": 8, "slow": 30, "momentum": 6, "breakout": 12,
                        "entry_momentum": 0.0, "exit_momentum": -0.005,
                        "rsi_entry": 25, "rsi_exit": 50, "stop_pct": 0.06}
+
+    def test_resample_uses_only_complete_closed_candles(self):
+        frame = sample_frame(12)  # 00:00 through 00:55, all source bars closed
+        # Remove the final 5m bar: the 00:30-01:00 bucket must be excluded.
+        incomplete = frame.iloc[:-1]
+        bars = resample_ohlcv(incomplete, "30min")
+        self.assertEqual(list(bars.index), [
+            pd.Timestamp("2025-01-01 00:30:00", tz="UTC")
+        ])
+        self.assertEqual(bars.iloc[0]["close_time"],
+                         pd.Timestamp("2025-01-01 00:30:00", tz="UTC"))
+        # With all six source bars present, the next boundary is valid.
+        complete = resample_ohlcv(frame, "30min")
+        self.assertEqual(list(complete.index), [
+            pd.Timestamp("2025-01-01 00:30:00", tz="UTC"),
+            pd.Timestamp("2025-01-01 01:00:00", tz="UTC")
+        ])
 
     def test_signal_has_no_lookahead_shift(self):
         frame = sample_frame()
