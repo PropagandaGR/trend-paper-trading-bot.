@@ -57,7 +57,7 @@ def make_frame(price, age_minutes=1):
 
 
 class PaperTraderExecutionSafetyTests(unittest.TestCase):
-    def _run_in_temp_repo(self, state, champion, frame_map, signal_value=1.0):
+    def _run_in_temp_repo(self, state, champion, frame_map, signal_value=1.0, resampled_frame=None):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         root = Path(temp.name)
@@ -84,7 +84,8 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
              patch.object(paper_trader, "fetch_klines", side_effect=fetch), \
              patch.object(paper_trader, "desired_signal",
                           return_value=pd.Series([0.0, signal_value], index=frame_map[champion["symbol"]].index)), \
-             patch.object(paper_trader, "add_features", return_value=feature_frame):
+             patch.object(paper_trader, "add_features", return_value=feature_frame), \
+             patch.object(paper_trader, "resample_ohlcv", return_value=resampled_frame):
             status = paper_trader.run_once()
         final_state = json.loads(state_file.read_text())
         return status, final_state
@@ -98,7 +99,7 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
             champion, {"BTCUSDT": stale_frame}, signal_value=1.0,
         )
         self.assertEqual(status["actions"], [])
-        self.assertIn("Fresh champion price unavailable", status["message"])
+        self.assertIn("Fresh champion price or signal candle unavailable", status["message"])
         self.assertEqual(state["cash"], 15.0)
         self.assertEqual(state["quantity"], 0.0)
 
@@ -131,6 +132,23 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         invested = state["quantity"] * 100.0
         self.assertLessEqual(invested, 7.5)
         self.assertGreaterEqual(state["cash"], 7.49)
+
+
+    def test_stale_resampled_signal_candle_cannot_trigger_buy(self):
+        champion = make_champion()
+        champion["interval"] = "30m"
+        fresh_price_frame = make_frame(100.0, age_minutes=1)
+        stale_signal_frame = make_frame(100.0, age_minutes=45)
+        status, state = self._run_in_temp_repo(
+            {"cash": 15.0, "quantity": 0.0, "symbol": None, "entry_price": None,
+             "last_processed_bars": {}, "starting_cash": 15.0},
+            champion, {"BTCUSDT": fresh_price_frame}, signal_value=1.0,
+            resampled_frame=stale_signal_frame,
+        )
+        self.assertEqual(status["actions"], [])
+        self.assertIn("signal candle unavailable", status["message"])
+        self.assertEqual(state["cash"], 15.0)
+        self.assertEqual(state["quantity"], 0.0)
 
 
 if __name__ == "__main__":
