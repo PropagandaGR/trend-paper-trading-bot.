@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18T21:57:28.919672+00:00",
+  "updated_at": "2026-10-18T22:07:26.929429+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
   "cash_usdt": 15.0,
@@ -34,27 +34,27 @@
       "stop_pct": 0.06
     }
   },
-  "last_processed_bar": "2026-10-18T21:30:00+00:00",
+  "last_processed_bar": "2026-10-18T22:00:00+00:00",
   "signal_diagnostics": {
     "symbol": "SOLUSDT",
     "strategy": "mean_reversion",
     "interval": "30m",
-    "latest_bar": "2026-10-18T21:30:00+00:00",
+    "latest_bar": "2026-10-18T22:00:00+00:00",
     "last_processed_bar_before_run": "2026-10-18T21:30:00+00:00",
-    "new_bar_to_process": false,
-    "close_usdt": 101.45,
+    "new_bar_to_process": true,
+    "close_usdt": 102.10742354,
     "signal_long": false,
     "current_signal": 0.0,
     "previous_signal": 0.0,
-    "rsi": 36.5936,
-    "ema_fast": 101.5761398,
-    "ema_slow": 102.88705064,
-    "momentum": -0.00792099,
+    "rsi": 46.1173,
+    "ema_fast": 101.70487343,
+    "ema_slow": 102.86068147,
+    "momentum": -0.00119738,
     "rsi_entry_threshold": 20.0,
     "rsi_below_entry_threshold": false,
     "close_below_ema_slow": true,
     "raw_entry_conditions_met": false,
-    "explanation": "This candle was already processed; no duplicate simulated order is placed."
+    "explanation": "No entry: RSI is not below 20.0."
   },
   "message": "Simulated portfolio only; fills are estimates, not exchange orders."
 }
