@@ -315,7 +315,58 @@ def run_once() -> dict[str, Any]:
 
     symbol = champion["symbol"]
     if symbol not in frames:
-        status["message"] = "Champion symbol data unavailable; no simulated order made."
+        current_prices, price_timestamps = fresh_price_map(frames)
+        mark_prices = current_prices
+        state["last_prices"] = current_prices
+        state["last_price_timestamps"] = price_timestamps
+        qty = float(state.get("quantity", 0.0))
+        held_symbol = state.get("symbol")
+        cash = float(state.get("cash", STARTING_CASH))
+        if qty > 0 and held_symbol not in mark_prices:
+            status["data_errors"].append({
+                "symbol": held_symbol,
+                "error": "Held-asset mark is stale or unavailable; no trade or unsafe valuation allowed."
+            })
+            status["message"] = "Champion data unavailable and held position cannot be safely marked."
+        else:
+            equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
+            risk = update_risk_metrics(state, equity)
+            exposure_fraction = (qty * mark / equity) if qty > 0 and equity > 0 else 0.0
+            if exposure_fraction > MAX_POSITION_FRACTION:
+                state["risk_halt"] = True
+                state["risk_halt_reason"] = "position_exposure_limit"
+                risk["halted"] = True
+                risk["halt_reason"] = state["risk_halt_reason"]
+            if risk["halted"] and qty > 0:
+                entry = float(state.get("entry_price") or mark)
+                sale = sell_with_costs(qty, mark, entry, FEE_BPS, SLIPPAGE_BPS)
+                cash += sale.net_proceeds
+                state["realized_pnl"] = float(state.get("realized_pnl", 0.0)) + sale.realized_pnl
+                state["completed_trades"] = int(state.get("completed_trades", 0)) + 1
+                status["actions"].append({
+                    "action": "PAPER_SELL", "symbol": held_symbol,
+                    "price": round(sale.execution_price, 8), "quantity": qty,
+                    "fee_usdt": round(sale.fee, 8), "slippage_usdt": round(sale.slippage, 8),
+                    "net_proceeds_usdt": round(sale.net_proceeds, 8),
+                    "realized_pnl_usdt": round(sale.realized_pnl, 8),
+                    "reason": "risk circuit breaker: " + str(risk["halt_reason"]),
+                })
+                qty, held_symbol = 0.0, None
+                state["quantity"], state["symbol"], state["entry_price"] = 0.0, None, None
+                equity = cash
+                risk = update_risk_metrics(state, equity)
+                risk["halted"] = True
+                risk["halt_reason"] = state.get("risk_halt_reason")
+            status.update({
+                "cash_usdt": round(cash, 8), "equity_usdt": round(equity, 8),
+                "total_pnl_usdt": round(equity - STARTING_CASH, 8), "risk": risk,
+            })
+            status["message"] = ("Risk circuit breaker is latched; no new simulated buys are allowed."
+                                 if risk["halted"] else
+                                 "Champion data unavailable; no simulated order made.")
+        state.update({"cash": cash, "quantity": qty, "symbol": held_symbol,
+                      "last_checked_at": utc_now()})
+        STATE_FILE.write_text(json.dumps(state, indent=2))
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
     interval = champion.get("interval", "5m")
