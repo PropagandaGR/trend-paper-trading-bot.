@@ -83,7 +83,8 @@ def run_once() -> dict[str, Any]:
     if interval != "5m":
         bars = resample_ohlcv(bars, INTERVALS[interval])
     params = champion["params"]
-    signals = desired_signal(bars, champion["strategy"], params,\n                            allow_short=bool(champion.get("allow_short", False)) and PAPER_ALLOW_SHORTS)
+    signals = desired_signal(bars, champion["strategy"], params,
+                            allow_short=bool(champion.get("allow_short", False)) and PAPER_ALLOW_SHORTS)
     if len(bars) < 2:
         status["message"] = "Waiting for sufficient closed candles."
         STATUS_FILE.write_text(json.dumps(status, indent=2))
@@ -108,7 +109,9 @@ def run_once() -> dict[str, Any]:
         "last_processed_bar_before_run": cursor,
         "new_bar_to_process": cursor != latest_time,
         "close_usdt": round(latest_price, 8),
-        "signal_long": target_side > 0,\n        "signal_short": target_side < 0,\n        "target_side": target_side,
+        "signal_long": target_side > 0,
+        "signal_short": target_side < 0,
+        "target_side": target_side,
         "current_signal": float(signals.iloc[-1]),
         "previous_signal": float(signals.iloc[-2]),
         "rsi": round(float(latest_features["rsi"]), 4),
