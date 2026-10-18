@@ -29,56 +29,6 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _frame_from_binance_rows(rows: list[list[Any]]) -> pd.DataFrame:
-    frame = pd.DataFrame(rows, columns=[
-        "open_time", "open", "high", "low", "close", "volume", "close_time",
-        "quote_volume", "trades", "taker_base", "taker_quote", "ignore"
-    ])
-    frame = frame.drop_duplicates("open_time").sort_values("open_time")
-    for col in ("open", "high", "low", "close", "volume"):
-        frame[col] = pd.to_numeric(frame[col], errors="coerce")
-    frame["open_time"] = pd.to_datetime(frame["open_time"], unit="ms", utc=True)
-    frame["close_time"] = pd.to_datetime(frame["close_time"], unit="ms", utc=True)
-    frame = frame.set_index("open_time")
-    return frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC")]
-
-
-def _fetch_binance(symbol: str, interval: str, days: int) -> pd.DataFrame:
-    end_ms = int(time.time() * 1000)
-    cursor = end_ms - int(days * 86400 * 1000)
-    rows: list[list[Any]] = []
-    # Try the global and US public endpoints. Some hosted runners are region-blocked.
-    last_error: Exception | None = None
-    for base in ("https://api.binance.com", "https://api.binance.us"):
-        try:
-            rows = []
-            page_cursor = cursor
-            while page_cursor < end_ms:
-                response = SESSION.get(
-                    f"{base}/api/v3/klines",
-                    params={"symbol": symbol, "interval": interval, "startTime": page_cursor,
-                            "endTime": end_ms, "limit": 1000},
-                    timeout=20,
-                )
-                response.raise_for_status()
-                batch = response.json()
-                if not batch:
-                    break
-                rows.extend(batch)
-                next_cursor = int(batch[-1][0]) + 1
-                if next_cursor <= page_cursor:
-                    break
-                page_cursor = next_cursor
-                if len(batch) < 1000:
-                    break
-                time.sleep(0.08)
-            if rows:
-                return _frame_from_binance_rows(rows)
-        except Exception as exc:
-            last_error = exc
-    raise RuntimeError(f"Binance public endpoints unavailable for {symbol} {interval}: {last_error}")
-
-
 def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     """Fallback to Coinbase Exchange public USD candles when Binance is region-blocked."""
     product = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD"}.get(symbol)
@@ -120,19 +70,17 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
 
 
 def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFrame:
-    """Fetch public closed candles; fallback when Binance is geo-blocked on CI."""
-    errors = []
-    for provider in (_fetch_binance, _fetch_coinbase):
-        try:
-            frame = provider(symbol, interval, days)
-            if not frame.empty:
-                frame.attrs["source"] = "coinbase" if provider is _fetch_coinbase else "binance"
-                return frame.sort_index()
-            errors.append(f"{provider.__name__}: empty data")
-        except Exception as exc:
-            errors.append(f"{provider.__name__}: {exc}")
-    raise RuntimeError(f"All public data providers failed for {symbol} {interval}: " + " | ".join(errors))
+    """Fetch public, closed candles from Coinbase only.
 
+    Deliberately do not fall back to Binance: silently switching exchanges can
+    make research and paper-trading results differ from the intended venue.
+    This uses public market data and does not require API credentials.
+    """
+    frame = _fetch_coinbase(symbol, interval, days)
+    if frame.empty:
+        raise RuntimeError(f"Coinbase returned no closed candles for {symbol} {interval}")
+    frame.attrs["source"] = "coinbase"
+    return frame.sort_index()
 
 def resample_ohlcv(frame: pd.DataFrame, rule: str) -> pd.DataFrame:
     """Build only complete higher-timeframe candles from closed 5m source bars.
