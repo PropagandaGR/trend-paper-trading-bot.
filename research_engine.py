@@ -29,33 +29,7 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFrame:
-    """Fetch public Binance candles only; returned candles are UTC and sorted."""
-    end_ms = int(time.time() * 1000)
-    start_ms = end_ms - int(days * 86400 * 1000)
-    rows: list[list[Any]] = []
-    cursor = start_ms
-    while cursor < end_ms:
-        response = SESSION.get(
-            "https://api.binance.com/api/v3/klines",
-            params={"symbol": symbol, "interval": interval, "startTime": cursor,
-                    "endTime": end_ms, "limit": 1000},
-            timeout=20,
-        )
-        response.raise_for_status()
-        batch = response.json()
-        if not batch:
-            break
-        rows.extend(batch)
-        next_cursor = int(batch[-1][0]) + 1
-        if next_cursor <= cursor:
-            break
-        cursor = next_cursor
-        if len(batch) < 1000:
-            break
-        time.sleep(0.08)
-    if not rows:
-        raise RuntimeError(f"No Binance candles returned for {symbol} {interval}")
+def _frame_from_binance_rows(rows: list[list[Any]]) -> pd.DataFrame:
     frame = pd.DataFrame(rows, columns=[
         "open_time", "open", "high", "low", "close", "volume", "close_time",
         "quote_volume", "trades", "taker_base", "taker_quote", "ignore"
@@ -66,8 +40,98 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
     frame["open_time"] = pd.to_datetime(frame["open_time"], unit="ms", utc=True)
     frame["close_time"] = pd.to_datetime(frame["close_time"], unit="ms", utc=True)
     frame = frame.set_index("open_time")
-    # Drop the currently forming candle. A signal may only use closed bars.
     return frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC")]
+
+
+def _fetch_binance(symbol: str, interval: str, days: int) -> pd.DataFrame:
+    end_ms = int(time.time() * 1000)
+    cursor = end_ms - int(days * 86400 * 1000)
+    rows: list[list[Any]] = []
+    # Try the global and US public endpoints. Some hosted runners are region-blocked.
+    last_error: Exception | None = None
+    for base in ("https://api.binance.com", "https://api.binance.us"):
+        try:
+            rows = []
+            page_cursor = cursor
+            while page_cursor < end_ms:
+                response = SESSION.get(
+                    f"{base}/api/v3/klines",
+                    params={"symbol": symbol, "interval": interval, "startTime": page_cursor,
+                            "endTime": end_ms, "limit": 1000},
+                    timeout=20,
+                )
+                response.raise_for_status()
+                batch = response.json()
+                if not batch:
+                    break
+                rows.extend(batch)
+                next_cursor = int(batch[-1][0]) + 1
+                if next_cursor <= page_cursor:
+                    break
+                page_cursor = next_cursor
+                if len(batch) < 1000:
+                    break
+                time.sleep(0.08)
+            if rows:
+                return _frame_from_binance_rows(rows)
+        except Exception as exc:
+            last_error = exc
+    raise RuntimeError(f"Binance public endpoints unavailable for {symbol} {interval}: {last_error}")
+
+
+def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
+    """Fallback to Coinbase Exchange public USD candles when Binance is region-blocked."""
+    product = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD"}.get(symbol)
+    if not product:
+        raise ValueError(f"No Coinbase fallback mapping for {symbol}")
+    granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
+    if granularity is None:
+        raise ValueError(f"Unsupported Coinbase candle interval: {interval}")
+    end = pd.Timestamp.now(tz="UTC").floor("min")
+    start = end - pd.Timedelta(days=days)
+    # Coinbase caps each response at 300 candles; page through the period.
+    rows: list[list[Any]] = []
+    chunk = pd.Timedelta(seconds=granularity * 280)
+    cursor = start
+    while cursor < end:
+        stop = min(cursor + chunk, end)
+        response = SESSION.get(
+            f"https://api.exchange.coinbase.com/products/{product}/candles",
+            params={"granularity": granularity, "start": cursor.isoformat(),
+                    "end": stop.isoformat()},
+            timeout=20,
+        )
+        response.raise_for_status()
+        batch = response.json()
+        rows.extend(batch)
+        cursor = stop
+        time.sleep(0.06)
+    if not rows:
+        raise RuntimeError(f"No Coinbase candles returned for {product} {interval}")
+    frame = pd.DataFrame(rows, columns=["time", "low", "high", "open", "close", "volume"])
+    frame = frame.drop_duplicates("time").sort_values("time")
+    frame["open_time"] = pd.to_datetime(frame["time"], unit="s", utc=True)
+    frame["close_time"] = frame["open_time"] + pd.to_timedelta(granularity, unit="s")
+    for col in ("open", "high", "low", "close", "volume"):
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+    frame = frame.set_index("open_time")
+    return frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC"),
+                     ["open", "high", "low", "close", "volume", "close_time"]]
+
+
+def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFrame:
+    """Fetch public closed candles; fallback when Binance is geo-blocked on CI."""
+    errors = []
+    for provider in (_fetch_binance, _fetch_coinbase):
+        try:
+            frame = provider(symbol, interval, days)
+            if not frame.empty:
+                frame.attrs["source"] = "coinbase" if provider is _fetch_coinbase else "binance"
+                return frame.sort_index()
+            errors.append(f"{provider.__name__}: empty data")
+        except Exception as exc:
+            errors.append(f"{provider.__name__}: {exc}")
+    raise RuntimeError(f"All public data providers failed for {symbol} {interval}: " + " | ".join(errors))
 
 
 def resample_ohlcv(frame: pd.DataFrame, rule: str) -> pd.DataFrame:
