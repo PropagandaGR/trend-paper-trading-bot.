@@ -121,6 +121,25 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         self.assertEqual(final_state["quantity"], 0.0)
         self.assertIsNone(final_state["symbol"])
 
+    def test_risk_liquidation_keeps_status_and_saved_ledger_in_sync(self):
+        champion = make_champion()
+        state = {
+            "cash": 0.0, "quantity": 0.1, "symbol": "ETHUSDT", "entry_price": 100.0,
+            "last_processed_bars": {}, "starting_cash": 15.0,
+            "realized_pnl": 0.0, "completed_trades": 0,
+        }
+        status, final_state = self._run_in_temp_repo(
+            state, champion,
+            {"BTCUSDT": make_frame(100.0), "ETHUSDT": make_frame(100.0)},
+            signal_value=1.0,
+        )
+        self.assertEqual([action["action"] for action in status["actions"]], ["PAPER_SELL"])
+        self.assertEqual(status["completed_trades"], final_state["completed_trades"])
+        self.assertEqual(status["realized_pnl_usdt"], round(final_state["realized_pnl"], 8))
+        self.assertEqual(status["cash_usdt"], round(final_state["cash"], 8))
+        self.assertEqual(final_state["quantity"], 0.0)
+        self.assertIsNone(final_state["symbol"])
+
     def test_new_position_uses_at_most_half_of_equity(self):
         champion = make_champion()
         status, state = self._run_in_temp_repo(
