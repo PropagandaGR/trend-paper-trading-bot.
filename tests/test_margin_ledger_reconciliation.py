@@ -18,6 +18,14 @@ class MarginLedgerReconciliationTests(unittest.TestCase):
         self.assertEqual(state["quantity"], 0.0)
         self.assertNotEqual(state["cash"], before_close_cash)
 
+    def test_entry_costs_do_not_immediately_breach_exposure_cap(self):
+        for side in (1, -1):
+            state = {"cash": 15.0, "quantity": 0.0, "symbol": None,
+                     "completed_trades": 0, "realized_pnl": 0.0}
+            open_position(state, "BTCUSDT", side, 100.0, leverage=2.0)
+            marked = mark_position(state, 100.0)
+            self.assertLessEqual(marked["gross_exposure"], marked["equity"] * 2.0 + 1e-8)
+
     def test_nonfinite_prices_are_rejected(self):
         state = {"cash": 15.0, "quantity": 0.0}
         with self.assertRaises(ValueError):
