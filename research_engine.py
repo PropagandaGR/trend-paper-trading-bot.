@@ -234,7 +234,8 @@ def performance(returns: pd.Series) -> dict[str, float]:
 
 def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
              fee_bps: float = DEFAULT_FEE_BPS,
-             slippage_bps: float = DEFAULT_SLIPPAGE_BPS,\n             allow_short: bool = False) -> dict[str, float]:
+             slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
+             allow_short: bool = False) -> dict[str, float]:
     if len(frame) < max(int(params["slow"]) * 3, int(params["breakout"]) + 50):
         return performance(pd.Series(dtype=float))
     pos = desired_signal(frame, strategy, params, allow_short=allow_short)
@@ -294,21 +295,22 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 split = int(len(bars) * 0.70)
                 train, test = bars.iloc[:split], bars.iloc[split:]
                 for strategy in ("trend", "breakout", "mean_reversion"):
-                    for params in candidates:
-                        train_m = backtest(train, strategy, params, 10, 5)
-                        test_m = backtest(test, strategy, params, 10, 5)
-                        stress_m = backtest(test, strategy, params, 20, 10)
-                        # Out-of-sample candidate must survive costs, not just fit train.
-                        passed = (test_m["total_return_pct"] > 0 and
-                                  stress_m["total_return_pct"] > 0 and
-                                  test_m["max_drawdown_pct"] < 25 and
-                                  test_m["trades"] >= 2)
-                        results.append({
-                            "symbol": symbol, "interval": interval, "strategy": strategy,
-                            "params": params, "train": train_m, "test": test_m,
-                            "stress": stress_m, "score": score(test_m),
-                            "passed_validation": bool(passed)
-                        })
+                    for allow_short in (False, True):
+                        for params in candidates:
+                            train_m = backtest(train, strategy, params, 10, 5, allow_short=allow_short)
+                            test_m = backtest(test, strategy, params, 10, 5, allow_short=allow_short)
+                            stress_m = backtest(test, strategy, params, 20, 10, allow_short=allow_short)
+                            # Out-of-sample candidate must survive costs, not just fit train.
+                            passed = (test_m["total_return_pct"] > 0 and
+                                      stress_m["total_return_pct"] > 0 and
+                                      test_m["max_drawdown_pct"] < 25 and
+                                      test_m["trades"] >= 2)
+                            results.append({
+                                "symbol": symbol, "interval": interval, "strategy": strategy,
+                                "allow_short": allow_short, "params": params,
+                                "train": train_m, "test": test_m, "stress": stress_m,
+                                "score": score(test_m), "passed_validation": bool(passed)
+                            })
         except Exception as exc:
             results.append({"symbol": symbol, "error": str(exc)})
     valid = [r for r in results if r.get("passed_validation")]
@@ -328,7 +330,8 @@ def run_research(days: int = 90) -> dict[str, Any]:
     (REPORTS / "research_latest.json").write_text(json.dumps(summary, indent=2))
     with (REPORTS / "experiments.jsonl").open("a") as handle:
         handle.write(json.dumps({"at": utc_now(), "days": days, "evaluations": len(results),
-                                 "validated": len(valid), "champion": champion}, default=str) + "\n")
+                                 "validated": len(valid), "champion": champion}, default=str) + "
+")
     if champion:
         (STATE / "champion.json").write_text(json.dumps(champion, indent=2))
     return summary
