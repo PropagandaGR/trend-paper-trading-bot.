@@ -1,15 +1,28 @@
 {
-  "updated_at": "2026-10-18T22:07:26.929429+00:00",
+  "updated_at": "2026-10-18T22:15:51.286394+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
-  "cash_usdt": 15.0,
-  "equity_usdt": 15.0,
-  "unrealized_pnl_usdt": 0.0,
+  "cash_usdt": 0.0,
+  "equity_usdt": 14.9775337,
+  "unrealized_pnl_usdt": -0.0224663,
   "realized_pnl_usdt": 0.0,
   "completed_trades": 0,
-  "open_position": null,
+  "open_position": {
+    "symbol": "ETHUSDT",
+    "quantity": 0.0063178584,
+    "mark_price": 2370.66626621,
+    "entry_price": 2374.22226561
+  },
   "champion_available": true,
-  "actions": [],
+  "actions": [
+    {
+      "action": "PAPER_BUY",
+      "symbol": "ETHUSDT",
+      "price": 2374.22226561,
+      "quantity": 0.00631785836452632,
+      "reason": "validated champion entry"
+    }
+  ],
   "data_errors": [],
   "safety": {
     "real_orders": false,
@@ -17,9 +30,9 @@
     "leverage": false,
     "short_selling": false
   },
-  "total_pnl_usdt": 0.0,
+  "total_pnl_usdt": -0.0224663,
   "champion": {
-    "symbol": "SOLUSDT",
+    "symbol": "ETHUSDT",
     "interval": "30m",
     "strategy": "mean_reversion",
     "params": {
@@ -36,25 +49,25 @@
   },
   "last_processed_bar": "2026-10-18T22:00:00+00:00",
   "signal_diagnostics": {
-    "symbol": "SOLUSDT",
+    "symbol": "ETHUSDT",
     "strategy": "mean_reversion",
     "interval": "30m",
     "latest_bar": "2026-10-18T22:00:00+00:00",
-    "last_processed_bar_before_run": "2026-10-18T21:30:00+00:00",
+    "last_processed_bar_before_run": "2026-10-18T19:00:00+00:00",
     "new_bar_to_process": true,
-    "close_usdt": 102.10742354,
-    "signal_long": false,
-    "current_signal": 0.0,
-    "previous_signal": 0.0,
-    "rsi": 46.1173,
-    "ema_fast": 101.70487343,
-    "ema_slow": 102.86068147,
-    "momentum": -0.00119738,
+    "close_usdt": 2370.66626621,
+    "signal_long": true,
+    "current_signal": 1.0,
+    "previous_signal": 1.0,
+    "rsi": 45.311,
+    "ema_fast": 2361.24117327,
+    "ema_slow": 2390.43902958,
+    "momentum": -0.00373841,
     "rsi_entry_threshold": 20.0,
     "rsi_below_entry_threshold": false,
     "close_below_ema_slow": true,
     "raw_entry_conditions_met": false,
-    "explanation": "No entry: RSI is not below 20.0."
+    "explanation": "The strategy signal is long; the paper trader should enter or remain invested on this new candle."
   },
   "message": "Simulated portfolio only; fills are estimates, not exchange orders."
 }

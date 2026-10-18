@@ -1,15 +1,15 @@
 {
-  "cash": 15.0,
-  "quantity": 0.0,
-  "symbol": null,
-  "entry_price": null,
+  "cash": 0.0,
+  "quantity": 0.00631785836452632,
+  "symbol": "ETHUSDT",
+  "entry_price": 2374.2222656054464,
   "last_processed_bars": {
-    "ETHUSDT": "2026-10-18T19:00:00+00:00",
+    "ETHUSDT": "2026-10-18T22:00:00+00:00",
     "SOLUSDT": "2026-10-18T22:00:00+00:00"
   },
   "starting_cash": 15.0,
   "completed_trades": 0,
   "realized_pnl": 0.0,
-  "last_checked_at": "2026-10-18T22:07:26.929421+00:00",
-  "last_price": 102.10742353706762
+  "last_checked_at": "2026-10-18T22:15:51.286385+00:00",
+  "last_price": 2370.666266206137
 }
