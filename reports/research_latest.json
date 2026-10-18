@@ -1,6 +1,6 @@
 {
-  "started_at": "2026-10-18T18:51:55.795105+00:00",
-  "completed_at": "2026-10-18T18:54:10.665045+00:00",
+  "started_at": "2026-10-18T18:54:28.923660+00:00",
+  "completed_at": "2026-10-18T18:56:52.949096+00:00",
   "days": 90,
   "symbols": [
     "BTCUSDT",
@@ -144,7 +144,7 @@
       "train": {
         "total_return_pct": 2.0303,
         "max_drawdown_pct": 2.2807,
-        "sharpe": 2.688,
+        "sharpe": 2.687,
         "trades": 14
       },
       "test": {
@@ -180,7 +180,7 @@
       "train": {
         "total_return_pct": 2.0303,
         "max_drawdown_pct": 2.2807,
-        "sharpe": 2.688,
+        "sharpe": 2.687,
         "trades": 14
       },
       "test": {
