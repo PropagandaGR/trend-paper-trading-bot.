@@ -36,3 +36,7 @@ python paper_trader.py --once
 - `state/champion.json`: latest candidate that passed validation
 
 All generated state is simulated. Do not add exchange credentials. The system deliberately has no real-order code. Coinbase public candles are the only market-data source; if Coinbase data or the USDT-USD conversion candles are unavailable, the run should fail rather than silently switch providers.
+
+## Validation
+
+Pull requests run `python -m unittest discover -s tests -v` through the GitHub Actions Tests workflow. The Coinbase Public Data Smoke Test also checks recent public candles and USDT price conversion; it requires public network access and no exchange credentials.
