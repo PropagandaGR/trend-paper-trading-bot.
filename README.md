@@ -5,8 +5,8 @@ A **new, isolated research project** for continuous live-market paper trading an
 ## Safety and scope
 - Simulated starting equity: **15 USDT**.
 - Spot-only, long/flat: no leverage, no shorting.
-- Public Binance market data only; no API keys or secrets.
-- Research explores parameterized trend, breakout, and mean-reversion strategies on BTCUSDT, ETHUSDT, and SOLUSDT.
+- Public Coinbase Exchange market data only; no API keys or secrets are needed for candle data.
+- Research explores parameterized trend, breakout, and mean-reversion strategies for BTC, ETH, and SOL using Coinbase USD-quoted candles. The simulated ledger remains denominated in USDT, so USD/USDT quote differences must be considered when interpreting results.
 - Candidate strategies must pass chronological train/validation/test splits, realistic fees/slippage stress, and benchmark comparisons before being selected for the paper portfolio.
 - The live paper trader uses the currently validated champion only. Research experiments never directly modify portfolio cash or positions.
 - Results are simulated estimates, not proof of future profitability.
