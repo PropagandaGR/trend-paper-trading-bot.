@@ -16,19 +16,19 @@
   "train": {
     "total_return_pct": 0.672,
     "max_drawdown_pct": 1.1521,
-    "sharpe": 3.424,
+    "sharpe": 3.405,
     "trades": 2
   },
   "test": {
     "total_return_pct": 5.8711,
     "max_drawdown_pct": 2.4163,
-    "sharpe": 12.563,
+    "sharpe": 12.49,
     "trades": 8
   },
   "stress": {
     "total_return_pct": 4.6084,
     "max_drawdown_pct": 2.8558,
-    "sharpe": 9.973,
+    "sharpe": 9.916,
     "trades": 8
   },
   "score": 3.9788750000000004,
