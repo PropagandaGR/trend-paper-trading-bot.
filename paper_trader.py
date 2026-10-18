@@ -255,6 +255,7 @@ def run_once() -> dict[str, Any]:
     high_water = max(float(state.get("high_water_equity", equity)), 1e-12)
     daily_loss_pct = max(0.0, (day_start - equity) / day_start * 100)
     drawdown_pct = max(0.0, (high_water - equity) / high_water * 100)
+    liquidation_triggered = qty > 0 and bool(snap.get("liquidation", False))
     exposure_limit_breached = (
         qty > 0 and float(snap.get("gross_exposure", 0.0)) >
         max(equity, 0.0) * MAX_GROSS_EXPOSURE_MULTIPLE
@@ -262,7 +263,7 @@ def run_once() -> dict[str, Any]:
     risk_halt = (
         daily_loss_pct >= MAX_DAILY_LOSS_PCT or
         drawdown_pct >= MAX_TOTAL_DRAWDOWN_PCT or
-        exposure_limit_breached
+        exposure_limit_breached or liquidation_triggered
     )
     if risk_halt:
         state["risk_halt_day_utc"] = today
