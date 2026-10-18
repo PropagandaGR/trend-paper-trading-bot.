@@ -94,7 +94,7 @@ jobs:
           if not isinstance(report.get("champion"), dict):
               raise SystemExit("FAIL: fresh report has no champion object")
           metadata = active.get("validation_metadata", {})
-          if not active.get("champion_version", "").startswith("champion-") or metadata.get("status") != "validated":
+          if not isinstance(active.get("champion_version"), str) or not active["champion_version"].startswith("champion-") or metadata.get("status") != "validated":
               raise SystemExit("FAIL: champion version/validated metadata missing")
           if active.get("champion_version") != report["champion"].get("champion_version"):
               raise SystemExit("FAIL: active champion does not match fresh report champion")
