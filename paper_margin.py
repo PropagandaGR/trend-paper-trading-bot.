@@ -49,8 +49,9 @@ def open_position(
     # Keep enough free cash to absorb the entry fee and adverse entry slippage,
     # so marked gross exposure does not immediately exceed the equity cap.
     slippage_cost_rate = slip_rate / (1.0 + slip_rate) if side == 1 else slip_rate / (1.0 - slip_rate)
-    margin = cash / (1.0 + leverage * (fee_rate + slippage_cost_rate))
-    notional = margin * leverage
+    effective_leverage = leverage * (1.0 - slip_rate if side == -1 else 1.0)
+    margin = cash / (1.0 + effective_leverage * (fee_rate + slippage_cost_rate))
+    notional = margin * effective_leverage
     quantity = notional / fill
     entry_fee = notional * fee_rate
     state["cash"] = cash - margin - entry_fee
