@@ -6,6 +6,9 @@ A **new, isolated research project** for continuous live-market paper trading an
 - Simulated starting equity: **15 USDT**.
 - Paper margin engine defaults to 1x; leverage above 1x is simulation-only and capped at 2x. Shorting is paper-only. Set repository Actions variables `PAPER_LEVERAGE` to `2.0` to test 2x, and `PAPER_ALLOW_SHORTS` to `false` to disable shorts.
 - Liquidation is approximated at completed-bar marks and is not an exchange liquidation model.
+- Paper execution blocks stale/unvalidated champions and stale/non-positive price marks; champion validation must be newer than 24 hours and include positive held-out and fee-stress evidence.
+- Portfolio safeguards: 5% UTC-day loss limit, 15% peak-to-equity drawdown limit, and gross exposure capped at 2x marked equity. A loss/exposure/liquidation halt blocks new entries for the UTC day.
+- On coin switches, an open position is closed using a fresh mark for its own symbol; unavailable held-asset prices freeze execution rather than substituting another asset's price.
 - Paper simulation supports long and short positions with configurable isolated leverage (1x–2x maximum). No live derivatives or real orders.
 - Public Binance market data only; no API keys or secrets.
 - Research explores parameterized trend, breakout, and mean-reversion strategies on BTCUSDT, ETHUSDT, and SOLUSDT.
