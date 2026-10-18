@@ -1,28 +1,16 @@
 {
-  "updated_at": "2026-10-18T23:18:01.345251+00:00",
+  "updated_at": "2026-10-18T23:18:55.952369+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
   "cash_usdt": 15.08402666,
   "equity_usdt": 15.08402666,
   "unrealized_pnl_usdt": 0.0,
-  "realized_pnl_usdt": 0.0,
-  "completed_trades": 0,
+  "realized_pnl_usdt": 0.08402666,
+  "completed_trades": 1,
   "open_position": null,
   "champion_available": true,
   "champion_rejection_reason": null,
-  "actions": [
-    {
-      "action": "PAPER_SELL",
-      "symbol": "ETHUSDT",
-      "price": 2389.91204209,
-      "quantity": 0.00631785836452632,
-      "fee_usdt": 0.01509913,
-      "slippage_usdt": 0.00755334,
-      "net_proceeds_usdt": 15.08402666,
-      "realized_pnl_usdt": 0.08402666,
-      "reason": "risk circuit breaker: position_exposure_limit"
-    }
-  ],
+  "actions": [],
   "data_errors": [],
   "safety": {
     "real_orders": false,
