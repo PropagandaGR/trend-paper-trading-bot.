@@ -400,8 +400,21 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 "warning": "Test metrics are report-only and were not used to rank, select, or validate this champion.",
             },
         }
+    validation_status = "validated" if champion else ("no_candidate" if results else "insufficient_data")
     summary = {
         "started_at": started, "completed_at": utc_now(), "days": days,
+        "run_status": "completed" if results else "failed",
+        "validation_status": validation_status,
+        "validation_result": {
+            "status": validation_status,
+            "evaluations": len(results),
+            "validated_candidates": len(eligible),
+            "champion_version": champion["champion_version"] if champion else None,
+            "reason": None if champion else (
+                "No candidate passed validation gates" if results
+                else "No candidate evaluations completed; check market data and history coverage"
+            ),
+        },
         "symbols": list(SYMBOLS), "intervals": list(INTERVALS),
         "candidate_count": len(candidates), "evaluations": len(results),
         "validated_count": len(eligible), "champion": champion,
@@ -429,3 +442,92 @@ def run_research(days: int = 90) -> dict[str, Any]:
         (STATE / "champion.json").write_text("null")
     return summary
 
+def validate_research_artifacts(invocation_started: datetime, report_path: Path | None = None) -> dict[str, Any]:
+    """Fail closed unless this invocation produced a fresh, substantive report."""
+    report_path = report_path or (REPORTS / "research_latest.json")
+    if not report_path.is_file():
+        raise RuntimeError(f"Research report was not produced: {report_path}")
+    if report_path.stat().st_mtime < invocation_started.timestamp() - 2:
+        raise RuntimeError("Research report is stale; this invocation did not refresh it")
+    try:
+        report = json.loads(report_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Research report is unreadable: {exc}") from exc
+
+    def parse_timestamp(value: Any, field: str) -> datetime:
+        if not isinstance(value, str) or not value:
+            raise RuntimeError(f"Research report is missing {field}")
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise RuntimeError(f"Research report has invalid {field}") from exc
+        if parsed.tzinfo is None:
+            raise RuntimeError(f"Research report {field} must include a timezone")
+        return parsed.astimezone(timezone.utc)
+
+    report_started = parse_timestamp(report.get("started_at"), "started_at")
+    report_completed = parse_timestamp(report.get("completed_at"), "completed_at")
+    if report_started < invocation_started.replace(microsecond=0) - pd.Timedelta(seconds=2).to_pytimedelta():
+        raise RuntimeError("Research report started before this invocation")
+    if report_completed < report_started:
+        raise RuntimeError("Research report completed_at precedes started_at")
+    if report.get("run_status") != "completed":
+        raise RuntimeError(f"Research run did not complete successfully: {report.get('run_status')}")
+    if not isinstance(report.get("evaluations"), int) or report["evaluations"] <= 0:
+        raise RuntimeError("Research produced no candidate evaluations")
+    validation = report.get("validation_result")
+    allowed = {"validated", "no_candidate"}
+    if not isinstance(validation, dict) or validation.get("status") not in allowed:
+        raise RuntimeError("Research did not produce a complete validation result")
+    if validation.get("status") != report.get("validation_status"):
+        raise RuntimeError("Research validation status is inconsistent")
+    if validation.get("evaluations") != report.get("evaluations"):
+        raise RuntimeError("Research validation result does not match evaluation count")
+    champion = report.get("champion")
+    if validation["status"] == "validated":
+        if not isinstance(champion, dict):
+            raise RuntimeError("Validation says a champion passed, but no champion was reported")
+        if not champion.get("champion_version") or not isinstance(champion.get("validation_metadata"), dict):
+            raise RuntimeError("Validated champion is missing version or validation metadata")
+        if champion["validation_metadata"].get("test_used_for_selection") is not False:
+            raise RuntimeError("Champion metadata does not prove final-test isolation")
+        if validation.get("champion_version") != champion.get("champion_version"):
+            raise RuntimeError("Validation result champion version does not match the champion")
+    elif champion is not None or validation.get("champion_version") is not None:
+        raise RuntimeError("No-candidate validation must not leave an active champion")
+    return report
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Run Coinbase-only strategy research and validate the resulting artifacts.")
+    parser.add_argument("--days", type=int, default=90, help="Historical window in days (30–365; default: 90)")
+    parser.add_argument(
+        "--require-fresh-report", action="store_true",
+        help="Explicitly require a fresh report and complete validation result (always enforced in CI).",
+    )
+    args = parser.parse_args(argv)
+    if not 30 <= args.days <= 365:
+        parser.error("--days must be between 30 and 365")
+
+    invocation_started = datetime.now(timezone.utc)
+    try:
+        run_research(days=args.days)
+        report = validate_research_artifacts(invocation_started)
+    except Exception as exc:
+        import sys
+        print(f"Research failed artifact validation: {exc}", file=sys.stderr)
+        return 1
+
+    print(json.dumps({
+        "run_status": report["run_status"],
+        "validation_status": report["validation_status"],
+        "evaluations": report["evaluations"],
+        "validated_count": report["validated_count"],
+        "champion_version": report["validation_result"].get("champion_version"),
+        "report": str(REPORTS / "research_latest.json"),
+    }, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
