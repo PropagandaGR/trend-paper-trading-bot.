@@ -240,7 +240,7 @@ def candidate_params() -> list[dict[str, Any]]:
                                "exit_momentum": -0.005, "rsi_entry": rsi_entry,
                                "rsi_exit": rsi_exit, "stop_pct": stop_pct})
     # Limit run time while retaining deterministic coverage.
-    return candidates[::max(1, len(candidates) // 240)][:240]
+    return candidates[::max(1, len(candidates) // 48)][:48]
 
 
 def score(metrics: dict[str, float]) -> float:
