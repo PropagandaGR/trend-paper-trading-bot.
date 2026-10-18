@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+from paper_margin import close_position, mark_position, open_position, MAX_LEVERAGE
 
 from research_engine import (
     INTERVALS, REPORTS, STATE, SYMBOLS, fetch_klines, desired_signal, add_features, resample_ohlcv, utc_now
@@ -13,6 +16,10 @@ from research_engine import (
 STARTING_CASH = 15.0
 FEE_BPS = 10.0
 SLIPPAGE_BPS = 5.0
+PAPER_ALLOW_SHORTS = os.getenv("PAPER_ALLOW_SHORTS", "true").lower() in ("1", "true", "yes")
+PAPER_LEVERAGE = float(os.getenv("PAPER_LEVERAGE", "1.0"))
+if not 1.0 <= PAPER_LEVERAGE <= MAX_LEVERAGE:
+    raise ValueError(f"PAPER_LEVERAGE must be between 1.0 and {MAX_LEVERAGE}x")
 STATE_FILE = STATE / "paper_state.json"
 CHAMPION_FILE = STATE / "champion.json"
 STATUS_FILE = REPORTS / "paper_status.json"
@@ -43,7 +50,7 @@ def run_once() -> dict[str, Any]:
         "open_position": None, "champion_available": bool(champion),
         "actions": [], "data_errors": [],
         "safety": {"real_orders": False, "exchange_credentials_used": False,
-                   "leverage": False, "short_selling": False}
+                   "paper_leverage_enabled": PAPER_LEVERAGE > 1.0, "paper_shorts_enabled": PAPER_ALLOW_SHORTS, "max_paper_leverage": MAX_LEVERAGE}
     }
     frames: dict[str, pd.DataFrame] = {}
     for symbol in SYMBOLS:
@@ -84,7 +91,7 @@ def run_once() -> dict[str, Any]:
     latest_time = bars.index[-1].isoformat()
     cursor = state.setdefault("last_processed_bars", {}).get(symbol)
     latest_price = float(bars.close.iloc[-1])
-    target_long = bool(signals.iloc[-1] > 0)
+    target_side = int(signals.iloc[-1])\n    champion_allows_shorts = bool(champion.get("allow_short", False))\n    if not PAPER_ALLOW_SHORTS or not champion_allows_shorts:\n        target_side = max(0, target_side)
     features = add_features(
         bars, int(params["fast"]), int(params["slow"]),
         int(params["momentum"]), int(params["breakout"])
@@ -98,7 +105,7 @@ def run_once() -> dict[str, Any]:
         "last_processed_bar_before_run": cursor,
         "new_bar_to_process": cursor != latest_time,
         "close_usdt": round(latest_price, 8),
-        "signal_long": target_long,
+        "signal_long": target_side > 0,\n        "signal_short": target_side < 0,\n        "target_side": target_side,
         "current_signal": float(signals.iloc[-1]),
         "previous_signal": float(signals.iloc[-2]),
         "rsi": round(float(latest_features["rsi"]), 4),
@@ -137,57 +144,73 @@ def run_once() -> dict[str, Any]:
     position_symbol = state.get("symbol")
     qty = float(state.get("quantity", 0.0))
     cash = float(state.get("cash", STARTING_CASH))
-    cost_rate = (FEE_BPS + SLIPPAGE_BPS) / 10000.0
-
+    state.setdefault("side", 1 if qty > 0 else 0)
+    state.setdefault("margin", 0.0)
+    state.setdefault("leverage", 1.0)
+    state.setdefault("entry_fee", 0.0)
+    if qty > 0 and not state.get("margin") and state.get("entry_price"):
+        # Migrate a legacy spot position into 1x isolated-margin paper accounting.
+        state["margin"] = qty * float(state["entry_price"])
+        state["side"] = 1
+        state["leverage"] = 1.0
     if cursor != latest_time:
-        # One-position, long-only portfolio. All fills are simulated at the latest
-        # closed candle price with a conservative cost haircut.
-        if qty > 0 and (position_symbol != symbol or not target_long):
-            fill = latest_price * (1 - cost_rate)
-            proceeds = qty * fill
-            entry = float(state.get("entry_price") or fill)
-            pnl = proceeds - qty * entry
-            cash += proceeds
-            state["realized_pnl"] = float(state.get("realized_pnl", 0.0)) + pnl
-            state["completed_trades"] = int(state.get("completed_trades", 0)) + 1
-            status["actions"].append({"action": "PAPER_SELL", "symbol": position_symbol,
-                                      "price": round(fill, 8), "quantity": qty,
-                                      "reason": "validated champion exit or symbol change"})
-            qty, position_symbol = 0.0, None
-            state["entry_price"] = None
-        if qty <= 0 and target_long:
-            # Invest available cash, including the 15 USDT starting portfolio.
-            fill = latest_price * (1 + cost_rate)
-            spend = cash
-            qty = max(0.0, spend / fill)
-            cash = 0.0
+        liquidated = False
+        if qty > 0:
+            mark = mark_position(state, latest_price)
+            if mark["liquidation"]:
+                closed = close_position(state, latest_price, reason="simulated liquidation",
+                                        fee_bps=FEE_BPS, slippage_bps=SLIPPAGE_BPS)
+                if closed:
+                    status["actions"].append(closed)
+                qty, position_symbol = 0.0, None
+                liquidated = True
+            elif position_symbol != symbol or target_side != int(state.get("side", 0)):
+                closed = close_position(state, latest_price, reason="validated champion exit or side change",
+                                        fee_bps=FEE_BPS, slippage_bps=SLIPPAGE_BPS)
+                if closed:
+                    status["actions"].append(closed)
+                qty, position_symbol = 0.0, None
+        if qty <= 0 and target_side != 0 and not liquidated:
+            opened = open_position(state, symbol, target_side, latest_price,
+                                   leverage=PAPER_LEVERAGE, fee_bps=FEE_BPS,
+                                   slippage_bps=SLIPPAGE_BPS)
+            status["actions"].append(opened)
+            qty = float(state["quantity"])
             position_symbol = symbol
-            state["entry_price"] = fill
-            status["actions"].append({"action": "PAPER_BUY", "symbol": symbol,
-                                      "price": round(fill, 8), "quantity": qty,
-                                      "reason": "validated champion entry"})
         state.setdefault("last_processed_bars", {})[symbol] = latest_time
-    state.update({"cash": cash, "quantity": qty, "symbol": position_symbol,
-                  "last_checked_at": utc_now()})
+    state["last_checked_at"] = utc_now()
     state["last_price"] = latest_price
-    equity = cash + (qty * latest_price if position_symbol else 0.0)
+    qty = float(state.get("quantity", 0.0))
+    mark = mark_position(state, latest_price)
+    equity = float(mark["equity"])
+    unrealized = float(mark["unrealized_pnl"])
     entry_price = float(state.get("entry_price") or latest_price)
-    unrealized = (latest_price - entry_price) * qty if position_symbol else 0.0
+    position_symbol = state.get("symbol") if qty > 0 else None
+    state["cash"] = float(state.get("cash", 0.0))
     status.update({
-        "updated_at": utc_now(), "cash_usdt": round(cash, 8),
+        "updated_at": utc_now(), "cash_usdt": round(state["cash"], 8),
         "equity_usdt": round(equity, 8),
         "total_pnl_usdt": round(equity - STARTING_CASH, 8),
+        "realized_pnl_usdt": round(float(state.get("realized_pnl", 0.0)), 8),
         "unrealized_pnl_usdt": round(unrealized, 8),
-        "open_position": ({"symbol": position_symbol, "quantity": round(qty, 10),
-                           "mark_price": round(latest_price, 8),
-                           "entry_price": round(entry_price, 8)} if position_symbol else None),
+        "completed_trades": int(state.get("completed_trades", 0)),
+        "open_position": ({
+            "symbol": position_symbol, "side": "long" if int(state.get("side", 0)) == 1 else "short",
+            "quantity": round(qty, 10), "mark_price": round(latest_price, 8),
+            "entry_price": round(entry_price, 8),
+            "leverage": float(state.get("leverage", 1.0)),
+            "margin_reserved_usdt": round(float(state.get("margin", 0.0)), 8)
+        } if position_symbol else None),
+        "paper_risk_config": {"shorts_enabled": PAPER_ALLOW_SHORTS,
+                              "leverage": PAPER_LEVERAGE, "max_leverage": MAX_LEVERAGE},
         "champion": {"symbol": symbol, "interval": interval,
-                     "strategy": champion["strategy"], "params": params},
+                     "strategy": champion["strategy"], "allow_short": champion_allows_shorts,
+                     "params": params},
         "last_processed_bar": latest_time,
         "signal_diagnostics": signal_diagnostics,
-        "message": "Simulated portfolio only; fills are estimates, not exchange orders."
+        "message": "Paper-only isolated-margin simulation; liquidation and fills are estimates, not exchange execution."
     })
-    STATE_FILE.write_text(json.dumps(state, indent=2))
+        STATE_FILE.write_text(json.dumps(state, indent=2))
     STATUS_FILE.write_text(json.dumps(status, indent=2))
     return status
 
