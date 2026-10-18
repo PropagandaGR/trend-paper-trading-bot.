@@ -14,6 +14,8 @@ import numpy as np
 import pandas as pd
 import requests
 
+from portfolio_accounting import buy_with_costs, sell_with_costs
+
 ROOT = Path(__file__).resolve().parent
 REPORTS = ROOT / "reports"
 STATE = ROOT / "state"
@@ -309,6 +311,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     candidates = candidate_params()
     errors: list[dict[str, Any]] = []
+    evaluation_frames: dict[tuple[str, str], pd.DataFrame] = {}
     for symbol in SYMBOLS:
         try:
             raw = fetch_klines(symbol, "5m", days).sort_index()
@@ -318,6 +321,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
                     errors.append({"symbol": symbol, "interval": interval,
                                    "error": "Insufficient bars for independent train/validation/test evaluation"})
                     continue
+                evaluation_frames[(symbol, interval)] = bars.copy()
                 train, validation, test = chronological_split(bars)
                 for strategy in ("trend", "breakout", "mean_reversion"):
                     for params in candidates:
@@ -348,8 +352,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
     if selected is not None:
         # The final test is only evaluated after the validation-only selection is fixed.
         symbol, interval = selected["symbol"], selected["interval"]
-        raw = fetch_klines(symbol, "5m", days).sort_index()
-        bars = raw if interval == "5m" else resample_ohlcv(raw, INTERVALS[interval])
+        bars = evaluation_frames[(symbol, interval)]
         train, validation, test = chronological_split(bars)
         test_metrics = backtest(test, selected["strategy"], selected["params"],
                                 DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
