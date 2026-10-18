@@ -5,6 +5,7 @@ import itertools
 import json
 import math
 import os
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -494,7 +495,8 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
     champion = report.get("champion")
     if not isinstance(champion, dict):
         raise RuntimeError("Validation says a champion passed, but no champion was reported")
-    if not isinstance(champion.get("champion_version"), str) or not champion["champion_version"].startswith("champion-"):
+    champion_version = champion.get("champion_version")
+    if not isinstance(champion_version, str) or not re.fullmatch(r"champion-[A-Za-z0-9_-]{6,64}", champion_version):
         raise RuntimeError("Validated champion version is missing or invalid")
     metadata = champion.get("validation_metadata")
     if not isinstance(metadata, dict) or metadata.get("status") != "validated":
@@ -510,8 +512,31 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
     created_at = parse_timestamp(metadata.get("created_at"), "champion validation created_at")
     if created_at < report_started or created_at > report_completed:
         raise RuntimeError("Champion validation timestamp is outside the research run")
-    if validation.get("champion_version") != champion.get("champion_version"):
+    if validation.get("champion_version") != champion_version:
         raise RuntimeError("Validation result champion version does not match the champion")
+
+    # A report alone is not sufficient evidence that the strategy is deployable
+    # to the paper trader. Verify the active pointer and immutable version snapshot
+    # both match this exact invocation's champion.
+    active_path = STATE / "champion.json"
+    if not active_path.is_file():
+        raise RuntimeError(f"Active champion artifact is missing: {active_path}")
+    try:
+        active_champion = json.loads(active_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Active champion artifact is unreadable: {exc}") from exc
+    if active_champion != champion:
+        raise RuntimeError("Active champion artifact does not match the fresh research report")
+
+    snapshot_path = STATE / "champions" / f"{champion_version}.json"
+    if not snapshot_path.is_file():
+        raise RuntimeError(f"Immutable champion snapshot is missing: {snapshot_path}")
+    try:
+        snapshot = json.loads(snapshot_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Immutable champion snapshot is unreadable: {exc}") from exc
+    if snapshot != champion:
+        raise RuntimeError("Immutable champion snapshot does not match the fresh research report")
     return report
 
 

@@ -211,6 +211,36 @@ def _sync_ledger_status(status: dict[str, Any], state: dict[str, Any]) -> None:
     status["completed_trades"] = int(state.get("completed_trades", 0))
 
 
+def _set_unvalued_position_status(status: dict[str, Any], state: dict[str, Any],
+                                  message: str) -> None:
+    """Publish an explicit unknown valuation instead of presenting cash as total equity."""
+    cash = float(state.get("cash", STARTING_CASH))
+    quantity = float(state.get("quantity", 0.0))
+    symbol = state.get("symbol")
+    has_position = quantity > 0
+    entry = state.get("entry_price")
+    status.update({
+        "cash_usdt": round(cash, 8),
+        "equity_usdt": None if has_position else round(cash, 8),
+        "total_pnl_usdt": None if has_position else round(cash - STARTING_CASH, 8),
+        "unrealized_pnl_usdt": None if has_position else 0.0,
+        "open_position": ({
+            "symbol": symbol,
+            "quantity": round(quantity, 10),
+            "mark_price": None,
+            "entry_price": float(entry) if finite_positive(entry) else None,
+            "valuation_status": "unavailable",
+        } if has_position else None),
+        "valuation_status": "unavailable" if has_position else "cash_only",
+        "message": message,
+    })
+    if has_position:
+        status["risk"] = {
+            "halted": bool(state.get("risk_halt", False)),
+            "halt_reason": state.get("risk_halt_reason"),
+        }
+
+
 def run_once() -> dict[str, Any]:
     STATE.mkdir(exist_ok=True)
     REPORTS.mkdir(exist_ok=True)
@@ -251,6 +281,12 @@ def run_once() -> dict[str, Any]:
             status["data_errors"].append({"symbol": symbol, "error": str(exc)})
     if not frames:
         status["updated_at"] = utc_now()
+        _set_unvalued_position_status(
+            status, state,
+            "Market data unavailable; held position cannot be valued; no simulated order made."
+            if float(state.get("quantity", 0.0)) > 0
+            else "Market data unavailable; no simulated order made.",
+        )
         _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
@@ -272,7 +308,16 @@ def run_once() -> dict[str, Any]:
                 "symbol": held_symbol,
                 "error": "Missing valid mark for held position; refusing cross-symbol valuation or trade."
             })
-            status["message"] = "Champion rejected and held position cannot be safely valued; no simulated order made."
+            _set_unvalued_position_status(
+                status, state,
+                "Champion rejected and held position cannot be safely valued; no simulated order made.",
+            )
+            state.update({"cash": cash, "quantity": qty, "symbol": held_symbol,
+                          "last_checked_at": utc_now()})
+            STATE_FILE.write_text(json.dumps(state, indent=2))
+            _sync_ledger_status(status, state)
+            STATUS_FILE.write_text(json.dumps(status, indent=2))
+            return status
         else:
             equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
             risk = update_risk_metrics(state, equity)
@@ -337,7 +382,16 @@ def run_once() -> dict[str, Any]:
                 "symbol": held_symbol,
                 "error": "Held-asset mark is stale or unavailable; no trade or unsafe valuation allowed."
             })
-            status["message"] = "Champion data unavailable and held position cannot be safely marked."
+            _set_unvalued_position_status(
+                status, state,
+                "Champion data unavailable and held position cannot be safely marked.",
+            )
+            state.update({"cash": cash, "quantity": qty, "symbol": held_symbol,
+                          "last_checked_at": utc_now()})
+            STATE_FILE.write_text(json.dumps(state, indent=2))
+            _sync_ledger_status(status, state)
+            STATUS_FILE.write_text(json.dumps(status, indent=2))
+            return status
         else:
             equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
             risk = update_risk_metrics(state, equity)
@@ -459,7 +513,10 @@ def run_once() -> dict[str, Any]:
             "symbol": position_symbol,
             "error": "Missing valid mark for held position; refusing cross-symbol valuation or trade."
         })
-        status["message"] = "Held position cannot be safely valued; no simulated order made."
+        _set_unvalued_position_status(
+            status, state,
+            "Held position cannot be safely valued; no simulated order made.",
+        )
         _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
