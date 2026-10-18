@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import math
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -19,34 +21,99 @@ SLIPPAGE_BPS = 5.0
 STATE_FILE = STATE / "paper_state.json"
 CHAMPION_FILE = STATE / "champion.json"
 STATUS_FILE = REPORTS / "paper_status.json"
+MAX_POSITION_FRACTION = 0.50
+MAX_DAILY_LOSS_PCT = 5.0
+MAX_DRAWDOWN_PCT = 10.0
+MAX_PRICE_AGE_SECONDS = 15 * 60
 
 
 def champion_validation_error(champion: Any, now: datetime | None = None) -> str | None:
-    """Return a fail-closed rejection reason for any unvalidated/stale champion."""
+    """Fail closed on unsupported, malformed, stale, or incompletely validated champions."""
     if not isinstance(champion, dict):
         return "No champion is available."
-    if champion.get("symbol") not in SYMBOLS:
+    symbol = champion.get("symbol")
+    if not isinstance(symbol, str) or not re.fullmatch(r"[A-Z0-9]{2,15}USDT", symbol):
         return "Champion symbol is unsupported."
     if champion.get("interval") not in INTERVALS:
         return "Champion interval is unsupported."
-    if champion.get("strategy") not in {"trend", "breakout", "mean_reversion"}:
+    strategy = champion.get("strategy")
+    if strategy not in {"trend", "breakout", "mean_reversion"}:
         return "Champion strategy is unsupported."
     params = champion.get("params")
-    if not isinstance(params, dict) or not {"fast", "slow", "momentum", "breakout"}.issubset(params):
+    if not isinstance(params, dict):
         return "Champion parameters are incomplete."
-    if not isinstance(champion.get("champion_version"), str) or not champion["champion_version"].startswith("champion-"):
-        return "Champion version is missing."
+    required = {"fast", "slow", "momentum", "breakout"}
+    if not required.issubset(params):
+        return "Champion parameters are incomplete."
+
+    def finite_number(value: Any) -> bool:
+        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
+
+    for name, low, high in (("fast", 2, 100), ("slow", 3, 300),
+                            ("momentum", 1, 100), ("breakout", 2, 300)):
+        value = params.get(name)
+        if not isinstance(value, int) or isinstance(value, bool) or not low <= value <= high:
+            return f"Champion parameter {name} is outside its allowed integer range."
+    if params["fast"] >= params["slow"]:
+        return "Champion parameters require fast < slow."
+    for name in ("entry_momentum", "exit_momentum"):
+        if name in params and (not finite_number(params[name]) or abs(float(params[name])) > 1):
+            return f"Champion parameter {name} must be finite and within [-1, 1]."
+    if strategy == "mean_reversion":
+        if not finite_number(params.get("rsi_entry")) or not 0 <= float(params["rsi_entry"]) <= 100:
+            return "Champion rsi_entry must be finite and within [0, 100]."
+        if not finite_number(params.get("rsi_exit")) or not 0 <= float(params["rsi_exit"]) <= 100:
+            return "Champion rsi_exit must be finite and within [0, 100]."
+        if float(params["rsi_entry"]) >= float(params["rsi_exit"]):
+            return "Champion mean-reversion RSI entry must be below RSI exit."
+    if "stop_pct" in params and (
+        not finite_number(params["stop_pct"]) or not 0.001 <= float(params["stop_pct"]) <= 0.25
+    ):
+        return "Champion stop_pct must be finite and within [0.001, 0.25]."
+
+    version = champion.get("champion_version")
+    if not isinstance(version, str) or not re.fullmatch(r"champion-[a-f0-9]{8,64}|champion-[A-Za-z0-9_-]{6,64}", version):
+        return "Champion version is missing or invalid."
     metadata = champion.get("validation_metadata")
     if not isinstance(metadata, dict) or metadata.get("status") != "validated":
         return "Champion has no explicit validation metadata."
     if metadata.get("test_used_for_selection") is not False:
         return "Champion metadata does not confirm final-test isolation."
     for field in ("validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
-        if not isinstance(metadata.get(field), dict):
+        metrics = metadata.get(field)
+        if not isinstance(metrics, dict):
             return f"Champion validation metadata is missing {field}."
+        for metric in ("total_return_pct", "max_drawdown_pct", "sharpe", "trades"):
+            if not finite_number(metrics.get(metric)):
+                return f"Champion {field}.{metric} must be a finite number."
+        if float(metrics["max_drawdown_pct"]) < 0 or float(metrics["trades"]) < 0:
+            return f"Champion {field} contains invalid drawdown/trade metrics."
+    validation_score = metadata.get("validation_score")
+    if not finite_number(validation_score):
+        return "Champion validation_score must be finite."
     cost = metadata.get("cost_convention")
-    if not isinstance(cost, dict) or cost.get("fee_basis") != "executed notional":
+    if (not isinstance(cost, dict) or cost.get("fee_basis") != "executed notional"
+            or cost.get("fill_timing") != "closed candle close after one-candle signal shift"):
         return "Champion cost convention is missing or unsupported."
+    for field in ("fee_bps_per_side", "slippage_bps_per_side",
+                  "stress_fee_bps_per_side", "stress_slippage_bps_per_side"):
+        if not finite_number(cost.get(field)) or float(cost[field]) < 0:
+            return f"Champion cost convention field {field} is invalid."
+    periods = metadata.get("periods")
+    if not isinstance(periods, dict) or not all(isinstance(periods.get(k), dict) for k in ("train", "validation", "test")):
+        return "Champion chronological period metadata is incomplete."
+    try:
+        train_end = datetime.fromisoformat(str(periods["train"]["end"]).replace("Z", "+00:00"))
+        validation_start = datetime.fromisoformat(str(periods["validation"]["start"]).replace("Z", "+00:00"))
+        validation_end = datetime.fromisoformat(str(periods["validation"]["end"]).replace("Z", "+00:00"))
+        test_start = datetime.fromisoformat(str(periods["test"]["start"]).replace("Z", "+00:00"))
+        if train_end.tzinfo is None or validation_start.tzinfo is None or validation_end.tzinfo is None or test_start.tzinfo is None:
+            raise ValueError("naive period timestamp")
+        if not train_end < validation_start <= validation_end < test_start:
+            return "Champion train/validation/test periods overlap or are out of order."
+    except (ValueError, TypeError, KeyError):
+        return "Champion chronological period timestamps are invalid."
+
     created_at = metadata.get("created_at")
     if not isinstance(created_at, str):
         return "Champion validation timestamp is missing."
@@ -57,13 +124,78 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
     if validated_at.tzinfo is None:
         return "Champion validation timestamp must include a timezone."
     now = now or datetime.now(timezone.utc)
-    validated_at = validated_at.astimezone(timezone.utc)
-    age = now.astimezone(timezone.utc) - validated_at
+    age = now.astimezone(timezone.utc) - validated_at.astimezone(timezone.utc)
     if age < -timedelta(minutes=5):
         return "Champion validation timestamp is in the future."
     if age > timedelta(hours=24):
         return "Champion validation is stale (older than 24 hours)."
     return None
+
+
+def fresh_price_map(frames: dict[str, pd.DataFrame], now: datetime | None = None) -> tuple[dict[str, float], dict[str, str]]:
+    """Return only finite positive marks whose candle close is no more than 15 minutes old."""
+    current = pd.Timestamp(now or datetime.now(timezone.utc))
+    if current.tzinfo is None:
+        raise ValueError("fresh-price check requires a timezone-aware clock")
+    current = current.tz_convert("UTC") if current.tzinfo else current.tz_localize("UTC")
+    prices: dict[str, float] = {}
+    timestamps: dict[str, str] = {}
+    for symbol, frame in frames.items():
+        if frame.empty or "close_time" not in frame.columns or "close" not in frame.columns:
+            continue
+        try:
+            price = float(frame["close"].iloc[-1])
+            closed_at = pd.to_datetime(frame["close_time"].iloc[-1], utc=True)
+            age_seconds = (current - closed_at).total_seconds()
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if math.isfinite(price) and price > 0 and -60 <= age_seconds <= MAX_PRICE_AGE_SECONDS:
+            prices[symbol] = price
+            timestamps[symbol] = closed_at.isoformat()
+    return prices, timestamps
+
+
+def update_risk_metrics(state: dict[str, Any], equity: float,
+                        now: datetime | None = None) -> dict[str, Any]:
+    """Persist UTC daily-start and peak-equity metrics; latch any loss/drawdown breach."""
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        raise ValueError("risk clock must be timezone-aware")
+    day = current.astimezone(timezone.utc).date().isoformat()
+    if not math.isfinite(equity) or equity < 0:
+        raise ValueError("equity must be finite and non-negative")
+    if state.get("risk_day") != day or not finite_positive(state.get("daily_start_equity")):
+        state["risk_day"] = day
+        state["daily_start_equity"] = max(equity, 1e-12)
+    if not finite_positive(state.get("peak_equity")):
+        state["peak_equity"] = max(equity, 1e-12)
+    state["peak_equity"] = max(float(state["peak_equity"]), equity)
+    daily_start = float(state["daily_start_equity"])
+    peak = float(state["peak_equity"])
+    daily_loss_pct = max(0.0, (daily_start - equity) / daily_start * 100.0)
+    drawdown_pct = max(0.0, (peak - equity) / peak * 100.0)
+    reasons = []
+    if daily_loss_pct >= MAX_DAILY_LOSS_PCT:
+        reasons.append("daily_loss_limit")
+    if drawdown_pct >= MAX_DRAWDOWN_PCT:
+        reasons.append("drawdown_limit")
+    if reasons:
+        state["risk_halt"] = True
+        state["risk_halt_reason"] = ",".join(reasons)
+    return {
+        "daily_loss_pct": round(daily_loss_pct, 6),
+        "drawdown_pct": round(drawdown_pct, 6),
+        "daily_loss_limit_pct": MAX_DAILY_LOSS_PCT,
+        "drawdown_limit_pct": MAX_DRAWDOWN_PCT,
+        "max_position_fraction": MAX_POSITION_FRACTION,
+        "halted": bool(state.get("risk_halt", False)),
+        "halt_reason": state.get("risk_halt_reason"),
+    }
+
+
+def finite_positive(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value)) and float(value) > 0
+
 
 
 def read_json(path: Path, default: Any) -> Any:
