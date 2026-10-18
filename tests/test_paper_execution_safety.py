@@ -94,6 +94,35 @@ class PaperExecutionSafetyTests(unittest.TestCase):
             self.assertFalse(status["champion_valid"])
             self.assertEqual(status["cash_usdt"], 15.0)
 
+    def test_daily_loss_limit_blocks_new_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reports = root / "reports"
+            reports.mkdir()
+            state_path, champion_path = root / "paper_state.json", root / "champion.json"
+            today = pd.Timestamp.now(tz="UTC").date().isoformat()
+            state_path.write_text(json.dumps({
+                "cash": 14.0, "quantity": 0.0, "symbol": None, "last_processed_bars": {},
+                "starting_cash": 15.0, "completed_trades": 0, "realized_pnl": 0.0,
+                "high_water_equity": 15.0, "day_start_equity": 15.0, "risk_day_utc": today,
+            }))
+            champion = {"passed_validation": True, "validated_at": pd.Timestamp.now(tz="UTC").isoformat(),
+                        "symbol": "BTCUSDT", "interval": "5m", "strategy": "trend",
+                        "allow_short": False,
+                        "params": {"fast": 8, "slow": 30, "momentum": 6, "breakout": 12,
+                                   "entry_momentum": 0.0, "exit_momentum": -0.005,
+                                   "rsi_entry": 20, "rsi_exit": 50, "stop_pct": 0.06}}
+            champion_path.write_text(json.dumps(champion))
+            data = {symbol: candles(100) for symbol in paper_trader.SYMBOLS}
+            with patch.multiple(paper_trader, STATE=root, REPORTS=reports, STATE_FILE=state_path,
+                                CHAMPION_FILE=champion_path, STATUS_FILE=reports / "paper_status.json"), \\
+                 patch.object(paper_trader, "fetch_klines", side_effect=lambda symbol, *_: data[symbol]), \\
+                 patch.object(paper_trader, "desired_signal", side_effect=lambda bars, *_args, **_kwargs: pd.Series(1.0, index=bars.index)):
+                status = paper_trader.run_once()
+            self.assertEqual(status["actions"], [])
+            self.assertTrue(status["risk_limits"]["risk_halt"])
+            self.assertEqual(status["cash_usdt"], 14.0)
+
 
 if __name__ == "__main__":
     unittest.main()
