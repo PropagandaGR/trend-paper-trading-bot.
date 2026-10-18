@@ -51,6 +51,12 @@ class ResearchCliTests(unittest.TestCase):
             "champion": champion,
         }
         (reports / "research_latest.json").write_text(json.dumps(report))
+        if champion is not None:
+            state_dir = reports.parent / "state"
+            snapshot_dir = state_dir / "champions"
+            snapshot_dir.mkdir(parents=True, exist_ok=True)
+            (state_dir / "champion.json").write_text(json.dumps(champion))
+            (snapshot_dir / f"{champion_version}.json").write_text(json.dumps(champion))
         return report
 
     def test_real_cli_entry_point_supports_help(self):
@@ -76,13 +82,15 @@ class ResearchCliTests(unittest.TestCase):
     def test_cli_accepts_fresh_report_with_valid_champion_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:
             reports = Path(tmp) / "reports"
+            state_dir = Path(tmp) / "state"
             with patch.object(research_engine, "REPORTS", reports):
-                with patch.object(
-                    research_engine, "run_research",
-                    side_effect=lambda days: self._write_report(reports, status="validated"),
-                ) as run:
-                    self.assertEqual(research_engine.main(["--days", "30", "--require-fresh-report"]), 0)
-                    run.assert_called_once_with(days=30)
+                with patch.object(research_engine, "STATE", state_dir):
+                    with patch.object(
+                        research_engine, "run_research",
+                        side_effect=lambda days: self._write_report(reports, status="validated"),
+                    ) as run:
+                        self.assertEqual(research_engine.main(["--days", "30", "--require-fresh-report"]), 0)
+                        run.assert_called_once_with(days=30)
 
     def test_cli_fails_if_research_does_not_write_a_report(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -114,6 +122,32 @@ class ResearchCliTests(unittest.TestCase):
             invocation_started = datetime.now(timezone.utc) + __import__("datetime").timedelta(seconds=5)
             with self.assertRaisesRegex(RuntimeError, "stale"):
                 research_engine.validate_research_artifacts(invocation_started, report_path)
+
+
+    def test_artifact_gate_rejects_missing_active_champion_pointer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reports = Path(tmp) / "reports"
+            state_dir = Path(tmp) / "state"
+            self._write_report(reports, status="validated")
+            (state_dir / "champion.json").unlink()
+            with patch.object(research_engine, "STATE", state_dir):
+                with self.assertRaisesRegex(RuntimeError, "Active champion artifact is missing"):
+                    research_engine.validate_research_artifacts(
+                        datetime.now(timezone.utc), reports / "research_latest.json"
+                    )
+
+    def test_artifact_gate_rejects_mismatched_immutable_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reports = Path(tmp) / "reports"
+            state_dir = Path(tmp) / "state"
+            report = self._write_report(reports, status="validated")
+            snapshot_path = state_dir / "champions" / f'{report["champion"]["champion_version"]}.json'
+            snapshot_path.write_text(json.dumps({"champion_version": "champion-wrongversion"}))
+            with patch.object(research_engine, "STATE", state_dir):
+                with self.assertRaisesRegex(RuntimeError, "snapshot does not match"):
+                    research_engine.validate_research_artifacts(
+                        datetime.now(timezone.utc), reports / "research_latest.json"
+                    )
 
     def test_validated_report_requires_versioned_champion_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:
