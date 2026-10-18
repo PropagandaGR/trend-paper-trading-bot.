@@ -1,7 +1,16 @@
 {
-  "started_at": "2026-10-18T22:15:23.976611+00:00",
-  "completed_at": "2026-10-18T22:17:55.546548+00:00",
+  "started_at": "2026-10-18T22:40:22.496500+00:00",
+  "completed_at": "2026-10-18T22:46:02.052138+00:00",
   "days": 90,
+  "run_status": "completed",
+  "validation_status": "validated",
+  "validation_result": {
+    "status": "validated",
+    "evaluations": 1728,
+    "validated_candidates": 132,
+    "champion_version": "champion-84186f7ee7e4",
+    "reason": null
+  },
   "symbols": [
     "BTCUSDT",
     "ETHUSDT",
@@ -15,1093 +24,1112 @@
   ],
   "candidate_count": 48,
   "evaluations": 1728,
-  "validated_count": 8,
+  "validated_count": 132,
   "champion": {
-    "symbol": "ETHUSDT",
+    "symbol": "SOLUSDT",
     "interval": "30m",
-    "strategy": "mean_reversion",
+    "strategy": "trend",
     "params": {
       "fast": 8,
-      "slow": 48,
+      "slow": 72,
       "momentum": 12,
-      "breakout": 12,
+      "breakout": 48,
       "entry_momentum": 0.0,
-      "exit_momentum": -0.005,
-      "rsi_entry": 20,
+      "exit_momentum": -0.01,
+      "rsi_entry": 30,
       "rsi_exit": 50,
       "stop_pct": 0.06
     },
-    "train": {
-      "total_return_pct": 1.9345,
-      "max_drawdown_pct": 2.1307,
-      "sharpe": 3.837,
-      "trades": 10
-    },
-    "test": {
-      "total_return_pct": 6.6125,
-      "max_drawdown_pct": 2.6632,
-      "sharpe": 13.232,
-      "trades": 11
-    },
-    "stress": {
-      "total_return_pct": 4.8667,
-      "max_drawdown_pct": 3.1176,
-      "sharpe": 9.821,
-      "trades": 11
-    },
-    "score": 4.5051,
-    "passed_validation": true
+    "champion_version": "champion-84186f7ee7e4",
+    "validation_metadata": {
+      "created_at": "2026-10-18T22:40:22.496500+00:00",
+      "status": "validated",
+      "selection_metric": "validation_score",
+      "validation_score": 12.472925000000002,
+      "validation_criteria": {
+        "validation_return_positive": true,
+        "validation_stress_return_positive": true,
+        "validation_max_drawdown_below_pct": 25,
+        "minimum_validation_position_changes": 2
+      },
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      },
+      "train_metrics": {
+        "total_return_pct": 2.6811,
+        "max_drawdown_pct": 13.3579,
+        "sharpe": 0.631,
+        "trades": 92
+      },
+      "validation_metrics": {
+        "total_return_pct": 17.6031,
+        "max_drawdown_pct": 6.5469,
+        "sharpe": 7.902,
+        "trades": 22
+      },
+      "validation_stress_metrics": {
+        "total_return_pct": 13.7855,
+        "max_drawdown_pct": 7.8002,
+        "sharpe": 6.285,
+        "trades": 22
+      },
+      "test_metrics": {
+        "total_return_pct": -11.3022,
+        "max_drawdown_pct": 11.3022,
+        "sharpe": -12.831,
+        "trades": 24
+      },
+      "test_stress_metrics": {
+        "total_return_pct": -14.4386,
+        "max_drawdown_pct": 14.4386,
+        "sharpe": -15.739,
+        "trades": 24
+      },
+      "test_used_for_selection": false,
+      "cost_convention": {
+        "fee_bps_per_side": 10.0,
+        "slippage_bps_per_side": 5.0,
+        "stress_fee_bps_per_side": 20,
+        "stress_slippage_bps_per_side": 10,
+        "fill_timing": "closed candle close after one-candle signal shift",
+        "fee_basis": "executed notional",
+        "slippage": "execution price adjusted per side"
+      },
+      "sharpe_annualization": {
+        "bars_per_year": 17520,
+        "interval": "30m",
+        "calendar_days_per_year": 365
+      },
+      "warning": "Test metrics are report-only and were not used to rank, select, or validate this champion."
+    }
   },
-  "selection_policy": "positive unseen-period return at 15bps round-trip baseline and 30bps stress; max drawdown under 25%; minimum two position changes",
+  "selection_policy": "Select only by validation score; require positive validation and validation stress returns, validation drawdown under 25%, and at least two validation position changes. Final test metrics are report-only.",
   "results": [
     {
-      "symbol": "ETHUSDT",
+      "symbol": "SOLUSDT",
       "interval": "30m",
-      "strategy": "mean_reversion",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 72,
+        "momentum": 12,
+        "breakout": 48,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 2.6811,
+        "max_drawdown_pct": 13.3579,
+        "sharpe": 0.631,
+        "trades": 92
+      },
+      "validation": {
+        "total_return_pct": 17.6031,
+        "max_drawdown_pct": 6.5469,
+        "sharpe": 7.902,
+        "trades": 22
+      },
+      "validation_stress": {
+        "total_return_pct": 13.7855,
+        "max_drawdown_pct": 7.8002,
+        "sharpe": 6.285,
+        "trades": 22
+      },
+      "validation_score": 12.472925000000002,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "momentum": 24,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 6.4601,
+        "max_drawdown_pct": 11.809,
+        "sharpe": 1.173,
+        "trades": 94
+      },
+      "validation": {
+        "total_return_pct": 16.7335,
+        "max_drawdown_pct": 6.5086,
+        "sharpe": 7.622,
+        "trades": 20
+      },
+      "validation_stress": {
+        "total_return_pct": 13.2835,
+        "max_drawdown_pct": 8.0387,
+        "sharpe": 6.133,
+        "trades": 20
+      },
+      "validation_score": 11.65205,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 72,
+        "momentum": 24,
+        "breakout": 24,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 13.3617,
+        "max_drawdown_pct": 10.1153,
+        "sharpe": 2.216,
+        "trades": 70
+      },
+      "validation": {
+        "total_return_pct": 16.2912,
+        "max_drawdown_pct": 6.2703,
+        "sharpe": 7.529,
+        "trades": 20
+      },
+      "validation_stress": {
+        "total_return_pct": 12.8542,
+        "max_drawdown_pct": 7.8044,
+        "sharpe": 6.029,
+        "trades": 20
+      },
+      "validation_score": 11.388475,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 72,
+        "momentum": 12,
+        "breakout": 12,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 1.266,
+        "max_drawdown_pct": 13.8334,
+        "sharpe": 0.413,
+        "trades": 96
+      },
+      "validation": {
+        "total_return_pct": 16.184,
+        "max_drawdown_pct": 6.8042,
+        "sharpe": 7.305,
+        "trades": 24
+      },
+      "validation_stress": {
+        "total_return_pct": 12.0758,
+        "max_drawdown_pct": 8.0541,
+        "sharpe": 5.553,
+        "trades": 24
+      },
+      "validation_score": 10.840850000000001,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
       "params": {
         "fast": 8,
         "slow": 48,
         "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
+        "breakout": 48,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
         "rsi_exit": 50,
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 1.9345,
-        "max_drawdown_pct": 2.1307,
-        "sharpe": 3.837,
-        "trades": 10
+        "total_return_pct": 5.6428,
+        "max_drawdown_pct": 13.4973,
+        "sharpe": 1.062,
+        "trades": 102
       },
-      "test": {
-        "total_return_pct": 6.6125,
-        "max_drawdown_pct": 2.6632,
-        "sharpe": 13.232,
-        "trades": 11
+      "validation": {
+        "total_return_pct": 15.6502,
+        "max_drawdown_pct": 7.4782,
+        "sharpe": 7.045,
+        "trades": 28
       },
-      "stress": {
-        "total_return_pct": 4.8667,
-        "max_drawdown_pct": 3.1176,
-        "sharpe": 9.821,
-        "trades": 11
+      "validation_stress": {
+        "total_return_pct": 10.8935,
+        "max_drawdown_pct": 9.6228,
+        "sharpe": 5.01,
+        "trades": 28
       },
-      "score": 4.5051,
-      "passed_validation": true
-    },
-    {
-      "symbol": "ETHUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 1.9345,
-        "max_drawdown_pct": 2.1307,
-        "sharpe": 3.837,
-        "trades": 10
-      },
-      "test": {
-        "total_return_pct": 6.6125,
-        "max_drawdown_pct": 2.6632,
-        "sharpe": 13.232,
-        "trades": 11
-      },
-      "stress": {
-        "total_return_pct": 4.8667,
-        "max_drawdown_pct": 3.1176,
-        "sharpe": 9.821,
-        "trades": 11
-      },
-      "score": 4.5051,
-      "passed_validation": true
-    },
-    {
-      "symbol": "ETHUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": 1.1313,
-        "max_drawdown_pct": 2.0604,
-        "sharpe": 2.436,
-        "trades": 10
-      },
-      "test": {
-        "total_return_pct": 4.4772,
-        "max_drawdown_pct": 2.6632,
-        "sharpe": 10.867,
-        "trades": 15
-      },
-      "stress": {
-        "total_return_pct": 2.1519,
-        "max_drawdown_pct": 3.4519,
-        "sharpe": 5.339,
-        "trades": 15
-      },
-      "score": 2.3298,
-      "passed_validation": true
-    },
-    {
-      "symbol": "ETHUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": 1.1313,
-        "max_drawdown_pct": 2.0604,
-        "sharpe": 2.436,
-        "trades": 10
-      },
-      "test": {
-        "total_return_pct": 4.4772,
-        "max_drawdown_pct": 2.6632,
-        "sharpe": 10.867,
-        "trades": 15
-      },
-      "stress": {
-        "total_return_pct": 2.1519,
-        "max_drawdown_pct": 3.4519,
-        "sharpe": 5.339,
-        "trades": 15
-      },
-      "score": 2.3298,
-      "passed_validation": true
+      "validation_score": 9.761550000000002,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
     },
     {
       "symbol": "SOLUSDT",
-      "interval": "10m",
-      "strategy": "mean_reversion",
+      "interval": "30m",
+      "strategy": "trend",
       "params": {
-        "fast": 8,
+        "fast": 12,
+        "slow": 48,
+        "momentum": 24,
+        "breakout": 12,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 7.7709,
+        "max_drawdown_pct": 10.2377,
+        "sharpe": 1.383,
+        "trades": 84
+      },
+      "validation": {
+        "total_return_pct": 14.934,
+        "max_drawdown_pct": 7.817,
+        "sharpe": 6.897,
+        "trades": 20
+      },
+      "validation_stress": {
+        "total_return_pct": 11.5371,
+        "max_drawdown_pct": 9.3257,
+        "sharpe": 5.414,
+        "trades": 20
+      },
+      "validation_score": 8.87125,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
+        "slow": 48,
+        "momentum": 24,
+        "breakout": 48,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 8.4589,
+        "max_drawdown_pct": 10.226,
+        "sharpe": 1.483,
+        "trades": 84
+      },
+      "validation": {
+        "total_return_pct": 14.934,
+        "max_drawdown_pct": 7.817,
+        "sharpe": 6.897,
+        "trades": 20
+      },
+      "validation_stress": {
+        "total_return_pct": 11.5371,
+        "max_drawdown_pct": 9.3257,
+        "sharpe": 5.414,
+        "trades": 20
+      },
+      "validation_score": 8.87125,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 48,
+        "momentum": 12,
+        "breakout": 24,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 7.7045,
+        "max_drawdown_pct": 11.3205,
+        "sharpe": 1.397,
+        "trades": 80
+      },
+      "validation": {
+        "total_return_pct": 15.0025,
+        "max_drawdown_pct": 7.9004,
+        "sharpe": 6.881,
+        "trades": 22
+      },
+      "validation_stress": {
+        "total_return_pct": 11.2694,
+        "max_drawdown_pct": 9.1355,
+        "sharpe": 5.257,
+        "trades": 22
+      },
+      "validation_score": 8.857199999999999,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
         "slow": 48,
         "momentum": 12,
         "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
         "rsi_exit": 50,
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": -1.382,
-        "max_drawdown_pct": 4.7502,
-        "sharpe": -1.076,
-        "trades": 20
+        "total_return_pct": 8.2572,
+        "max_drawdown_pct": 11.7796,
+        "sharpe": 1.473,
+        "trades": 86
       },
-      "test": {
-        "total_return_pct": 3.2415,
-        "max_drawdown_pct": 3.2989,
-        "sharpe": 5.455,
-        "trades": 10
+      "validation": {
+        "total_return_pct": 14.5174,
+        "max_drawdown_pct": 7.5156,
+        "sharpe": 6.607,
+        "trades": 24
       },
-      "stress": {
-        "total_return_pct": 1.7021,
-        "max_drawdown_pct": 3.3279,
-        "sharpe": 2.86,
-        "trades": 10
+      "validation_stress": {
+        "total_return_pct": 10.4681,
+        "max_drawdown_pct": 9.2133,
+        "sharpe": 4.859,
+        "trades": 24
       },
-      "score": 0.6673249999999996,
-      "passed_validation": true
+      "validation_score": 8.6407,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
     },
     {
       "symbol": "SOLUSDT",
-      "interval": "10m",
-      "strategy": "mean_reversion",
+      "interval": "15m",
+      "strategy": "trend",
       "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
+        "fast": 20,
+        "slow": 72,
+        "momentum": 24,
         "breakout": 24,
         "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
         "rsi_exit": 50,
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": -1.382,
-        "max_drawdown_pct": 4.7502,
-        "sharpe": -1.076,
-        "trades": 20
+        "total_return_pct": -0.1546,
+        "max_drawdown_pct": 16.5601,
+        "sharpe": 0.204,
+        "trades": 108
       },
-      "test": {
-        "total_return_pct": 3.2415,
-        "max_drawdown_pct": 3.2989,
-        "sharpe": 5.455,
-        "trades": 10
+      "validation": {
+        "total_return_pct": 14.6562,
+        "max_drawdown_pct": 7.9018,
+        "sharpe": 6.426,
+        "trades": 30
       },
-      "stress": {
-        "total_return_pct": 1.7021,
-        "max_drawdown_pct": 3.3279,
-        "sharpe": 2.86,
-        "trades": 10
+      "validation_stress": {
+        "total_return_pct": 9.6111,
+        "max_drawdown_pct": 9.8679,
+        "sharpe": 4.346,
+        "trades": 30
       },
-      "score": 0.6673249999999996,
-      "passed_validation": true
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": 1.6065,
-        "max_drawdown_pct": 0.6428,
-        "sharpe": 6.984,
-        "trades": 8
-      },
-      "test": {
-        "total_return_pct": 0.2956,
-        "max_drawdown_pct": 0.502,
-        "sharpe": 3.728,
-        "trades": 2
-      },
-      "stress": {
-        "total_return_pct": -0.0057,
-        "max_drawdown_pct": 0.502,
-        "sharpe": -0.025,
-        "trades": 2
-      },
-      "score": -0.10090000000000003,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": 1.6065,
-        "max_drawdown_pct": 0.6428,
-        "sharpe": 6.984,
-        "trades": 8
-      },
-      "test": {
-        "total_return_pct": 0.2956,
-        "max_drawdown_pct": 0.502,
-        "sharpe": 3.728,
-        "trades": 2
-      },
-      "stress": {
-        "total_return_pct": -0.0057,
-        "max_drawdown_pct": 0.502,
-        "sharpe": -0.025,
-        "trades": 2
-      },
-      "score": -0.10090000000000003,
-      "passed_validation": false
+      "validation_score": 8.42985,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
     },
     {
       "symbol": "SOLUSDT",
-      "interval": "10m",
-      "strategy": "mean_reversion",
+      "interval": "15m",
+      "strategy": "trend",
       "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
+        "fast": 12,
+        "slow": 72,
+        "momentum": 24,
+        "breakout": 12,
         "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": -1.9845,
-        "max_drawdown_pct": 4.6743,
-        "sharpe": -1.805,
-        "trades": 20
+        "total_return_pct": -0.5026,
+        "max_drawdown_pct": 18.3774,
+        "sharpe": 0.153,
+        "trades": 118
       },
-      "test": {
-        "total_return_pct": 2.0599,
-        "max_drawdown_pct": 2.7241,
-        "sharpe": 3.865,
-        "trades": 12
+      "validation": {
+        "total_return_pct": 14.7969,
+        "max_drawdown_pct": 8.1318,
+        "sharpe": 6.415,
+        "trades": 34
       },
-      "stress": {
-        "total_return_pct": 0.237,
-        "max_drawdown_pct": 3.0299,
-        "sharpe": 0.503,
-        "trades": 12
+      "validation_stress": {
+        "total_return_pct": 9.089,
+        "max_drawdown_pct": 10.1759,
+        "sharpe": 4.086,
+        "trades": 34
       },
-      "score": -0.10317500000000013,
-      "passed_validation": true
+      "validation_score": 8.35805,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
     },
     {
       "symbol": "SOLUSDT",
-      "interval": "10m",
-      "strategy": "mean_reversion",
+      "interval": "15m",
+      "strategy": "trend",
       "params": {
         "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": -1.9845,
-        "max_drawdown_pct": 4.6743,
-        "sharpe": -1.805,
-        "trades": 20
-      },
-      "test": {
-        "total_return_pct": 2.0599,
-        "max_drawdown_pct": 2.7241,
-        "sharpe": 3.865,
-        "trades": 12
-      },
-      "stress": {
-        "total_return_pct": 0.237,
-        "max_drawdown_pct": 3.0299,
-        "sharpe": 0.503,
-        "trades": 12
-      },
-      "score": -0.10317500000000013,
-      "passed_validation": true
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
+        "slow": 72,
+        "momentum": 24,
+        "breakout": 48,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
         "rsi_exit": 50,
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 2.1273,
-        "max_drawdown_pct": 0.8299,
-        "sharpe": 7.784,
-        "trades": 8
+        "total_return_pct": -1.5103,
+        "max_drawdown_pct": 17.4255,
+        "sharpe": -0.001,
+        "trades": 110
       },
-      "test": {
-        "total_return_pct": -0.2114,
-        "max_drawdown_pct": 1.1747,
-        "sharpe": -1.555,
-        "trades": 2
-      },
-      "stress": {
-        "total_return_pct": -0.5111,
-        "max_drawdown_pct": 1.1747,
-        "sharpe": -3.635,
-        "trades": 2
-      },
-      "score": -1.112425,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 2.1273,
-        "max_drawdown_pct": 0.8299,
-        "sharpe": 7.784,
-        "trades": 8
-      },
-      "test": {
-        "total_return_pct": -0.2114,
-        "max_drawdown_pct": 1.1747,
-        "sharpe": -1.555,
-        "trades": 2
-      },
-      "stress": {
-        "total_return_pct": -0.5111,
-        "max_drawdown_pct": 1.1747,
-        "sharpe": -3.635,
-        "trades": 2
-      },
-      "score": -1.112425,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "10m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": -2.6792,
-        "max_drawdown_pct": 2.8888,
-        "sharpe": -3.311,
+      "validation": {
+        "total_return_pct": 14.6719,
+        "max_drawdown_pct": 8.1318,
+        "sharpe": 6.372,
         "trades": 32
       },
-      "test": {
-        "total_return_pct": -0.2558,
-        "max_drawdown_pct": 1.2513,
-        "sharpe": -0.884,
-        "trades": 8
-      },
-      "stress": {
-        "total_return_pct": -1.4488,
-        "max_drawdown_pct": 1.6198,
-        "sharpe": -4.532,
-        "trades": 8
-      },
-      "score": -1.2742750000000003,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "10m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": -2.6792,
-        "max_drawdown_pct": 2.8888,
-        "sharpe": -3.311,
+      "validation_stress": {
+        "total_return_pct": 9.2976,
+        "max_drawdown_pct": 10.1759,
+        "sharpe": 4.177,
         "trades": 32
       },
-      "test": {
-        "total_return_pct": -0.2558,
-        "max_drawdown_pct": 1.2513,
-        "sharpe": -0.884,
-        "trades": 8
-      },
-      "stress": {
-        "total_return_pct": -1.4488,
-        "max_drawdown_pct": 1.6198,
-        "sharpe": -4.532,
-        "trades": 8
-      },
-      "score": -1.2742750000000003,
-      "passed_validation": false
-    },
-    {
-      "symbol": "ETHUSDT",
-      "interval": "15m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 3.5325,
-        "max_drawdown_pct": 1.824,
-        "sharpe": 4.709,
-        "trades": 20
-      },
-      "test": {
-        "total_return_pct": 1.6332,
-        "max_drawdown_pct": 3.8078,
-        "sharpe": 2.974,
-        "trades": 12
-      },
-      "stress": {
-        "total_return_pct": -0.1823,
-        "max_drawdown_pct": 4.3313,
-        "sharpe": -0.199,
-        "trades": 12
-      },
-      "score": -1.34265,
-      "passed_validation": false
-    },
-    {
-      "symbol": "ETHUSDT",
-      "interval": "15m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 3.5325,
-        "max_drawdown_pct": 1.824,
-        "sharpe": 4.709,
-        "trades": 20
-      },
-      "test": {
-        "total_return_pct": 1.6332,
-        "max_drawdown_pct": 3.8078,
-        "sharpe": 2.974,
-        "trades": 12
-      },
-      "stress": {
-        "total_return_pct": -0.1823,
-        "max_drawdown_pct": 4.3313,
-        "sharpe": -0.199,
-        "trades": 12
-      },
-      "score": -1.34265,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 30,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 25,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": 0.2388,
-        "max_drawdown_pct": 1.9832,
-        "sharpe": 0.658,
-        "trades": 22
-      },
-      "test": {
-        "total_return_pct": -0.0019,
-        "max_drawdown_pct": 1.9231,
-        "sharpe": 0.071,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -0.8987,
-        "max_drawdown_pct": 2.2185,
-        "sharpe": -4.35,
-        "trades": 6
-      },
-      "score": -1.5042250000000001,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 25,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": 0.2388,
-        "max_drawdown_pct": 1.9832,
-        "sharpe": 0.658,
-        "trades": 22
-      },
-      "test": {
-        "total_return_pct": -0.0019,
-        "max_drawdown_pct": 1.9231,
-        "sharpe": 0.071,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -0.8987,
-        "max_drawdown_pct": 2.2185,
-        "sharpe": -4.35,
-        "trades": 6
-      },
-      "score": -1.5042250000000001,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 25,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": 0.2388,
-        "max_drawdown_pct": 1.9832,
-        "sharpe": 0.658,
-        "trades": 22
-      },
-      "test": {
-        "total_return_pct": -0.0019,
-        "max_drawdown_pct": 1.9231,
-        "sharpe": 0.071,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -0.8987,
-        "max_drawdown_pct": 2.2185,
-        "sharpe": -4.35,
-        "trades": 6
-      },
-      "score": -1.5042250000000001,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "15m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -0.4388,
-        "max_drawdown_pct": 1.5482,
-        "sharpe": -0.921,
-        "trades": 16
-      },
-      "test": {
-        "total_return_pct": -0.4238,
-        "max_drawdown_pct": 1.8033,
-        "sharpe": -1.683,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -1.3184,
-        "max_drawdown_pct": 2.1473,
-        "sharpe": -4.89,
-        "trades": 6
-      },
-      "score": -1.8362749999999999,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "15m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -0.4388,
-        "max_drawdown_pct": 1.5482,
-        "sharpe": -0.921,
-        "trades": 16
-      },
-      "test": {
-        "total_return_pct": -0.4238,
-        "max_drawdown_pct": 1.8033,
-        "sharpe": -1.683,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -1.3184,
-        "max_drawdown_pct": 2.1473,
-        "sharpe": -4.89,
-        "trades": 6
-      },
-      "score": -1.8362749999999999,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "5m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -6.1156,
-        "max_drawdown_pct": 6.3807,
-        "sharpe": -4.33,
-        "trades": 52
-      },
-      "test": {
-        "total_return_pct": -0.7655,
-        "max_drawdown_pct": 1.3982,
-        "sharpe": -1.431,
-        "trades": 16
-      },
-      "stress": {
-        "total_return_pct": -3.1243,
-        "max_drawdown_pct": 3.5401,
-        "sharpe": -5.264,
-        "trades": 16
-      },
-      "score": -1.97415,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "5m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -6.1156,
-        "max_drawdown_pct": 6.3807,
-        "sharpe": -4.33,
-        "trades": 52
-      },
-      "test": {
-        "total_return_pct": -0.7655,
-        "max_drawdown_pct": 1.3982,
-        "sharpe": -1.431,
-        "trades": 16
-      },
-      "stress": {
-        "total_return_pct": -3.1243,
-        "max_drawdown_pct": 3.5401,
-        "sharpe": -5.264,
-        "trades": 16
-      },
-      "score": -1.97415,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "15m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": -0.3048,
-        "max_drawdown_pct": 1.3274,
-        "sharpe": -0.73,
-        "trades": 16
-      },
-      "test": {
-        "total_return_pct": -0.7205,
-        "max_drawdown_pct": 1.8033,
-        "sharpe": -3.282,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -1.6124,
-        "max_drawdown_pct": 2.0936,
-        "sharpe": -6.631,
-        "trades": 6
-      },
-      "score": -2.132975,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "15m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": -0.3048,
-        "max_drawdown_pct": 1.3274,
-        "sharpe": -0.73,
-        "trades": 16
-      },
-      "test": {
-        "total_return_pct": -0.7205,
-        "max_drawdown_pct": 1.8033,
-        "sharpe": -3.282,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -1.6124,
-        "max_drawdown_pct": 2.0936,
-        "sharpe": -6.631,
-        "trades": 6
-      },
-      "score": -2.132975,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 30,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 25,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 2.2109,
-        "max_drawdown_pct": 1.8091,
-        "sharpe": 4.497,
-        "trades": 22
-      },
-      "test": {
-        "total_return_pct": -0.2868,
-        "max_drawdown_pct": 2.5723,
-        "sharpe": -1.083,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -1.1811,
-        "max_drawdown_pct": 2.8657,
-        "sharpe": -4.701,
-        "trades": 6
-      },
-      "score": -2.2760249999999997,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 30,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 25,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 2.2109,
-        "max_drawdown_pct": 1.8091,
-        "sharpe": 4.497,
-        "trades": 22
-      },
-      "test": {
-        "total_return_pct": -0.2868,
-        "max_drawdown_pct": 2.5723,
-        "sharpe": -1.083,
-        "trades": 6
-      },
-      "stress": {
-        "total_return_pct": -1.1811,
-        "max_drawdown_pct": 2.8657,
-        "sharpe": -4.701,
-        "trades": 6
-      },
-      "score": -2.2760249999999997,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "5m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": -6.2582,
-        "max_drawdown_pct": 6.3923,
-        "sharpe": -4.9,
-        "trades": 54
-      },
-      "test": {
-        "total_return_pct": -1.4589,
-        "max_drawdown_pct": 2.0334,
-        "sharpe": -2.931,
-        "trades": 16
-      },
-      "stress": {
-        "total_return_pct": -3.8012,
-        "max_drawdown_pct": 4.2141,
-        "sharpe": -6.716,
-        "trades": 16
-      },
-      "score": -3.1439500000000002,
-      "passed_validation": false
-    },
-    {
-      "symbol": "BTCUSDT",
-      "interval": "5m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": -6.2582,
-        "max_drawdown_pct": 6.3923,
-        "sharpe": -4.9,
-        "trades": 54
-      },
-      "test": {
-        "total_return_pct": -1.4589,
-        "max_drawdown_pct": 2.0334,
-        "sharpe": -2.931,
-        "trades": 16
-      },
-      "stress": {
-        "total_return_pct": -3.8012,
-        "max_drawdown_pct": 4.2141,
-        "sharpe": -6.716,
-        "trades": 16
-      },
-      "score": -3.1439500000000002,
-      "passed_validation": false
+      "validation_score": 8.25305,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
     },
     {
       "symbol": "SOLUSDT",
-      "interval": "5m",
-      "strategy": "mean_reversion",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
+        "slow": 72,
+        "momentum": 12,
+        "breakout": 24,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 5.6395,
+        "max_drawdown_pct": 12.0025,
+        "sharpe": 1.076,
+        "trades": 90
+      },
+      "validation": {
+        "total_return_pct": 13.823,
+        "max_drawdown_pct": 7.1412,
+        "sharpe": 6.384,
+        "trades": 24
+      },
+      "validation_stress": {
+        "total_return_pct": 9.7983,
+        "max_drawdown_pct": 8.3865,
+        "sharpe": 4.627,
+        "trades": 24
+      },
+      "validation_score": 8.2271,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 48,
+        "momentum": 24,
+        "breakout": 24,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 9.8612,
+        "max_drawdown_pct": 10.0201,
+        "sharpe": 1.693,
+        "trades": 74
+      },
+      "validation": {
+        "total_return_pct": 14.0892,
+        "max_drawdown_pct": 7.8229,
+        "sharpe": 6.585,
+        "trades": 20
+      },
+      "validation_stress": {
+        "total_return_pct": 10.7174,
+        "max_drawdown_pct": 9.1953,
+        "sharpe": 5.102,
+        "trades": 20
+      },
+      "validation_score": 8.022025000000001,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
+        "slow": 72,
+        "momentum": 24,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 11.9556,
+        "max_drawdown_pct": 9.7816,
+        "sharpe": 1.991,
+        "trades": 72
+      },
+      "validation": {
+        "total_return_pct": 13.1624,
+        "max_drawdown_pct": 6.9049,
+        "sharpe": 6.244,
+        "trades": 20
+      },
+      "validation_stress": {
+        "total_return_pct": 9.8179,
+        "max_drawdown_pct": 8.4285,
+        "sharpe": 4.747,
+        "trades": 20
+      },
+      "validation_score": 7.783725,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "15m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 48,
+        "momentum": 24,
+        "breakout": 24,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -6.6384,
+        "max_drawdown_pct": 19.3174,
+        "sharpe": -0.794,
+        "trades": 126
+      },
+      "validation": {
+        "total_return_pct": 14.8072,
+        "max_drawdown_pct": 9.233,
+        "sharpe": 6.426,
+        "trades": 34
+      },
+      "validation_stress": {
+        "total_return_pct": 9.0988,
+        "max_drawdown_pct": 11.7022,
+        "sharpe": 4.099,
+        "trades": 34
+      },
+      "validation_score": 7.54245,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "15m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 48,
+        "momentum": 12,
+        "breakout": 24,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -7.5997,
+        "max_drawdown_pct": 18.3721,
+        "sharpe": -0.975,
+        "trades": 128
+      },
+      "validation": {
+        "total_return_pct": 14.2878,
+        "max_drawdown_pct": 8.8429,
+        "sharpe": 6.469,
+        "trades": 46
+      },
+      "validation_stress": {
+        "total_return_pct": 6.6678,
+        "max_drawdown_pct": 12.1172,
+        "sharpe": 3.206,
+        "trades": 46
+      },
+      "validation_score": 7.195625000000001,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "momentum": 12,
+        "breakout": 24,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -1.2636,
+        "max_drawdown_pct": 15.78,
+        "sharpe": 0.024,
+        "trades": 108
+      },
+      "validation": {
+        "total_return_pct": 14.2747,
+        "max_drawdown_pct": 9.1814,
+        "sharpe": 6.571,
+        "trades": 30
+      },
+      "validation_stress": {
+        "total_return_pct": 9.2463,
+        "max_drawdown_pct": 11.4681,
+        "sharpe": 4.383,
+        "trades": 30
+      },
+      "validation_score": 7.0886499999999995,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 1.7762,
+        "max_drawdown_pct": 12.8863,
+        "sharpe": 0.491,
+        "trades": 106
+      },
+      "validation": {
+        "total_return_pct": 13.1122,
+        "max_drawdown_pct": 7.9389,
+        "sharpe": 6.063,
+        "trades": 36
+      },
+      "validation_stress": {
+        "total_return_pct": 7.1661,
+        "max_drawdown_pct": 10.8061,
+        "sharpe": 3.452,
+        "trades": 36
+      },
+      "validation_score": 6.798024999999999,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
       "params": {
         "fast": 8,
         "slow": 48,
@@ -1114,27 +1142,574 @@
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": -2.7115,
-        "max_drawdown_pct": 5.2342,
-        "sharpe": -1.201,
+        "total_return_pct": -2.9534,
+        "max_drawdown_pct": 17.8805,
+        "sharpe": -0.258,
+        "trades": 136
+      },
+      "validation": {
+        "total_return_pct": 12.7825,
+        "max_drawdown_pct": 7.4574,
+        "sharpe": 6.076,
+        "trades": 44
+      },
+      "validation_stress": {
+        "total_return_pct": 5.5792,
+        "max_drawdown_pct": 11.6623,
+        "sharpe": 2.821,
+        "trades": 44
+      },
+      "validation_score": 6.74945,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "momentum": 12,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -2.9534,
+        "max_drawdown_pct": 17.8805,
+        "sharpe": -0.258,
+        "trades": 136
+      },
+      "validation": {
+        "total_return_pct": 12.7825,
+        "max_drawdown_pct": 7.4574,
+        "sharpe": 6.076,
+        "trades": 44
+      },
+      "validation_stress": {
+        "total_return_pct": 5.5792,
+        "max_drawdown_pct": 11.6623,
+        "sharpe": 2.821,
+        "trades": 44
+      },
+      "validation_score": 6.74945,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
+        "slow": 72,
+        "momentum": 24,
+        "breakout": 48,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 18.2633,
+        "max_drawdown_pct": 10.1153,
+        "sharpe": 2.898,
+        "trades": 62
+      },
+      "validation": {
+        "total_return_pct": 12.5215,
+        "max_drawdown_pct": 7.4321,
+        "sharpe": 5.971,
+        "trades": 20
+      },
+      "validation_stress": {
+        "total_return_pct": 9.196,
+        "max_drawdown_pct": 8.9471,
+        "sharpe": 4.476,
+        "trades": 20
+      },
+      "validation_score": 6.747424999999999,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "breakout",
+      "params": {
+        "fast": 20,
+        "slow": 30,
+        "momentum": 24,
+        "breakout": 12,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 0.3436,
+        "max_drawdown_pct": 15.6619,
+        "sharpe": 0.255,
+        "trades": 110
+      },
+      "validation": {
+        "total_return_pct": 11.9223,
+        "max_drawdown_pct": 6.6438,
+        "sharpe": 6.043,
+        "trades": 30
+      },
+      "validation_stress": {
+        "total_return_pct": 6.9974,
+        "max_drawdown_pct": 7.8958,
+        "sharpe": 3.658,
+        "trades": 30
+      },
+      "validation_score": 6.63945,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
+        "slow": 48,
+        "momentum": 12,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -0.8547,
+        "max_drawdown_pct": 15.4544,
+        "sharpe": 0.067,
+        "trades": 126
+      },
+      "validation": {
+        "total_return_pct": 12.0317,
+        "max_drawdown_pct": 7.5872,
+        "sharpe": 5.746,
         "trades": 42
       },
-      "test": {
-        "total_return_pct": 0.4202,
-        "max_drawdown_pct": 4.5708,
-        "sharpe": 0.442,
-        "trades": 18
+      "validation_stress": {
+        "total_return_pct": 5.1914,
+        "max_drawdown_pct": 11.5212,
+        "sharpe": 2.645,
+        "trades": 42
       },
-      "stress": {
-        "total_return_pct": -2.2626,
-        "max_drawdown_pct": 5.7133,
-        "sharpe": -1.828,
-        "trades": 18
+      "validation_score": 5.9213000000000005,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "15m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
+        "slow": 72,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
       },
-      "score": -3.1879000000000004,
-      "passed_validation": false
+      "train": {
+        "total_return_pct": -4.3752,
+        "max_drawdown_pct": 18.89,
+        "sharpe": -0.454,
+        "trades": 142
+      },
+      "validation": {
+        "total_return_pct": 13.0021,
+        "max_drawdown_pct": 9.2171,
+        "sharpe": 5.845,
+        "trades": 50
+      },
+      "validation_stress": {
+        "total_return_pct": 4.837,
+        "max_drawdown_pct": 12.2959,
+        "sharpe": 2.364,
+        "trades": 50
+      },
+      "validation_score": 5.589275000000001,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 48,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 1.0307,
+        "max_drawdown_pct": 13.2033,
+        "sharpe": 0.377,
+        "trades": 106
+      },
+      "validation": {
+        "total_return_pct": 12.0199,
+        "max_drawdown_pct": 8.1276,
+        "sharpe": 5.66,
+        "trades": 34
+      },
+      "validation_stress": {
+        "total_return_pct": 6.4501,
+        "max_drawdown_pct": 11.402,
+        "sharpe": 3.17,
+        "trades": 34
+      },
+      "validation_score": 5.584200000000001,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
+        "slow": 30,
+        "momentum": 12,
+        "breakout": 48,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 5.3714,
+        "max_drawdown_pct": 12.7591,
+        "sharpe": 1.027,
+        "trades": 98
+      },
+      "validation": {
+        "total_return_pct": 12.5987,
+        "max_drawdown_pct": 9.3842,
+        "sharpe": 5.87,
+        "trades": 24
+      },
+      "validation_stress": {
+        "total_return_pct": 8.6172,
+        "max_drawdown_pct": 11.1343,
+        "sharpe": 4.11,
+        "trades": 24
+      },
+      "validation_score": 5.320549999999999,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:30:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-12T23:00:00+00:00",
+          "end": "2026-09-30T22:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "15m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 72,
+        "momentum": 6,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -7.6839,
+        "max_drawdown_pct": 17.1672,
+        "sharpe": -0.987,
+        "trades": 146
+      },
+      "validation": {
+        "total_return_pct": 12.7639,
+        "max_drawdown_pct": 9.3565,
+        "sharpe": 5.773,
+        "trades": 48
+      },
+      "validation_stress": {
+        "total_return_pct": 4.9303,
+        "max_drawdown_pct": 12.6928,
+        "sharpe": 2.414,
+        "trades": 48
+      },
+      "validation_score": 5.266525,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "15m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 72,
+        "momentum": 6,
+        "breakout": 48,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -3.1342,
+        "max_drawdown_pct": 16.3138,
+        "sharpe": -0.264,
+        "trades": 134
+      },
+      "validation": {
+        "total_return_pct": 12.6336,
+        "max_drawdown_pct": 9.4297,
+        "sharpe": 5.732,
+        "trades": 46
+      },
+      "validation_stress": {
+        "total_return_pct": 5.1239,
+        "max_drawdown_pct": 12.7634,
+        "sharpe": 2.504,
+        "trades": 46
+      },
+      "validation_score": 5.101324999999999,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "interval": "15m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 72,
+        "momentum": 12,
+        "breakout": 48,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -3.5955,
+        "max_drawdown_pct": 16.0059,
+        "sharpe": -0.324,
+        "trades": 116
+      },
+      "validation": {
+        "total_return_pct": 11.8872,
+        "max_drawdown_pct": 8.6787,
+        "sharpe": 5.444,
+        "trades": 48
+      },
+      "validation_stress": {
+        "total_return_pct": 4.1145,
+        "max_drawdown_pct": 11.8538,
+        "sharpe": 2.073,
+        "trades": 48
+      },
+      "validation_score": 4.898175,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-20T23:00:00+00:00",
+          "end": "2026-09-12T22:30:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-12T22:45:00+00:00",
+          "end": "2026-09-30T22:15:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T22:30:00+00:00",
+          "end": "2026-10-18T22:30:00+00:00",
+          "bars": 1729
+        }
+      }
     }
   ],
   "errors": [],
-  "warning": "Backtest results are simulations and may overfit. No candidate is promoted unless it passes held-out and cost-stress checks."
+  "warning": "Test metrics are not used for selection. Repeated runs over the same dates can still contaminate broader research decisions."
 }

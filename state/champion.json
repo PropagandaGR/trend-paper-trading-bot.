@@ -1,36 +1,92 @@
 {
-  "symbol": "ETHUSDT",
+  "symbol": "SOLUSDT",
   "interval": "30m",
-  "strategy": "mean_reversion",
+  "strategy": "trend",
   "params": {
     "fast": 8,
-    "slow": 48,
+    "slow": 72,
     "momentum": 12,
-    "breakout": 12,
+    "breakout": 48,
     "entry_momentum": 0.0,
-    "exit_momentum": -0.005,
-    "rsi_entry": 20,
+    "exit_momentum": -0.01,
+    "rsi_entry": 30,
     "rsi_exit": 50,
     "stop_pct": 0.06
   },
-  "train": {
-    "total_return_pct": 1.9345,
-    "max_drawdown_pct": 2.1307,
-    "sharpe": 3.837,
-    "trades": 10
-  },
-  "test": {
-    "total_return_pct": 6.6125,
-    "max_drawdown_pct": 2.6632,
-    "sharpe": 13.232,
-    "trades": 11
-  },
-  "stress": {
-    "total_return_pct": 4.8667,
-    "max_drawdown_pct": 3.1176,
-    "sharpe": 9.821,
-    "trades": 11
-  },
-  "score": 4.5051,
-  "passed_validation": true
+  "champion_version": "champion-84186f7ee7e4",
+  "validation_metadata": {
+    "created_at": "2026-10-18T22:40:22.496500+00:00",
+    "status": "validated",
+    "selection_metric": "validation_score",
+    "validation_score": 12.472925000000002,
+    "validation_criteria": {
+      "validation_return_positive": true,
+      "validation_stress_return_positive": true,
+      "validation_max_drawdown_below_pct": 25,
+      "minimum_validation_position_changes": 2
+    },
+    "periods": {
+      "train": {
+        "start": "2026-07-20T23:30:00+00:00",
+        "end": "2026-09-12T22:30:00+00:00",
+        "bars": 2591
+      },
+      "validation": {
+        "start": "2026-09-12T23:00:00+00:00",
+        "end": "2026-09-30T22:00:00+00:00",
+        "bars": 863
+      },
+      "test": {
+        "start": "2026-09-30T22:30:00+00:00",
+        "end": "2026-10-18T22:30:00+00:00",
+        "bars": 865
+      }
+    },
+    "train_metrics": {
+      "total_return_pct": 2.6811,
+      "max_drawdown_pct": 13.3579,
+      "sharpe": 0.631,
+      "trades": 92
+    },
+    "validation_metrics": {
+      "total_return_pct": 17.6031,
+      "max_drawdown_pct": 6.5469,
+      "sharpe": 7.902,
+      "trades": 22
+    },
+    "validation_stress_metrics": {
+      "total_return_pct": 13.7855,
+      "max_drawdown_pct": 7.8002,
+      "sharpe": 6.285,
+      "trades": 22
+    },
+    "test_metrics": {
+      "total_return_pct": -11.3022,
+      "max_drawdown_pct": 11.3022,
+      "sharpe": -12.831,
+      "trades": 24
+    },
+    "test_stress_metrics": {
+      "total_return_pct": -14.4386,
+      "max_drawdown_pct": 14.4386,
+      "sharpe": -15.739,
+      "trades": 24
+    },
+    "test_used_for_selection": false,
+    "cost_convention": {
+      "fee_bps_per_side": 10.0,
+      "slippage_bps_per_side": 5.0,
+      "stress_fee_bps_per_side": 20,
+      "stress_slippage_bps_per_side": 10,
+      "fill_timing": "closed candle close after one-candle signal shift",
+      "fee_basis": "executed notional",
+      "slippage": "execution price adjusted per side"
+    },
+    "sharpe_annualization": {
+      "bars_per_year": 17520,
+      "interval": "30m",
+      "calendar_days_per_year": 365
+    },
+    "warning": "Test metrics are report-only and were not used to rank, select, or validate this champion."
+  }
 }
