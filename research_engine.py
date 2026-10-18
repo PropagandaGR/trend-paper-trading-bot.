@@ -334,8 +334,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
     (REPORTS / "research_latest.json").write_text(json.dumps(summary, indent=2))
     with (REPORTS / "experiments.jsonl").open("a") as handle:
         handle.write(json.dumps({"at": utc_now(), "days": days, "evaluations": len(results),
-                                 "validated": len(valid), "champion": champion}, default=str) + "
-")
+                                 "validated": len(valid), "champion": champion}, default=str) + "\n")
     if champion:
         (STATE / "champion.json").write_text(json.dumps(champion, indent=2))
     return summary
