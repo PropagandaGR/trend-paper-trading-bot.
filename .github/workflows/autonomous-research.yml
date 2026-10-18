@@ -47,7 +47,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports/research_latest.json reports/experiments.jsonl state/champion.json
+          mkdir -p reports state
+          git add -A -- reports state
           git diff --cached --quiet || git commit -m "Update autonomous strategy research"
           git pull --rebase origin main
           git push origin HEAD:main
