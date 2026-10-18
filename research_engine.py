@@ -30,7 +30,7 @@ def utc_now() -> str:
 
 
 def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
-    """Fallback to Coinbase Exchange public USD candles when Binance is region-blocked."""
+    """Fetch Coinbase Exchange public USD candles without account credentials."""
     product = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD"}.get(symbol)
     if not product:
         raise ValueError(f"No Coinbase fallback mapping for {symbol}")
@@ -55,7 +55,7 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
         batch = response.json()
         rows.extend(batch)
         cursor = stop
-        time.sleep(0.06)
+        time.sleep(0.12)
     if not rows:
         raise RuntimeError(f"No Coinbase candles returned for {product} {interval}")
     frame = pd.DataFrame(rows, columns=["time", "low", "high", "open", "close", "volume"])
@@ -89,7 +89,7 @@ def resample_ohlcv(frame: pd.DataFrame, rule: str) -> pd.DataFrame:
     group [18:00, 18:30) into the candle labeled 18:30, without pulling the
     18:30 candle into the candle that just ended. Require every expected 5m
     source candle and a final close timestamp at the bucket boundary (allowing
-    Binance's close_time to be boundary minus 1 ms).
+    Coinbase candle close timestamps are derived from their open times.
     """
     rule_delta = pd.Timedelta(rule)
     source_delta = pd.Timedelta(minutes=5)
