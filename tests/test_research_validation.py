@@ -80,5 +80,38 @@ class TestSetIsolationTests(unittest.TestCase):
             )
 
 
+    def test_no_validated_candidate_clears_stale_active_champion(self):
+        index = pd.date_range("2026-01-01", periods=1200, freq="5min", tz="UTC")
+        frame = pd.DataFrame({
+            "open": [100.0] * len(index), "high": [101.0] * len(index),
+            "low": [99.0] * len(index), "close": [100.0] * len(index),
+            "volume": [1.0] * len(index),
+            "close_time": index + pd.Timedelta(minutes=5),
+        }, index=index)
+        params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            reports, state = Path(tmp) / "reports", Path(tmp) / "state"
+            state.mkdir()
+            (state / "champion.json").write_text(json.dumps({"symbol": "BTCUSDT", "stale": True}))
+
+            def failed_candidate(*args, **kwargs):
+                return {"total_return_pct": -5.0, "max_drawdown_pct": 30.0,
+                        "sharpe": -1.0, "trades": 4}
+
+            with (
+                patch.object(research_engine, "REPORTS", reports),
+                patch.object(research_engine, "STATE", state),
+                patch.object(research_engine, "fetch_klines", return_value=frame),
+                patch.object(research_engine, "resample_ohlcv", side_effect=lambda raw, rule: raw),
+                patch.object(research_engine, "candidate_params", return_value=[params]),
+                patch.object(research_engine, "backtest", side_effect=failed_candidate),
+            ):
+                summary = research_engine.run_research(days=30)
+
+            self.assertIsNone(summary["champion"])
+            self.assertIsNone(json.loads((state / "champion.json").read_text()))
+
+
 if __name__ == "__main__":
     unittest.main()
