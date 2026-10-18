@@ -1,5 +1,5 @@
 {
-  "symbol": "SOLUSDT",
+  "symbol": "ETHUSDT",
   "interval": "30m",
   "strategy": "mean_reversion",
   "params": {
@@ -14,23 +14,23 @@
     "stop_pct": 0.06
   },
   "train": {
-    "total_return_pct": 0.672,
-    "max_drawdown_pct": 1.1521,
-    "sharpe": 3.424,
-    "trades": 2
+    "total_return_pct": 1.9345,
+    "max_drawdown_pct": 2.1307,
+    "sharpe": 3.795,
+    "trades": 10
   },
   "test": {
-    "total_return_pct": 5.8711,
-    "max_drawdown_pct": 2.4163,
-    "sharpe": 12.563,
-    "trades": 8
+    "total_return_pct": 6.6125,
+    "max_drawdown_pct": 2.6632,
+    "sharpe": 13.086,
+    "trades": 11
   },
   "stress": {
-    "total_return_pct": 4.6084,
-    "max_drawdown_pct": 2.8558,
-    "sharpe": 9.973,
-    "trades": 8
+    "total_return_pct": 4.8667,
+    "max_drawdown_pct": 3.1176,
+    "sharpe": 9.713,
+    "trades": 11
   },
-  "score": 3.9788750000000004,
+  "score": 4.5051,
   "passed_validation": true
 }
