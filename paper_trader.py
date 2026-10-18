@@ -6,6 +6,8 @@ from typing import Any
 
 import pandas as pd
 
+from portfolio_accounting import buy_with_costs, mark_to_market, sell_with_costs
+
 from research_engine import (
     INTERVALS, REPORTS, STATE, SYMBOLS, fetch_klines, desired_signal, add_features, resample_ohlcv, utc_now
 )
@@ -137,50 +139,72 @@ def run_once() -> dict[str, Any]:
     position_symbol = state.get("symbol")
     qty = float(state.get("quantity", 0.0))
     cash = float(state.get("cash", STARTING_CASH))
-    cost_rate = (FEE_BPS + SLIPPAGE_BPS) / 10000.0
+    # Keep marks symbol-scoped. Never reuse the champion's price to value a
+    # different asset held from an earlier champion.
+    current_prices = {
+        name: float(frame.close.iloc[-1])
+        for name, frame in frames.items()
+        if not frame.empty and float(frame.close.iloc[-1]) > 0
+    }
+    cached_prices = state.get("last_prices", {})
+    mark_prices = {**cached_prices, **current_prices}
+    state["last_prices"] = mark_prices
+    if qty > 0 and position_symbol not in mark_prices:
+        status["data_errors"].append({
+            "symbol": position_symbol,
+            "error": "Missing valid mark for held position; refusing cross-symbol valuation or trade."
+        })
+        status["message"] = "Held position cannot be safely valued; no simulated order made."
+        STATUS_FILE.write_text(json.dumps(status, indent=2))
+        return status
 
     if cursor != latest_time:
         # One-position, long-only portfolio. All fills are simulated at the latest
         # closed candle price with a conservative cost haircut.
         if qty > 0 and (position_symbol != symbol or not target_long):
-            fill = latest_price * (1 - cost_rate)
-            proceeds = qty * fill
-            entry = float(state.get("entry_price") or fill)
-            pnl = proceeds - qty * entry
-            cash += proceeds
-            state["realized_pnl"] = float(state.get("realized_pnl", 0.0)) + pnl
+            held_mark = float(mark_prices[position_symbol])
+            entry = float(state.get("entry_price") or held_mark)
+            sale = sell_with_costs(qty, held_mark, entry, FEE_BPS, SLIPPAGE_BPS)
+            cash += sale.net_proceeds
+            state["realized_pnl"] = float(state.get("realized_pnl", 0.0)) + sale.realized_pnl
             state["completed_trades"] = int(state.get("completed_trades", 0)) + 1
-            status["actions"].append({"action": "PAPER_SELL", "symbol": position_symbol,
-                                      "price": round(fill, 8), "quantity": qty,
-                                      "reason": "validated champion exit or symbol change"})
+            status["actions"].append({
+                "action": "PAPER_SELL", "symbol": position_symbol,
+                "price": round(sale.execution_price, 8), "quantity": qty,
+                "fee_usdt": round(sale.fee, 8), "slippage_usdt": round(sale.slippage, 8),
+                "net_proceeds_usdt": round(sale.net_proceeds, 8),
+                "realized_pnl_usdt": round(sale.realized_pnl, 8),
+                "reason": "validated champion exit or symbol change"
+            })
             qty, position_symbol = 0.0, None
             state["entry_price"] = None
         if qty <= 0 and target_long:
-            # Invest available cash, including the 15 USDT starting portfolio.
-            fill = latest_price * (1 + cost_rate)
-            spend = cash
-            qty = max(0.0, spend / fill)
-            cash = 0.0
+            # Buy quantity is calculated after modeled execution slippage and fee.
+            buy = buy_with_costs(cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
+            qty = max(0.0, buy.quantity)
+            cash = buy.cash_remaining
             position_symbol = symbol
-            state["entry_price"] = fill
-            status["actions"].append({"action": "PAPER_BUY", "symbol": symbol,
-                                      "price": round(fill, 8), "quantity": qty,
-                                      "reason": "validated champion entry"})
+            state["entry_price"] = buy.entry_cost_per_unit
+            status["actions"].append({
+                "action": "PAPER_BUY", "symbol": symbol,
+                "price": round(buy.execution_price, 8), "quantity": qty,
+                "fee_usdt": round(buy.fee, 8), "slippage_usdt": round(buy.slippage, 8),
+                "reason": "validated champion entry"
+            })
         state.setdefault("last_processed_bars", {})[symbol] = latest_time
     state.update({"cash": cash, "quantity": qty, "symbol": position_symbol,
                   "last_checked_at": utc_now()})
-    state["last_price"] = latest_price
-    equity = cash + (qty * latest_price if position_symbol else 0.0)
-    entry_price = float(state.get("entry_price") or latest_price)
-    unrealized = (latest_price - entry_price) * qty if position_symbol else 0.0
+    equity, position_mark = mark_to_market(cash, qty, position_symbol, mark_prices)
+    entry_price = float(state.get("entry_price") or position_mark or latest_price)
+    unrealized = (position_mark - entry_price) * qty if position_symbol and qty > 0 else 0.0
     status.update({
         "updated_at": utc_now(), "cash_usdt": round(cash, 8),
         "equity_usdt": round(equity, 8),
         "total_pnl_usdt": round(equity - STARTING_CASH, 8),
         "unrealized_pnl_usdt": round(unrealized, 8),
         "open_position": ({"symbol": position_symbol, "quantity": round(qty, 10),
-                           "mark_price": round(latest_price, 8),
-                           "entry_price": round(entry_price, 8)} if position_symbol else None),
+                           "mark_price": round(position_mark, 8),
+                           "entry_price": round(entry_price, 8)} if position_symbol and qty > 0 else None),
         "champion": {"symbol": symbol, "interval": interval,
                      "strategy": champion["strategy"], "params": params},
         "last_processed_bar": latest_time,
