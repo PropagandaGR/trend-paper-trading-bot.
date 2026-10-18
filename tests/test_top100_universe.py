@@ -60,6 +60,11 @@ class Top100UniverseTests(unittest.TestCase):
         self.assertEqual(meta["eligible_coinbase_markets"], 4)
         self.assertEqual(meta["market_cap_rank_limit"], 100)
         self.assertEqual(meta["batch_index"], 0)
+        second, second_meta = universe.get_research_batch(
+            batch_size=2, at=datetime(2026, 1, 1, 1, 0, tzinfo=timezone.utc)
+        )
+        self.assertEqual(second, ["SOLUSDT", "DOGEUSDT"])
+        self.assertEqual(second_meta["batch_index"], 1)
 
     def test_invalid_batch_size_is_rejected(self):
         with self.assertRaises(ValueError):
