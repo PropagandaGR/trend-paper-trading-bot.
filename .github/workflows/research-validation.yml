@@ -1,0 +1,75 @@
+name: Research Validation
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Public Coinbase history window (minimum 30 days)"
+        required: true
+        default: "90"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run research and enforce fresh validation output
+        env:
+          RESEARCH_DAYS: ${{ github.event.inputs.days || '90' }}
+        run: |
+          python research_engine.py --days "$RESEARCH_DAYS"
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          report_path = Path("reports/research_latest.json")
+          champion_path = Path("state/champion.json")
+          if not report_path.is_file() or not champion_path.is_file():
+              raise SystemExit("Research failed: report or active champion file is missing")
+          report = json.loads(report_path.read_text())
+          champion = json.loads(champion_path.read_text())
+          now = datetime.now(timezone.utc)
+          completed = datetime.fromisoformat(report["completed_at"].replace("Z", "+00:00"))
+          age_seconds = (now - completed.astimezone(timezone.utc)).total_seconds()
+          if age_seconds < -60 or age_seconds > 900:
+              raise SystemExit(f"Research report is stale: age={age_seconds:.1f}s")
+          if report.get("evaluations", 0) < 1 or report.get("validated_count", 0) < 1:
+              raise SystemExit("Research failed: no candidate evaluation and validation result")
+          metadata = (champion or {}).get("validation_metadata", {})
+          if not champion or metadata.get("status") != "validated":
+              raise SystemExit("Research failed: no validated active champion")
+          if metadata.get("test_used_for_selection") is not False:
+              raise SystemExit("Research failed: final-test isolation is not confirmed")
+          if champion.get("champion_version") != report["champion"]["champion_version"]:
+              raise SystemExit("Research failed: active champion does not match fresh report")
+          print(
+              f"Verified fresh research report: {report['evaluations']} evaluations, "
+              f"{report['validated_count']} validated candidates, "
+              f"champion {champion['champion_version']}"
+          )
+          PY
+      - name: Preserve research artifacts for audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-validation-${{ github.run_id }}
+          path: |
+            reports/research_latest.json
+            reports/experiments.jsonl
+            state/champion.json
+            state/champions/
+          if-no-files-found: warn
