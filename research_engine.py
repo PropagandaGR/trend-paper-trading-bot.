@@ -135,10 +135,28 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
 
 
 def resample_ohlcv(frame: pd.DataFrame, rule: str) -> pd.DataFrame:
-    return frame.resample(rule, label="right", closed="right").agg({
+    """Build only complete higher-timeframe candles from closed 5m source bars.
+
+    Source indices are candle open times. Left-closed/right-labeled buckets
+    group [18:00, 18:30) into the candle labeled 18:30, without pulling the
+    18:30 candle into the candle that just ended. Require every expected 5m
+    source candle and a final close timestamp at the bucket boundary (allowing
+    Binance's close_time to be boundary minus 1 ms).
+    """
+    rule_delta = pd.Timedelta(rule)
+    source_delta = pd.Timedelta(minutes=5)
+    if rule_delta < source_delta or rule_delta % source_delta != pd.Timedelta(0):
+        raise ValueError(f"Resample rule must be a multiple of 5 minutes: {rule}")
+    expected_rows = int(rule_delta / source_delta)
+    grouped = frame.resample(rule, label="right", closed="left")
+    result = grouped.agg({
         "open": "first", "high": "max", "low": "min", "close": "last",
         "volume": "sum", "close_time": "last"
     }).dropna(subset=["open", "high", "low", "close"])
+    counts = grouped["close"].count()
+    complete = counts.reindex(result.index).eq(expected_rows)
+    boundary_closed = result["close_time"] >= (result.index - pd.Timedelta(seconds=1))
+    return result.loc[complete & boundary_closed]
 
 
 def add_features(frame: pd.DataFrame, fast: int, slow: int, momentum: int,
