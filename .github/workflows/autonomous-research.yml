@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "research_engine.py"
+      - "universe.py"
+      - "tests/test_top100_universe.py"
       - "portfolio_accounting.py"
       - "requirements.txt"
       - ".github/workflows/autonomous-research.yml"
