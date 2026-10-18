@@ -1,28 +1,20 @@
 {
-  "updated_at": "2026-10-18T22:15:51.286394+00:00",
+  "updated_at": "2026-10-18T22:29:10.768897+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
   "cash_usdt": 0.0,
-  "equity_usdt": 14.9775337,
-  "unrealized_pnl_usdt": -0.0224663,
+  "equity_usdt": 15.12518721,
+  "unrealized_pnl_usdt": 0.12518721,
   "realized_pnl_usdt": 0.0,
   "completed_trades": 0,
   "open_position": {
     "symbol": "ETHUSDT",
     "quantity": 0.0063178584,
-    "mark_price": 2370.66626621,
+    "mark_price": 2394.03708302,
     "entry_price": 2374.22226561
   },
   "champion_available": true,
-  "actions": [
-    {
-      "action": "PAPER_BUY",
-      "symbol": "ETHUSDT",
-      "price": 2374.22226561,
-      "quantity": 0.00631785836452632,
-      "reason": "validated champion entry"
-    }
-  ],
+  "actions": [],
   "data_errors": [],
   "safety": {
     "real_orders": false,
@@ -30,7 +22,7 @@
     "leverage": false,
     "short_selling": false
   },
-  "total_pnl_usdt": -0.0224663,
+  "total_pnl_usdt": 0.12518721,
   "champion": {
     "symbol": "ETHUSDT",
     "interval": "30m",
@@ -53,8 +45,8 @@
     "strategy": "mean_reversion",
     "interval": "30m",
     "latest_bar": "2026-10-18T22:00:00+00:00",
-    "last_processed_bar_before_run": "2026-10-18T19:00:00+00:00",
-    "new_bar_to_process": true,
+    "last_processed_bar_before_run": "2026-10-18T22:00:00+00:00",
+    "new_bar_to_process": false,
     "close_usdt": 2370.66626621,
     "signal_long": true,
     "current_signal": 1.0,
@@ -67,7 +59,7 @@
     "rsi_below_entry_threshold": false,
     "close_below_ema_slow": true,
     "raw_entry_conditions_met": false,
-    "explanation": "The strategy signal is long; the paper trader should enter or remain invested on this new candle."
+    "explanation": "This candle was already processed; no duplicate simulated order is placed."
   },
   "message": "Simulated portfolio only; fills are estimates, not exchange orders."
 }
