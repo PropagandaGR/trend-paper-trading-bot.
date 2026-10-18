@@ -476,25 +476,35 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
     if not isinstance(report.get("evaluations"), int) or report["evaluations"] <= 0:
         raise RuntimeError("Research produced no candidate evaluations")
     validation = report.get("validation_result")
-    allowed = {"validated", "no_candidate"}
-    if not isinstance(validation, dict) or validation.get("status") not in allowed:
-        raise RuntimeError("Research did not produce a complete validation result")
+    if not isinstance(validation, dict) or validation.get("status") != "validated":
+        raise RuntimeError("Research did not produce a validated champion")
     if validation.get("status") != report.get("validation_status"):
         raise RuntimeError("Research validation status is inconsistent")
     if validation.get("evaluations") != report.get("evaluations"):
         raise RuntimeError("Research validation result does not match evaluation count")
+    if validation.get("validated_candidates", 0) < 1 or report.get("validated_count", 0) < 1:
+        raise RuntimeError("Research produced no candidate that passed validation")
     champion = report.get("champion")
-    if validation["status"] == "validated":
-        if not isinstance(champion, dict):
-            raise RuntimeError("Validation says a champion passed, but no champion was reported")
-        if not champion.get("champion_version") or not isinstance(champion.get("validation_metadata"), dict):
-            raise RuntimeError("Validated champion is missing version or validation metadata")
-        if champion["validation_metadata"].get("test_used_for_selection") is not False:
-            raise RuntimeError("Champion metadata does not prove final-test isolation")
-        if validation.get("champion_version") != champion.get("champion_version"):
-            raise RuntimeError("Validation result champion version does not match the champion")
-    elif champion is not None or validation.get("champion_version") is not None:
-        raise RuntimeError("No-candidate validation must not leave an active champion")
+    if not isinstance(champion, dict):
+        raise RuntimeError("Validation says a champion passed, but no champion was reported")
+    if not isinstance(champion.get("champion_version"), str) or not champion["champion_version"].startswith("champion-"):
+        raise RuntimeError("Validated champion version is missing or invalid")
+    metadata = champion.get("validation_metadata")
+    if not isinstance(metadata, dict) or metadata.get("status") != "validated":
+        raise RuntimeError("Champion is missing explicit validated metadata")
+    if metadata.get("test_used_for_selection") is not False:
+        raise RuntimeError("Champion metadata does not prove final-test isolation")
+    for field in ("validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
+        if not isinstance(metadata.get(field), dict):
+            raise RuntimeError(f"Champion validation metadata is missing {field}")
+    cost = metadata.get("cost_convention")
+    if not isinstance(cost, dict) or cost.get("fee_basis") != "executed notional":
+        raise RuntimeError("Champion cost convention is missing or invalid")
+    created_at = parse_timestamp(metadata.get("created_at"), "champion validation created_at")
+    if created_at < report_started or created_at > report_completed:
+        raise RuntimeError("Champion validation timestamp is outside the research run")
+    if validation.get("champion_version") != champion.get("champion_version"):
+        raise RuntimeError("Validation result champion version does not match the champion")
     return report
 
 
