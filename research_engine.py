@@ -15,6 +15,7 @@ import pandas as pd
 import requests
 
 from portfolio_accounting import buy_with_costs, sell_with_costs
+from universe import get_coinbase_product_id, get_research_batch
 
 ROOT = Path(__file__).resolve().parent
 REPORTS = ROOT / "reports"
@@ -34,7 +35,7 @@ def utc_now() -> str:
 
 def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     """Fetch Coinbase Exchange public USD candles without account credentials."""
-    product = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD", "USDTUSD": "USDT-USD"}.get(symbol)
+    product = get_coinbase_product_id(symbol)
     if not product:
         raise ValueError(f"No Coinbase fallback mapping for {symbol}")
     granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
@@ -313,7 +314,13 @@ def run_research(days: int = 90) -> dict[str, Any]:
     candidates = candidate_params()
     errors: list[dict[str, Any]] = []
     evaluation_frames: dict[tuple[str, str], pd.DataFrame] = {}
-    for symbol in SYMBOLS:
+    try:
+        research_symbols, universe_metadata = get_research_batch()
+    except Exception as exc:
+        research_symbols = []
+        universe_metadata = {"status": "unavailable", "source": "CoinGecko top-100 intersected with Coinbase USD spot products"}
+        errors.append({"universe": str(exc)})
+    for symbol in research_symbols:
         try:
             raw = fetch_klines(symbol, "5m", days).sort_index()
             for interval, rule in INTERVALS.items():
@@ -415,7 +422,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 else "No candidate evaluations completed; check market data and history coverage"
             ),
         },
-        "symbols": list(SYMBOLS), "intervals": list(INTERVALS),
+        "symbols": list(research_symbols), "universe": universe_metadata, "intervals": list(INTERVALS),
         "candidate_count": len(candidates), "evaluations": len(results),
         "validated_count": len(eligible), "champion": champion,
         "selection_policy": "Select only by validation score; require positive validation and validation stress returns, validation drawdown under 25%, and at least two validation position changes. Final test metrics are report-only.",
