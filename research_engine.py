@@ -416,6 +416,12 @@ def run_research(days: int = 90) -> dict[str, Any]:
                                  "champion_version": champion["champion_version"] if champion else None},
                                 default=str) + "\n")
     if champion:
+        # Keep immutable, version-addressable snapshots as well as the current champion.
+        version_dir = STATE / "champions"
+        version_dir.mkdir(parents=True, exist_ok=True)
+        version_file = version_dir / f"{champion['champion_version']}.json"
+        if not version_file.exists():
+            version_file.write_text(json.dumps(champion, indent=2))
         (STATE / "champion.json").write_text(json.dumps(champion, indent=2))
     return summary
 
