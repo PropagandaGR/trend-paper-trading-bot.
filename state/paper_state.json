@@ -5,11 +5,11 @@
   "entry_price": null,
   "last_processed_bars": {
     "ETHUSDT": "2026-10-18T19:00:00+00:00",
-    "SOLUSDT": "2026-10-18T19:30:00+00:00"
+    "SOLUSDT": "2026-10-18T21:30:00+00:00"
   },
   "starting_cash": 15.0,
   "completed_trades": 0,
   "realized_pnl": 0.0,
-  "last_checked_at": "2026-10-18T19:40:31.421126+00:00",
-  "last_price": 101.75
+  "last_checked_at": "2026-10-18T21:37:02.536266+00:00",
+  "last_price": 101.45
 }
