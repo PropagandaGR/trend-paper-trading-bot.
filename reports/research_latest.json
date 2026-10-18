@@ -1,14 +1,14 @@
 {
-  "started_at": "2026-10-18T23:25:34.095068+00:00",
-  "completed_at": "2026-10-18T23:36:54.988793+00:00",
+  "started_at": "2026-10-18T23:41:05.833341+00:00",
+  "completed_at": "2026-10-18T23:49:38.549900+00:00",
   "days": 90,
   "run_status": "completed",
   "validation_status": "validated",
   "validation_result": {
     "status": "validated",
     "evaluations": 2880,
-    "validated_candidates": 244,
-    "champion_version": "champion-3677c153f5e1",
+    "validated_candidates": 238,
+    "champion_version": "champion-5bd705471457",
     "reason": null
   },
   "symbols": [
@@ -31,8 +31,8 @@
         "base": "ZEC",
         "product_id": "ZEC-USD",
         "market_cap_rank": 10,
-        "market_cap_usd": 19027811443,
-        "global_24h_volume_usd": 759791628.0,
+        "market_cap_usd": 19121136669,
+        "global_24h_volume_usd": 779610740.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       },
       {
@@ -40,8 +40,8 @@
         "base": "HYPE",
         "product_id": "HYPE-USD",
         "market_cap_rank": 11,
-        "market_cap_usd": 17501084842,
-        "global_24h_volume_usd": 542401014.0,
+        "market_cap_usd": 17560449719,
+        "global_24h_volume_usd": 548473952.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       },
       {
@@ -49,8 +49,8 @@
         "base": "DOGE",
         "product_id": "DOGE-USD",
         "market_cap_rank": 12,
-        "market_cap_usd": 12366626798,
-        "global_24h_volume_usd": 546496349.0,
+        "market_cap_usd": 12411267966,
+        "global_24h_volume_usd": 548577399.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       },
       {
@@ -58,8 +58,8 @@
         "base": "LINK",
         "product_id": "LINK-USD",
         "market_cap_rank": 16,
-        "market_cap_usd": 9181003147,
-        "global_24h_volume_usd": 260979417.0,
+        "market_cap_usd": 9218017475,
+        "global_24h_volume_usd": 263311109.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       },
       {
@@ -67,8 +67,8 @@
         "base": "ADA",
         "product_id": "ADA-USD",
         "market_cap_rank": 18,
-        "market_cap_usd": 8237140337,
-        "global_24h_volume_usd": 246667372.0,
+        "market_cap_usd": 8275648292,
+        "global_24h_volume_usd": 249795952.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       }
     ]
@@ -81,7 +81,7 @@
   ],
   "candidate_count": 48,
   "evaluations": 2880,
-  "validated_count": 244,
+  "validated_count": 238,
   "champion": {
     "symbol": "ZECUSDT",
     "interval": "30m",
@@ -97,9 +97,9 @@
       "rsi_exit": 50,
       "stop_pct": 0.06
     },
-    "champion_version": "champion-3677c153f5e1",
+    "champion_version": "champion-5bd705471457",
     "validation_metadata": {
-      "created_at": "2026-10-18T23:25:34.095068+00:00",
+      "created_at": "2026-10-18T23:41:05.833341+00:00",
       "status": "validated",
       "selection_metric": "validation_score",
       "validation_score": 31.6221,
@@ -111,18 +111,18 @@
       },
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       },
@@ -213,18 +213,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -251,33 +251,33 @@
         "trades": 76
       },
       "validation": {
-        "total_return_pct": 31.8226,
+        "total_return_pct": 31.9993,
         "max_drawdown_pct": 7.508,
-        "sharpe": 6.273,
+        "sharpe": 6.301,
         "trades": 23
       },
       "validation_stress": {
-        "total_return_pct": 27.3525,
+        "total_return_pct": 27.5232,
         "max_drawdown_pct": 8.611,
-        "sharpe": 5.55,
+        "sharpe": 5.578,
         "trades": 23
       },
-      "validation_score": 25.9616,
+      "validation_score": 26.1383,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -319,18 +319,71 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "ZECUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 72,
+        "momentum": 24,
+        "breakout": 24,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 68.1263,
+        "max_drawdown_pct": 26.6051,
+        "sharpe": 4.852,
+        "trades": 72
+      },
+      "validation": {
+        "total_return_pct": 30.3194,
+        "max_drawdown_pct": 7.8301,
+        "sharpe": 6.068,
+        "trades": 24
+      },
+      "validation_stress": {
+        "total_return_pct": 25.7113,
+        "max_drawdown_pct": 8.3814,
+        "sharpe": 5.308,
+        "trades": 24
+      },
+      "validation_score": 24.206825000000006,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -372,71 +425,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
-          "bars": 865
-        }
-      }
-    },
-    {
-      "symbol": "ZECUSDT",
-      "interval": "30m",
-      "strategy": "trend",
-      "params": {
-        "fast": 8,
-        "slow": 72,
-        "momentum": 24,
-        "breakout": 24,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 68.1263,
-        "max_drawdown_pct": 26.6051,
-        "sharpe": 4.852,
-        "trades": 72
-      },
-      "validation": {
-        "total_return_pct": 29.5715,
-        "max_drawdown_pct": 7.8301,
-        "sharpe": 5.944,
-        "trades": 24
-      },
-      "validation_stress": {
-        "total_return_pct": 24.9899,
-        "max_drawdown_pct": 8.3814,
-        "sharpe": 5.185,
-        "trades": 24
-      },
-      "validation_score": 23.458925000000004,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
-          "bars": 2591
-        },
-        "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
-          "bars": 863
-        },
-        "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -463,33 +463,86 @@
         "trades": 74
       },
       "validation": {
-        "total_return_pct": 29.9702,
+        "total_return_pct": 30.7204,
         "max_drawdown_pct": 9.3924,
-        "sharpe": 6.042,
+        "sharpe": 6.166,
         "trades": 26
       },
       "validation_stress": {
-        "total_return_pct": 24.9989,
+        "total_return_pct": 25.7204,
         "max_drawdown_pct": 11.0087,
-        "sharpe": 5.214,
+        "sharpe": 5.338,
         "trades": 26
       },
-      "validation_score": 22.665899999999997,
+      "validation_score": 23.4161,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
+      "symbol": "ZECUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 48,
+        "momentum": 24,
+        "breakout": 24,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 56.626,
+        "max_drawdown_pct": 29.1002,
+        "sharpe": 4.259,
+        "trades": 82
+      },
+      "validation": {
+        "total_return_pct": 28.7074,
+        "max_drawdown_pct": 8.1751,
+        "sharpe": 5.829,
+        "trades": 27
+      },
+      "validation_stress": {
+        "total_return_pct": 23.5991,
+        "max_drawdown_pct": 9.8132,
+        "sharpe": 4.968,
+        "trades": 27
+      },
+      "validation_score": 22.306075,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -531,71 +584,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
-          "bars": 865
-        }
-      }
-    },
-    {
-      "symbol": "ZECUSDT",
-      "interval": "30m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 48,
-        "momentum": 24,
-        "breakout": 24,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 56.626,
-        "max_drawdown_pct": 29.1002,
-        "sharpe": 4.259,
-        "trades": 82
-      },
-      "validation": {
-        "total_return_pct": 28.5351,
-        "max_drawdown_pct": 8.1751,
-        "sharpe": 5.8,
-        "trades": 27
-      },
-      "validation_stress": {
-        "total_return_pct": 23.4337,
-        "max_drawdown_pct": 9.8132,
-        "sharpe": 4.94,
-        "trades": 27
-      },
-      "validation_score": 22.133775,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
-          "bars": 2591
-        },
-        "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
-          "bars": 863
-        },
-        "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -622,33 +622,33 @@
         "trades": 80
       },
       "validation": {
-        "total_return_pct": 28.6501,
+        "total_return_pct": 28.8225,
         "max_drawdown_pct": 8.9047,
-        "sharpe": 5.765,
+        "sharpe": 5.793,
         "trades": 25
       },
       "validation_stress": {
-        "total_return_pct": 23.9152,
+        "total_return_pct": 24.0814,
         "max_drawdown_pct": 9.4497,
-        "sharpe": 4.977,
+        "sharpe": 5.005,
         "trades": 25
       },
-      "validation_score": 21.721574999999998,
+      "validation_score": 21.893975,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -675,33 +675,33 @@
         "trades": 78
       },
       "validation": {
-        "total_return_pct": 28.6501,
+        "total_return_pct": 28.8225,
         "max_drawdown_pct": 8.9047,
-        "sharpe": 5.765,
+        "sharpe": 5.793,
         "trades": 25
       },
       "validation_stress": {
-        "total_return_pct": 23.9152,
+        "total_return_pct": 24.0814,
         "max_drawdown_pct": 9.4497,
-        "sharpe": 4.977,
+        "sharpe": 5.005,
         "trades": 25
       },
-      "validation_score": 21.721574999999998,
+      "validation_score": 21.893975,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -743,18 +743,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -781,33 +781,33 @@
         "trades": 78
       },
       "validation": {
-        "total_return_pct": 28.0275,
+        "total_return_pct": 28.7665,
         "max_drawdown_pct": 9.3924,
-        "sharpe": 5.715,
+        "sharpe": 5.839,
         "trades": 28
       },
       "validation_stress": {
-        "total_return_pct": 22.7617,
+        "total_return_pct": 23.4703,
         "max_drawdown_pct": 11.0087,
-        "sharpe": 4.823,
+        "sharpe": 4.947,
         "trades": 28
       },
-      "validation_score": 20.7032,
+      "validation_score": 21.4422,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -849,18 +849,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -870,9 +870,9 @@
       "interval": "30m",
       "strategy": "trend",
       "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
+        "fast": 20,
+        "slow": 72,
+        "momentum": 24,
         "breakout": 24,
         "entry_momentum": 0.0,
         "exit_momentum": -0.01,
@@ -881,39 +881,39 @@
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 36.2958,
-        "max_drawdown_pct": 22.5155,
-        "sharpe": 3.2,
-        "trades": 154
+        "total_return_pct": 57.7312,
+        "max_drawdown_pct": 27.7389,
+        "sharpe": 4.367,
+        "trades": 76
       },
       "validation": {
-        "total_return_pct": 25.7552,
-        "max_drawdown_pct": 9.0749,
-        "sharpe": 5.532,
-        "trades": 52
+        "total_return_pct": 24.6407,
+        "max_drawdown_pct": 7.8156,
+        "sharpe": 5.266,
+        "trades": 28
       },
       "validation_stress": {
-        "total_return_pct": 16.3191,
-        "max_drawdown_pct": 11.2119,
-        "sharpe": 3.791,
-        "trades": 52
+        "total_return_pct": 19.5141,
+        "max_drawdown_pct": 9.2127,
+        "sharpe": 4.349,
+        "trades": 28
       },
-      "validation_score": 18.429025,
+      "validation_score": 18.499,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -955,18 +955,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -976,9 +976,9 @@
       "interval": "30m",
       "strategy": "trend",
       "params": {
-        "fast": 20,
-        "slow": 72,
-        "momentum": 24,
+        "fast": 12,
+        "slow": 48,
+        "momentum": 6,
         "breakout": 24,
         "entry_momentum": 0.0,
         "exit_momentum": -0.01,
@@ -987,39 +987,39 @@
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 57.7312,
-        "max_drawdown_pct": 27.7389,
-        "sharpe": 4.367,
-        "trades": 76
+        "total_return_pct": 36.2958,
+        "max_drawdown_pct": 22.5155,
+        "sharpe": 3.2,
+        "trades": 154
       },
       "validation": {
-        "total_return_pct": 23.9254,
-        "max_drawdown_pct": 7.8156,
-        "sharpe": 5.139,
-        "trades": 28
+        "total_return_pct": 25.5668,
+        "max_drawdown_pct": 9.0749,
+        "sharpe": 5.498,
+        "trades": 53
       },
       "validation_stress": {
-        "total_return_pct": 18.8283,
-        "max_drawdown_pct": 9.2127,
-        "sharpe": 4.222,
-        "trades": 28
+        "total_return_pct": 15.971,
+        "max_drawdown_pct": 11.3199,
+        "sharpe": 3.724,
+        "trades": 53
       },
-      "validation_score": 17.7837,
+      "validation_score": 18.230625,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -1046,33 +1046,33 @@
         "trades": 164
       },
       "validation": {
-        "total_return_pct": 23.8019,
+        "total_return_pct": 23.9678,
         "max_drawdown_pct": 7.5638,
-        "sharpe": 5.217,
+        "sharpe": 5.247,
         "trades": 59
       },
       "validation_stress": {
-        "total_return_pct": 13.3164,
+        "total_return_pct": 13.4683,
         "max_drawdown_pct": 11.72,
-        "sharpe": 3.228,
+        "sharpe": 3.258,
         "trades": 59
       },
-      "validation_score": 17.53905,
+      "validation_score": 17.70495,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -1114,18 +1114,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -1167,18 +1167,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -1220,18 +1220,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -1273,18 +1273,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-20T23:45:00+00:00",
-          "end": "2026-09-12T23:15:00+00:00",
+          "start": "2026-07-21T00:00:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 5183
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T23:00:00+00:00",
+          "start": "2026-09-12T23:45:00+00:00",
+          "end": "2026-09-30T23:15:00+00:00",
           "bars": 1727
         },
         "test": {
-          "start": "2026-09-30T23:15:00+00:00",
-          "end": "2026-10-18T23:15:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 1729
         }
       }
@@ -1326,18 +1326,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-20T23:45:00+00:00",
-          "end": "2026-09-12T23:15:00+00:00",
+          "start": "2026-07-21T00:00:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 5183
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T23:00:00+00:00",
+          "start": "2026-09-12T23:45:00+00:00",
+          "end": "2026-09-30T23:15:00+00:00",
           "bars": 1727
         },
         "test": {
-          "start": "2026-09-30T23:15:00+00:00",
-          "end": "2026-10-18T23:15:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 1729
         }
       }
@@ -1364,86 +1364,33 @@
         "trades": 164
       },
       "validation": {
-        "total_return_pct": 25.7722,
+        "total_return_pct": 25.9408,
         "max_drawdown_pct": 11.1826,
-        "sharpe": 5.526,
+        "sharpe": 5.555,
         "trades": 57
       },
       "validation_stress": {
-        "total_return_pct": 15.4657,
+        "total_return_pct": 15.6205,
         "max_drawdown_pct": 13.9715,
-        "sharpe": 3.621,
+        "sharpe": 3.651,
         "trades": 57
       },
-      "validation_score": 16.81525,
+      "validation_score": 16.983849999999997,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
-          "bars": 865
-        }
-      }
-    },
-    {
-      "symbol": "ZECUSDT",
-      "interval": "30m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 48,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 33.5369,
-        "max_drawdown_pct": 22.8057,
-        "sharpe": 3.021,
-        "trades": 154
-      },
-      "validation": {
-        "total_return_pct": 22.8273,
-        "max_drawdown_pct": 7.5106,
-        "sharpe": 5.052,
-        "trades": 54
-      },
-      "validation_stress": {
-        "total_return_pct": 13.2705,
-        "max_drawdown_pct": 11.4669,
-        "sharpe": 3.227,
-        "trades": 54
-      },
-      "validation_score": 16.65435,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
-          "bars": 2591
-        },
-        "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
-          "bars": 863
-        },
-        "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -1485,19 +1432,72 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-20T23:45:00+00:00",
-          "end": "2026-09-12T23:15:00+00:00",
+          "start": "2026-07-21T00:00:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 5183
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T23:00:00+00:00",
+          "start": "2026-09-12T23:45:00+00:00",
+          "end": "2026-09-30T23:15:00+00:00",
           "bars": 1727
         },
         "test": {
-          "start": "2026-09-30T23:15:00+00:00",
-          "end": "2026-10-18T23:15:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 1729
+        }
+      }
+    },
+    {
+      "symbol": "ZECUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 48,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 33.5369,
+        "max_drawdown_pct": 22.8057,
+        "sharpe": 3.021,
+        "trades": 154
+      },
+      "validation": {
+        "total_return_pct": 22.6433,
+        "max_drawdown_pct": 7.6492,
+        "sharpe": 5.018,
+        "trades": 55
+      },
+      "validation_stress": {
+        "total_return_pct": 12.9315,
+        "max_drawdown_pct": 11.7319,
+        "sharpe": 3.16,
+        "trades": 55
+      },
+      "validation_score": 16.356399999999997,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
+          "bars": 865
         }
       }
     },
@@ -1517,9 +1517,9 @@
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": -15.9404,
+        "total_return_pct": -16.1455,
         "max_drawdown_pct": 21.1951,
-        "sharpe": -1.988,
+        "sharpe": -2.02,
         "trades": 192
       },
       "validation": {
@@ -1538,18 +1538,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:30:00+00:00",
+          "start": "2026-07-21T00:15:00+00:00",
+          "end": "2026-09-12T23:45:00+00:00",
           "bars": 5182
         },
         "validation": {
-          "start": "2026-09-12T23:45:00+00:00",
-          "end": "2026-09-30T23:15:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:30:00+00:00",
           "bars": 1727
         },
         "test": {
-          "start": "2026-09-30T23:30:00+00:00",
-          "end": "2026-10-18T23:30:00+00:00",
+          "start": "2026-09-30T23:45:00+00:00",
+          "end": "2026-10-18T23:45:00+00:00",
           "bars": 1729
         }
       }
@@ -1591,18 +1591,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -1697,18 +1697,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:00:00+00:00",
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T22:30:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:00:00+00:00",
           "bars": 863
         },
         "test": {
-          "start": "2026-09-30T23:00:00+00:00",
-          "end": "2026-10-18T23:00:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 865
         }
       }
@@ -1750,18 +1750,18 @@
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-20T23:45:00+00:00",
-          "end": "2026-09-12T23:15:00+00:00",
+          "start": "2026-07-21T00:00:00+00:00",
+          "end": "2026-09-12T23:30:00+00:00",
           "bars": 5183
         },
         "validation": {
-          "start": "2026-09-12T23:30:00+00:00",
-          "end": "2026-09-30T23:00:00+00:00",
+          "start": "2026-09-12T23:45:00+00:00",
+          "end": "2026-09-30T23:15:00+00:00",
           "bars": 1727
         },
         "test": {
-          "start": "2026-09-30T23:15:00+00:00",
-          "end": "2026-10-18T23:15:00+00:00",
+          "start": "2026-09-30T23:30:00+00:00",
+          "end": "2026-10-18T23:30:00+00:00",
           "bars": 1729
         }
       }
