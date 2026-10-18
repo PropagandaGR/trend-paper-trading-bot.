@@ -225,10 +225,20 @@ def run_once() -> dict[str, Any]:
         "open_position": None, "champion_available": champion_accepted, "champion_rejection_reason": champion_error,
         "actions": [], "data_errors": [],
         "safety": {"real_orders": False, "exchange_credentials_used": False,
-                   "leverage": False, "short_selling": False}
+                   "leverage": False, "short_selling": False,
+                   "max_position_fraction": MAX_POSITION_FRACTION,
+                   "max_daily_loss_pct": MAX_DAILY_LOSS_PCT,
+                   "max_drawdown_pct": MAX_DRAWDOWN_PCT,
+                   "max_price_age_seconds": MAX_PRICE_AGE_SECONDS}
     }
     frames: dict[str, pd.DataFrame] = {}
-    for symbol in SYMBOLS:
+    symbols_to_fetch = []
+    for candidate in (champion.get("symbol") if isinstance(champion, dict) else None, state.get("symbol")):
+        if isinstance(candidate, str) and re.fullmatch(r"[A-Z0-9]{2,15}USDT", candidate) and candidate not in symbols_to_fetch:
+            symbols_to_fetch.append(candidate)
+    if not symbols_to_fetch:
+        symbols_to_fetch = list(SYMBOLS[:1])
+    for symbol in symbols_to_fetch:
         try:
             frames[symbol] = fetch_klines(symbol, "5m", 5)
         except Exception as exc:
@@ -243,13 +253,10 @@ def run_once() -> dict[str, Any]:
     if not champion_accepted:
         # Invalid champions must not trade, but an existing paper position still
         # needs an honest symbol-specific mark in the status report.
-        current_prices = {
-            name: float(frame.close.iloc[-1])
-            for name, frame in frames.items()
-            if not frame.empty and pd.notna(frame.close.iloc[-1]) and float(frame.close.iloc[-1]) > 0
-        }
-        mark_prices = {**state.get("last_prices", {}), **current_prices}
-        state["last_prices"] = mark_prices
+        current_prices, price_timestamps = fresh_price_map(frames)
+        mark_prices = current_prices
+        state["last_prices"] = current_prices
+        state["last_price_timestamps"] = price_timestamps
         qty = float(state.get("quantity", 0.0))
         held_symbol = state.get("symbol")
         cash = float(state.get("cash", STARTING_CASH))
@@ -350,20 +357,66 @@ def run_once() -> dict[str, Any]:
     cash = float(state.get("cash", STARTING_CASH))
     # Keep marks symbol-scoped. Never reuse the champion's price to value a
     # different asset held from an earlier champion.
-    current_prices = {
-        name: float(frame.close.iloc[-1])
-        for name, frame in frames.items()
-        if not frame.empty and float(frame.close.iloc[-1]) > 0
-    }
-    cached_prices = state.get("last_prices", {})
-    mark_prices = {**cached_prices, **current_prices}
-    state["last_prices"] = mark_prices
+    current_prices, price_timestamps = fresh_price_map(frames)
+    mark_prices = current_prices
+    state["last_prices"] = current_prices
+    state["last_price_timestamps"] = price_timestamps
+    if symbol not in current_prices:
+        status["data_errors"].append({
+            "symbol": symbol,
+            "error": "Champion price is stale, missing, or invalid; no simulated order made."
+        })
+        status["message"] = "Fresh champion price unavailable; no simulated order made."
+        STATUS_FILE.write_text(json.dumps(status, indent=2))
+        return status
     if qty > 0 and position_symbol not in mark_prices:
         status["data_errors"].append({
             "symbol": position_symbol,
             "error": "Missing valid mark for held position; refusing cross-symbol valuation or trade."
         })
         status["message"] = "Held position cannot be safely valued; no simulated order made."
+        STATUS_FILE.write_text(json.dumps(status, indent=2))
+        return status
+
+    equity_before, held_mark = mark_to_market(cash, qty, position_symbol, mark_prices)
+    risk = update_risk_metrics(state, equity_before)
+    exposure_fraction = (qty * held_mark / equity_before) if qty > 0 and equity_before > 0 else 0.0
+    if exposure_fraction > MAX_POSITION_FRACTION:
+        state["risk_halt"] = True
+        state["risk_halt_reason"] = "position_exposure_limit"
+        risk = update_risk_metrics(state, equity_before)
+        risk["halted"] = True
+        risk["halt_reason"] = state["risk_halt_reason"]
+    if risk["halted"]:
+        if qty > 0 and position_symbol in mark_prices:
+            entry = float(state.get("entry_price") or held_mark)
+            sale = sell_with_costs(qty, held_mark, entry, FEE_BPS, SLIPPAGE_BPS)
+            cash += sale.net_proceeds
+            state["realized_pnl"] = float(state.get("realized_pnl", 0.0)) + sale.realized_pnl
+            state["completed_trades"] = int(state.get("completed_trades", 0)) + 1
+            status["actions"].append({
+                "action": "PAPER_SELL", "symbol": position_symbol,
+                "price": round(sale.execution_price, 8), "quantity": qty,
+                "fee_usdt": round(sale.fee, 8), "slippage_usdt": round(sale.slippage, 8),
+                "net_proceeds_usdt": round(sale.net_proceeds, 8),
+                "realized_pnl_usdt": round(sale.realized_pnl, 8),
+                "reason": "risk circuit breaker: " + str(risk["halt_reason"]),
+            })
+            qty, position_symbol = 0.0, None
+            state["entry_price"] = None
+        equity_after = cash
+        risk = update_risk_metrics(state, equity_after)
+        risk["halted"] = True
+        risk["halt_reason"] = state.get("risk_halt_reason")
+        state.update({"cash": cash, "quantity": qty, "symbol": position_symbol,
+                      "last_checked_at": utc_now()})
+        status.update({
+            "cash_usdt": round(cash, 8), "equity_usdt": round(equity_after, 8),
+            "total_pnl_usdt": round(equity_after - STARTING_CASH, 8),
+            "risk": risk,
+            "message": "Risk circuit breaker is latched; no new simulated buys are allowed. Manual review/reset required.",
+        })
+        STATE_FILE.write_text(json.dumps(state, indent=2))
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
@@ -388,10 +441,11 @@ def run_once() -> dict[str, Any]:
             qty, position_symbol = 0.0, None
             state["entry_price"] = None
         if qty <= 0 and target_long:
-            # Buy quantity is calculated after modeled execution slippage and fee.
-            buy = buy_with_costs(cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
+            # Cap each new long to 50% of current equity; leave the rest in simulated cash.
+            spend_cash = min(cash, max(0.0, equity_before * MAX_POSITION_FRACTION))
+            buy = buy_with_costs(spend_cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
             qty = max(0.0, buy.quantity)
-            cash = buy.cash_remaining
+            cash = max(0.0, cash - spend_cash + buy.cash_remaining)
             position_symbol = symbol
             state["entry_price"] = buy.entry_cost_per_unit
             status["actions"].append({
@@ -418,6 +472,7 @@ def run_once() -> dict[str, Any]:
                      "strategy": champion["strategy"], "params": params},
         "last_processed_bar": latest_time,
         "signal_diagnostics": signal_diagnostics,
+        "risk": update_risk_metrics(state, equity),
         "message": "Simulated portfolio only; fills are estimates, not exchange orders."
     })
     STATE_FILE.write_text(json.dumps(state, indent=2))
