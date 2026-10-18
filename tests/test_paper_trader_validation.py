@@ -60,6 +60,22 @@ class PaperTraderChampionGateTests(unittest.TestCase):
         champion["validation_metadata"]["test_used_for_selection"] = True
         self.assertIn("final-test isolation", champion_validation_error(champion))
 
+    def test_rejects_nonpositive_heldout_test_or_stress_returns(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["test_metrics"]["total_return_pct"] = -0.01
+        self.assertIn("held-out test", champion_validation_error(champion))
+        champion = valid_champion()
+        champion["validation_metadata"]["test_stress_metrics"]["total_return_pct"] = 0.0
+        self.assertIn("held-out test", champion_validation_error(champion))
+
+    def test_rejects_excessive_heldout_test_drawdown_or_too_few_trades(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["test_metrics"]["max_drawdown_pct"] = 25.0
+        self.assertIn("drawdown", champion_validation_error(champion))
+        champion = valid_champion()
+        champion["validation_metadata"]["test_metrics"]["trades"] = 1
+        self.assertIn("at least two trades", champion_validation_error(champion))
+
     def test_rejects_incomplete_validation_metrics(self):
         champion = valid_champion()
         del champion["validation_metadata"]["validation_stress_metrics"]
