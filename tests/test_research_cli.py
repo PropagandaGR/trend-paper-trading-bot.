@@ -80,7 +80,7 @@ class ResearchCliTests(unittest.TestCase):
                 "validation_result": {"status": "no_candidate", "evaluations": 1},
                 "evaluations": 1, "champion": None,
             }))
-            invocation_started = datetime.now(timezone.utc)
+            invocation_started = datetime.now(timezone.utc) + __import__("datetime").timedelta(seconds=5)
             with self.assertRaisesRegex(RuntimeError, "stale"):
                 research_engine.validate_research_artifacts(invocation_started, report_path)
 
