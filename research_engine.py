@@ -23,6 +23,7 @@ DEFAULT_FEE_BPS = 10.0
 DEFAULT_SLIPPAGE_BPS = 5.0
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "Autonomous-Paper-Trading-Lab/1.0"})
+_USDT_USD_CANDLE_CACHE: dict[tuple[str, int], pd.DataFrame] = {}
 
 
 def utc_now() -> str:
@@ -101,7 +102,10 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
     if frame.empty:
         raise RuntimeError(f"Coinbase returned no closed candles for {symbol} {interval}")
     if symbol != "USDTUSD":
-        fx_frame = _fetch_coinbase("USDTUSD", interval, days)
+        cache_key = (interval, days)
+        if cache_key not in _USDT_USD_CANDLE_CACHE:
+            _USDT_USD_CANDLE_CACHE[cache_key] = _fetch_coinbase("USDTUSD", interval, days)
+        fx_frame = _USDT_USD_CANDLE_CACHE[cache_key]
         frame = _convert_usd_candles_to_usdt(frame, fx_frame)
     frame.attrs["source"] = "coinbase"
     frame.attrs["quote_currency"] = "USDT"
