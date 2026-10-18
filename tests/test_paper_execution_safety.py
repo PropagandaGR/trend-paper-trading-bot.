@@ -26,7 +26,7 @@ def candles(price: float, *, stale_minutes: int = 0) -> pd.DataFrame:
 class PaperExecutionSafetyTests(unittest.TestCase):
     def test_champion_requires_pass_and_fresh_timestamp(self):
         good = {"passed_validation": True, "validated_at": pd.Timestamp.now(tz="UTC").isoformat(),
-                "symbol": "BTCUSDT", "interval": "5m", "strategy": "trend", "params": {}}
+                "symbol": "BTCUSDT", "interval": "5m", "strategy": "trend", "params": {"fast": 8, "slow": 30, "momentum": 6, "breakout": 12, "entry_momentum": 0.0, "exit_momentum": -0.005, "rsi_entry": 20, "rsi_exit": 50, "stop_pct": 0.06}, "test": {"total_return_pct": 1.0, "max_drawdown_pct": 5.0, "trades": 4}, "stress": {"total_return_pct": 0.5}}
         self.assertTrue(paper_trader._valid_champion(good)[0])
         self.assertFalse(paper_trader._valid_champion({**good, "passed_validation": False})[0])
         stale = {**good, "validated_at": (pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=2)).isoformat()}
@@ -55,6 +55,8 @@ class PaperExecutionSafetyTests(unittest.TestCase):
             champion = {"passed_validation": True, "validated_at": pd.Timestamp.now(tz="UTC").isoformat(),
                         "symbol": "ETHUSDT", "interval": "5m", "strategy": "trend",
                         "allow_short": False,
+                        "test": {"total_return_pct": 1.0, "max_drawdown_pct": 5.0, "trades": 4},
+                        "stress": {"total_return_pct": 0.5},
                         "params": {"fast": 8, "slow": 30, "momentum": 6, "breakout": 12,
                                    "entry_momentum": 0.0, "exit_momentum": -0.005,
                                    "rsi_entry": 20, "rsi_exit": 50, "stop_pct": 0.06}}
@@ -109,6 +111,8 @@ class PaperExecutionSafetyTests(unittest.TestCase):
             champion = {"passed_validation": True, "validated_at": pd.Timestamp.now(tz="UTC").isoformat(),
                         "symbol": "BTCUSDT", "interval": "5m", "strategy": "trend",
                         "allow_short": False,
+                        "test": {"total_return_pct": 1.0, "max_drawdown_pct": 5.0, "trades": 4},
+                        "stress": {"total_return_pct": 0.5},
                         "params": {"fast": 8, "slow": 30, "momentum": 6, "breakout": 12,
                                    "entry_momentum": 0.0, "exit_momentum": -0.005,
                                    "rsi_entry": 20, "rsi_exit": 50, "stop_pct": 0.06}}
