@@ -4,11 +4,14 @@ A **new, isolated research project** for continuous live-market paper trading an
 
 ## Safety and scope
 - Simulated starting equity: **15 USDT**.
-- Spot-only, long/flat: no leverage, no shorting.
+- Paper margin engine defaults to 1x; leverage above 1x is simulation-only and capped at 2x. Shorting is paper-only.
+- Liquidation is approximated at completed-bar marks and is not an exchange liquidation model.
+- Paper simulation supports long and short positions with configurable isolated leverage (1x–2x maximum). No live derivatives or real orders.
 - Public Binance market data only; no API keys or secrets.
 - Research explores parameterized trend, breakout, and mean-reversion strategies on BTCUSDT, ETHUSDT, and SOLUSDT.
 - Candidate strategies must pass chronological train/validation/test splits, realistic fees/slippage stress, and benchmark comparisons before being selected for the paper portfolio.
-- The live paper trader uses the currently validated champion only. Research experiments never directly modify portfolio cash or positions.
+- The paper trader uses the currently validated champion only. Research experiments never directly modify portfolio cash or positions.
+- Margin accounting helpers and unit tests live in `paper_margin.py` and `tests/test_paper_margin.py`; these tests do not by themselves prove the scheduled workflow or full strategy integration.
 - Results are simulated estimates, not proof of future profitability.
 
 ## What runs
