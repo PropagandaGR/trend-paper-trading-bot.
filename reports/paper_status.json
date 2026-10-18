@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18T21:37:02.536275+00:00",
+  "updated_at": "2026-10-18T21:49:44.568094+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
   "cash_usdt": 15.0,
@@ -40,8 +40,8 @@
     "strategy": "mean_reversion",
     "interval": "30m",
     "latest_bar": "2026-10-18T21:30:00+00:00",
-    "last_processed_bar_before_run": "2026-10-18T19:30:00+00:00",
-    "new_bar_to_process": true,
+    "last_processed_bar_before_run": "2026-10-18T21:30:00+00:00",
+    "new_bar_to_process": false,
     "close_usdt": 101.45,
     "signal_long": false,
     "current_signal": 0.0,
@@ -54,7 +54,7 @@
     "rsi_below_entry_threshold": false,
     "close_below_ema_slow": true,
     "raw_entry_conditions_met": false,
-    "explanation": "No entry: RSI is not below 20.0."
+    "explanation": "This candle was already processed; no duplicate simulated order is placed."
   },
   "message": "Simulated portfolio only; fills are estimates, not exchange orders."
 }
