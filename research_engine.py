@@ -31,7 +31,7 @@ def utc_now() -> str:
 
 def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     """Fetch Coinbase Exchange public USD candles without account credentials."""
-    product = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD"}.get(symbol)
+    product = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD", "USDTUSD": "USDT-USD"}.get(symbol)
     if not product:
         raise ValueError(f"No Coinbase fallback mapping for {symbol}")
     granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
@@ -69,17 +69,42 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
                      ["open", "high", "low", "close", "volume", "close_time"]]
 
 
-def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFrame:
-    """Fetch public, closed candles from Coinbase only.
+def _convert_usd_candles_to_usdt(frame: pd.DataFrame, fx_frame: pd.DataFrame) -> pd.DataFrame:
+    """Convert USD-quoted OHLC prices to approximate USDT prices using USDT-USD closes.
 
-    Deliberately do not fall back to Binance: silently switching exchanges can
-    make research and paper-trading results differ from the intended venue.
-    This uses public market data and does not require API credentials.
+    Coinbase's USDT-USD close is USD per USDT. Dividing each asset's USD OHLC
+    by that same-candle FX close gives a consistent USDT-denominated price
+    series. This is an approximation, not tick-level FX conversion.
+    """
+    if frame.empty or fx_frame.empty:
+        raise RuntimeError("Cannot convert candles without asset and USDT-USD data")
+    fx = fx_frame["close"].reindex(frame.index).ffill()
+    valid = fx.notna() & (fx > 0)
+    converted = frame.loc[valid].copy()
+    fx = fx.loc[valid]
+    for column in ("open", "high", "low", "close"):
+        converted[column] = converted[column] / fx
+    converted.attrs["source"] = "coinbase"
+    converted.attrs["quote_currency"] = "USDT"
+    converted.attrs["fx_conversion"] = "USDT-USD candle close; approximate"
+    return converted
+
+
+def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFrame:
+    """Fetch closed Coinbase candles and express asset prices in USDT.
+
+    Binance is deliberately not used as a fallback. Candle data is public and
+    does not require API credentials. USD candles are converted using Coinbase
+    USDT-USD candle closes so the simulated USDT ledger uses matching units.
     """
     frame = _fetch_coinbase(symbol, interval, days)
     if frame.empty:
         raise RuntimeError(f"Coinbase returned no closed candles for {symbol} {interval}")
+    if symbol != "USDTUSD":
+        fx_frame = _fetch_coinbase("USDTUSD", interval, days)
+        frame = _convert_usd_candles_to_usdt(frame, fx_frame)
     frame.attrs["source"] = "coinbase"
+    frame.attrs["quote_currency"] = "USDT"
     return frame.sort_index()
 
 def resample_ohlcv(frame: pd.DataFrame, rule: str) -> pd.DataFrame:
