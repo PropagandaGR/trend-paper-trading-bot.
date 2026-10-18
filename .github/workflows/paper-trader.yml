@@ -1,0 +1,37 @@
+name: Live Market Paper Trading
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-paper-trader
+  cancel-in-progress: false
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Run paper portfolio once
+        run: python paper_trader.py
+      - name: Commit paper status and state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/paper_state.json reports/paper_status.json
+          git diff --cached --quiet || git commit -m "Update simulated paper portfolio"
+          git pull --rebase origin main
+          git push origin HEAD:main
