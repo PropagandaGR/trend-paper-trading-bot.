@@ -16,6 +16,9 @@ concurrency:
 jobs:
   paper:
     runs-on: ubuntu-latest
+    env:
+      PAPER_ALLOW_SHORTS: ${{ vars.PAPER_ALLOW_SHORTS || 'true' }}
+      PAPER_LEVERAGE: ${{ vars.PAPER_LEVERAGE || '1.0' }}
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
