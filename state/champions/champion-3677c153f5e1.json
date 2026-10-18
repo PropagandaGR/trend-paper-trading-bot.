@@ -1,0 +1,92 @@
+{
+  "symbol": "ZECUSDT",
+  "interval": "30m",
+  "strategy": "trend",
+  "params": {
+    "fast": 12,
+    "slow": 30,
+    "momentum": 24,
+    "breakout": 48,
+    "entry_momentum": -0.002,
+    "exit_momentum": -0.01,
+    "rsi_entry": 30,
+    "rsi_exit": 50,
+    "stop_pct": 0.06
+  },
+  "champion_version": "champion-3677c153f5e1",
+  "validation_metadata": {
+    "created_at": "2026-10-18T23:25:34.095068+00:00",
+    "status": "validated",
+    "selection_metric": "validation_score",
+    "validation_score": 31.6221,
+    "validation_criteria": {
+      "validation_return_positive": true,
+      "validation_stress_return_positive": true,
+      "validation_max_drawdown_below_pct": 25,
+      "minimum_validation_position_changes": 2
+    },
+    "periods": {
+      "train": {
+        "start": "2026-07-21T00:00:00+00:00",
+        "end": "2026-09-12T23:00:00+00:00",
+        "bars": 2591
+      },
+      "validation": {
+        "start": "2026-09-12T23:30:00+00:00",
+        "end": "2026-09-30T22:30:00+00:00",
+        "bars": 863
+      },
+      "test": {
+        "start": "2026-09-30T23:00:00+00:00",
+        "end": "2026-10-18T23:00:00+00:00",
+        "bars": 865
+      }
+    },
+    "train_metrics": {
+      "total_return_pct": 73.3799,
+      "max_drawdown_pct": 22.0468,
+      "sharpe": 5.086,
+      "trades": 96
+    },
+    "validation_metrics": {
+      "total_return_pct": 37.1045,
+      "max_drawdown_pct": 6.9632,
+      "sharpe": 7.051,
+      "trades": 26
+    },
+    "validation_stress_metrics": {
+      "total_return_pct": 31.8603,
+      "max_drawdown_pct": 7.2419,
+      "sharpe": 6.237,
+      "trades": 26
+    },
+    "test_metrics": {
+      "total_return_pct": -15.1744,
+      "max_drawdown_pct": 15.8475,
+      "sharpe": -6.125,
+      "trades": 36
+    },
+    "test_stress_metrics": {
+      "total_return_pct": -19.6335,
+      "max_drawdown_pct": 20.1517,
+      "sharpe": -8.133,
+      "trades": 36
+    },
+    "test_used_for_selection": false,
+    "cost_convention": {
+      "fee_bps_per_side": 10.0,
+      "slippage_bps_per_side": 5.0,
+      "stress_fee_bps_per_side": 20,
+      "stress_slippage_bps_per_side": 10,
+      "fill_timing": "closed candle close after one-candle signal shift",
+      "fee_basis": "executed notional",
+      "slippage": "execution price adjusted per side"
+    },
+    "sharpe_annualization": {
+      "bars_per_year": 17520,
+      "interval": "30m",
+      "calendar_days_per_year": 365
+    },
+    "warning": "Test metrics are report-only and were not used to rank, select, or validate this champion."
+  }
+}
