@@ -31,16 +31,29 @@ class PaperTraderWrongSymbolIntegrationTests(unittest.TestCase):
                 "validation_metadata": {
                     "created_at": pd.Timestamp.now(tz="UTC").isoformat(),
                     "status": "validated", "test_used_for_selection": False,
-                    "validation_metrics": {"total_return_pct": 1.0},
-                    "validation_stress_metrics": {"total_return_pct": 0.5},
-                    "test_metrics": {"total_return_pct": 0.2},
-                    "test_stress_metrics": {"total_return_pct": 0.1},
-                    "cost_convention": {"fee_basis": "executed notional"}
+                    "validation_score": 1.0,
+                    "periods": {
+                        "train": {"start": "2026-01-01T00:00:00+00:00", "end": "2026-01-02T00:00:00+00:00"},
+                        "validation": {"start": "2026-01-03T00:00:00+00:00", "end": "2026-01-04T00:00:00+00:00"},
+                        "test": {"start": "2026-01-05T00:00:00+00:00", "end": "2026-01-06T00:00:00+00:00"},
+                    },
+                    "validation_metrics": {"total_return_pct": 1.0, "max_drawdown_pct": 2.0, "sharpe": 0.5, "trades": 3},
+                    "validation_stress_metrics": {"total_return_pct": 0.5, "max_drawdown_pct": 3.0, "sharpe": 0.2, "trades": 3},
+                    "test_metrics": {"total_return_pct": 0.2, "max_drawdown_pct": 4.0, "sharpe": 0.1, "trades": 2},
+                    "test_stress_metrics": {"total_return_pct": 0.1, "max_drawdown_pct": 5.0, "sharpe": 0.05, "trades": 2},
+                    "cost_convention": {
+                        "fee_basis": "executed notional",
+                        "fill_timing": "closed candle close after one-candle signal shift",
+                        "fee_bps_per_side": 10, "slippage_bps_per_side": 5,
+                        "stress_fee_bps_per_side": 20, "stress_slippage_bps_per_side": 10
+                    }
                 }
             }))
-            index = pd.date_range("2026-01-01", periods=2, freq="5min", tz="UTC")
-            eth = pd.DataFrame({"close": [1_990.0, 2_000.0]}, index=index)
-            btc = pd.DataFrame({"close": [59_000.0, 60_000.0]}, index=index)
+            index = pd.date_range(end=pd.Timestamp.now(tz="UTC").floor("5min") - pd.Timedelta(minutes=5),
+                                  periods=2, freq="5min")
+            closes = index + pd.Timedelta(minutes=5)
+            eth = pd.DataFrame({"close": [1_990.0, 2_000.0], "close_time": closes}, index=index)
+            btc = pd.DataFrame({"close": [59_000.0, 60_000.0], "close_time": closes}, index=index)
             features = pd.DataFrame({
                 "rsi": [50.0, 50.0], "ema_fast": [1.0, 1.0],
                 "ema_slow": [1.0, 1.0], "momentum": [0.0, 0.0]
