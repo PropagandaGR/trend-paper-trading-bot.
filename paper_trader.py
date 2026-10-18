@@ -205,6 +205,12 @@ def read_json(path: Path, default: Any) -> Any:
         return default
 
 
+def _sync_ledger_status(status: dict[str, Any], state: dict[str, Any]) -> None:
+    """Keep the published status ledger fields aligned with persisted state."""
+    status["realized_pnl_usdt"] = round(float(state.get("realized_pnl", 0.0)), 8)
+    status["completed_trades"] = int(state.get("completed_trades", 0))
+
+
 def run_once() -> dict[str, Any]:
     STATE.mkdir(exist_ok=True)
     REPORTS.mkdir(exist_ok=True)
@@ -245,6 +251,7 @@ def run_once() -> dict[str, Any]:
             status["data_errors"].append({"symbol": symbol, "error": str(exc)})
     if not frames:
         status["updated_at"] = utc_now()
+        _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
@@ -308,8 +315,11 @@ def run_once() -> dict[str, Any]:
                 "message": ("Risk circuit breaker is latched; no new simulated buys are allowed."
                             if risk["halted"] else champion_error or "No validated champion; no simulated order made."),
             })
-        state["last_checked_at"] = utc_now()
+        state.update({"cash": cash, "quantity": qty, "symbol": held_symbol,
+                      "entry_price": state.get("entry_price") if qty > 0 else None,
+                      "last_checked_at": utc_now()})
         STATE_FILE.write_text(json.dumps(state, indent=2))
+        _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
@@ -367,6 +377,7 @@ def run_once() -> dict[str, Any]:
         state.update({"cash": cash, "quantity": qty, "symbol": held_symbol,
                       "last_checked_at": utc_now()})
         STATE_FILE.write_text(json.dumps(state, indent=2))
+        _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
     interval = champion.get("interval", "5m")
@@ -377,6 +388,7 @@ def run_once() -> dict[str, Any]:
     signals = desired_signal(bars, champion["strategy"], params)
     if len(bars) < 2:
         status["message"] = "Waiting for sufficient closed candles."
+        _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
     latest_time = bars.index[-1].isoformat()
@@ -448,6 +460,7 @@ def run_once() -> dict[str, Any]:
             "error": "Missing valid mark for held position; refusing cross-symbol valuation or trade."
         })
         status["message"] = "Held position cannot be safely valued; no simulated order made."
+        _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
@@ -490,6 +503,7 @@ def run_once() -> dict[str, Any]:
             "message": "Risk circuit breaker is latched; no new simulated buys are allowed. Manual review/reset required.",
         })
         STATE_FILE.write_text(json.dumps(state, indent=2))
+        _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
@@ -508,6 +522,7 @@ def run_once() -> dict[str, Any]:
         state.update({"cash": cash, "quantity": qty, "symbol": position_symbol,
                       "last_checked_at": utc_now()})
         STATE_FILE.write_text(json.dumps(state, indent=2))
+        _sync_ledger_status(status, state)
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
@@ -567,6 +582,7 @@ def run_once() -> dict[str, Any]:
         "message": "Simulated portfolio only; fills are estimates, not exchange orders."
     })
     STATE_FILE.write_text(json.dumps(state, indent=2))
+    _sync_ledger_status(status, state)
     STATUS_FILE.write_text(json.dumps(status, indent=2))
     return status
 
