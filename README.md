@@ -24,7 +24,7 @@ Python 3.11+ recommended.
 ```bash
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
-python research_engine.py --days 90
+python research_engine.py --days 90 --require-fresh-report
 python paper_trader.py --once
 ```
 
@@ -33,13 +33,13 @@ python paper_trader.py --once
 - `reports/research_latest.json`: latest search and validation summary
 - `reports/experiments.jsonl`: append-only research experiment log
 - `state/paper_state.json`: simulated portfolio and candle cursors
-- `state/champion.json`: latest candidate that passed validation
+- `state/champion.json`: latest fresh candidate that passed validation, including `champion_version` and `validation_metadata`
 
 All generated state is simulated. Do not add exchange credentials. The system deliberately has no real-order code. Coinbase public candles are the only market-data source; if Coinbase data or the USDT-USD conversion candles are unavailable, the run should fail rather than silently switch providers.
 
 ## Validation
 
-Pull requests run `python -m unittest discover -s tests -v` through the GitHub Actions Tests workflow. The Coinbase Public Data Smoke Test also checks recent public candles and USDT price conversion; it requires public network access and no exchange credentials.
+Pull requests run `python -m unittest discover -s tests -v` through the GitHub Actions Tests workflow. The research CLI fails unless the current invocation writes a fresh report with a substantive evaluation and explicit validation outcome. The autonomous research workflow independently verifies report freshness, champion metadata, final-test isolation, and the matching immutable snapshot before committing artifacts. Paper trading rejects missing, stale (over 24 hours), or incompletely validated champions. The Coinbase Public Data Smoke Test also checks recent public candles and USDT price conversion; it requires public network access and no exchange credentials.
 ## Research validation and backtest contract
 
 - Research uses chronological **60% training / 20% validation / 20% final test** periods per symbol and timeframe.
