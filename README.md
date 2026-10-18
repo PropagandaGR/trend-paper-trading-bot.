@@ -29,6 +29,8 @@ python paper_trader.py --once
 ```
 
 ## Reports and state
+
+- The research CLI exits non-zero unless the current run writes a fresh `reports/research_latest.json` with candidate evaluations, at least one validation-passing candidate, a validated champion, and explicit final-test isolation metadata. The scheduled/manual `Research Validation` workflow repeats these checks and preserves the report/state files as an audit artifact. A run with no validated champion is intentionally a failed research run, not a green workflow.
 - `reports/paper_status.json`: latest paper portfolio status
 - `reports/research_latest.json`: latest search and validation summary
 - `reports/experiments.jsonl`: append-only research experiment log
