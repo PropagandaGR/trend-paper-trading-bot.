@@ -1,19 +1,20 @@
 {
-  "updated_at": "2026-10-18T22:29:10.768897+00:00",
+  "updated_at": "2026-10-18T22:45:11.845389+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
   "cash_usdt": 0.0,
-  "equity_usdt": 15.12518721,
-  "unrealized_pnl_usdt": 0.12518721,
+  "equity_usdt": 15.14631336,
+  "unrealized_pnl_usdt": 0.14631336,
   "realized_pnl_usdt": 0.0,
   "completed_trades": 0,
   "open_position": {
     "symbol": "ETHUSDT",
     "quantity": 0.0063178584,
-    "mark_price": 2394.03708302,
+    "mark_price": 2397.38096192,
     "entry_price": 2374.22226561
   },
-  "champion_available": true,
+  "champion_available": false,
+  "champion_rejection_reason": "Champion version is missing.",
   "actions": [],
   "data_errors": [],
   "safety": {
@@ -22,44 +23,6 @@
     "leverage": false,
     "short_selling": false
   },
-  "total_pnl_usdt": 0.12518721,
-  "champion": {
-    "symbol": "ETHUSDT",
-    "interval": "30m",
-    "strategy": "mean_reversion",
-    "params": {
-      "fast": 8,
-      "slow": 48,
-      "momentum": 12,
-      "breakout": 12,
-      "entry_momentum": 0.0,
-      "exit_momentum": -0.005,
-      "rsi_entry": 20,
-      "rsi_exit": 50,
-      "stop_pct": 0.06
-    }
-  },
-  "last_processed_bar": "2026-10-18T22:00:00+00:00",
-  "signal_diagnostics": {
-    "symbol": "ETHUSDT",
-    "strategy": "mean_reversion",
-    "interval": "30m",
-    "latest_bar": "2026-10-18T22:00:00+00:00",
-    "last_processed_bar_before_run": "2026-10-18T22:00:00+00:00",
-    "new_bar_to_process": false,
-    "close_usdt": 2370.66626621,
-    "signal_long": true,
-    "current_signal": 1.0,
-    "previous_signal": 1.0,
-    "rsi": 45.311,
-    "ema_fast": 2361.24117327,
-    "ema_slow": 2390.43902958,
-    "momentum": -0.00373841,
-    "rsi_entry_threshold": 20.0,
-    "rsi_below_entry_threshold": false,
-    "close_below_ema_slow": true,
-    "raw_entry_conditions_met": false,
-    "explanation": "This candle was already processed; no duplicate simulated order is placed."
-  },
-  "message": "Simulated portfolio only; fills are estimates, not exchange orders."
+  "total_pnl_usdt": 0.14631336,
+  "message": "Champion version is missing."
 }

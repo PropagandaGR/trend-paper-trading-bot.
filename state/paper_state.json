@@ -10,11 +10,11 @@
   "starting_cash": 15.0,
   "completed_trades": 0,
   "realized_pnl": 0.0,
-  "last_checked_at": "2026-10-18T22:29:10.768883+00:00",
+  "last_checked_at": "2026-10-18T22:45:16.829040+00:00",
   "last_price": 2370.666266206137,
   "last_prices": {
-    "BTCUSDT": 81634.77634055505,
-    "ETHUSDT": 2394.037083016299,
-    "SOLUSDT": 103.30983941371991
+    "BTCUSDT": 81807.25641744424,
+    "ETHUSDT": 2397.3809619158224,
+    "SOLUSDT": 103.67025749869849
   }
 }
