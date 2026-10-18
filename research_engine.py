@@ -482,7 +482,9 @@ def validate_research_output(summary: dict[str, Any], report_path: Path | None =
         metadata.get("test_metrics"), dict
     ):
         raise RuntimeError("Champion is missing validation or report-only test metrics")
-    if champion.get("champion_version") != summary.get("champion", {}).get("champion_version"):
+    expected_champion = summary.get("champion")
+    if (not isinstance(expected_champion, dict)
+            or champion.get("champion_version") != expected_champion.get("champion_version")):
         raise RuntimeError("Persisted champion does not match this run's returned result")
 
 
