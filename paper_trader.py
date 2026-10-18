@@ -91,7 +91,10 @@ def run_once() -> dict[str, Any]:
     latest_time = bars.index[-1].isoformat()
     cursor = state.setdefault("last_processed_bars", {}).get(symbol)
     latest_price = float(bars.close.iloc[-1])
-    target_side = int(signals.iloc[-1])\n    champion_allows_shorts = bool(champion.get("allow_short", False))\n    if not PAPER_ALLOW_SHORTS or not champion_allows_shorts:\n        target_side = max(0, target_side)
+    target_side = int(signals.iloc[-1])
+    champion_allows_shorts = bool(champion.get("allow_short", False))
+    if not PAPER_ALLOW_SHORTS or not champion_allows_shorts:
+        target_side = max(0, target_side)
     features = add_features(
         bars, int(params["fast"]), int(params["slow"]),
         int(params["momentum"]), int(params["breakout"])
