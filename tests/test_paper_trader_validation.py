@@ -1,7 +1,10 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from paper_trader import champion_validation_error
+import pandas as pd
+
+from paper_trader import (MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT, MAX_POSITION_FRACTION,
+                          champion_validation_error, fresh_price_map, update_risk_metrics)
 
 
 def valid_champion(created_at=None):
@@ -16,11 +19,24 @@ def valid_champion(created_at=None):
             "created_at": (created_at or datetime.now(timezone.utc)).isoformat(),
             "status": "validated",
             "test_used_for_selection": False,
-            "validation_metrics": {"total_return_pct": 1.0},
-            "validation_stress_metrics": {"total_return_pct": 0.5},
-            "test_metrics": {"total_return_pct": 0.2},
-            "test_stress_metrics": {"total_return_pct": 0.1},
-            "cost_convention": {"fee_basis": "executed notional"},
+            "validation_score": 1.25,
+            "periods": {
+                "train": {"start": "2026-01-01T00:00:00+00:00", "end": "2026-01-02T00:00:00+00:00"},
+                "validation": {"start": "2026-01-03T00:00:00+00:00", "end": "2026-01-04T00:00:00+00:00"},
+                "test": {"start": "2026-01-05T00:00:00+00:00", "end": "2026-01-06T00:00:00+00:00"},
+            },
+            "validation_metrics": {"total_return_pct": 1.0, "max_drawdown_pct": 2.0, "sharpe": 0.5, "trades": 3},
+            "validation_stress_metrics": {"total_return_pct": 0.5, "max_drawdown_pct": 3.0, "sharpe": 0.2, "trades": 3},
+            "test_metrics": {"total_return_pct": 0.2, "max_drawdown_pct": 4.0, "sharpe": 0.1, "trades": 2},
+            "test_stress_metrics": {"total_return_pct": 0.1, "max_drawdown_pct": 5.0, "sharpe": 0.05, "trades": 2},
+            "cost_convention": {
+                "fee_basis": "executed notional",
+                "fill_timing": "closed candle close after one-candle signal shift",
+                "fee_bps_per_side": 10,
+                "slippage_bps_per_side": 5,
+                "stress_fee_bps_per_side": 20,
+                "stress_slippage_bps_per_side": 10,
+            },
         },
     }
 
@@ -48,6 +64,68 @@ class PaperTraderChampionGateTests(unittest.TestCase):
         champion = valid_champion()
         del champion["validation_metadata"]["validation_stress_metrics"]
         self.assertIn("validation_stress_metrics", champion_validation_error(champion))
+
+
+class PaperTraderAdversarialSafetyTests(unittest.TestCase):
+    def test_rejects_negative_or_out_of_range_strategy_parameters(self):
+        champion = valid_champion()
+        champion["params"]["fast"] = -5
+        self.assertIn("fast", champion_validation_error(champion))
+        champion = valid_champion()
+        champion["params"]["fast"] = 90
+        champion["params"]["slow"] = 30
+        self.assertIn("fast < slow", champion_validation_error(champion))
+
+    def test_rejects_non_finite_validation_metrics(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["test_metrics"]["sharpe"] = float("nan")
+        self.assertIn("finite number", champion_validation_error(champion))
+
+    def test_rejects_overlapping_final_test_period(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["periods"]["test"]["start"] = "2026-01-03T12:00:00+00:00"
+        self.assertIn("overlap", champion_validation_error(champion))
+
+    def test_rejects_invalid_mean_reversion_threshold_order(self):
+        champion = valid_champion()
+        champion["params"]["rsi_entry"] = 60
+        champion["params"]["rsi_exit"] = 50
+        self.assertIn("entry must be below RSI exit", champion_validation_error(champion))
+
+    def test_fresh_price_map_rejects_stale_future_and_invalid_marks(self):
+        now = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+        frames = {
+            "BTCUSDT": pd.DataFrame({"close": [100.0], "close_time": [pd.Timestamp("2026-01-01T11:50:00Z")]}),
+            "ETHUSDT": pd.DataFrame({"close": [200.0], "close_time": [pd.Timestamp("2026-01-01T11:40:00Z")]}),
+            "SOLUSDT": pd.DataFrame({"close": [300.0], "close_time": [pd.Timestamp("2026-01-01T12:05:00Z")]}),
+            "DOGEUSDT": pd.DataFrame({"close": [float("nan")], "close_time": [pd.Timestamp("2026-01-01T11:59:00Z")]}),
+        }
+        prices, timestamps = fresh_price_map(frames, now)
+        self.assertEqual(prices, {"BTCUSDT": 100.0})
+        self.assertIn("BTCUSDT", timestamps)
+        self.assertNotIn("ETHUSDT", prices)
+        self.assertNotIn("SOLUSDT", prices)
+        self.assertNotIn("DOGEUSDT", prices)
+
+    def test_daily_loss_limit_latches_halt(self):
+        now = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+        state = {"risk_day": "2026-01-01", "daily_start_equity": 15.0, "peak_equity": 15.0}
+        risk = update_risk_metrics(state, 14.0, now)
+        self.assertGreater(risk["daily_loss_pct"], MAX_DAILY_LOSS_PCT)
+        self.assertTrue(risk["halted"])
+        self.assertIn("daily_loss_limit", risk["halt_reason"])
+
+    def test_drawdown_limit_latches_halt(self):
+        now = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+        state = {"risk_day": "2026-01-01", "daily_start_equity": 20.0, "peak_equity": 20.0}
+        risk = update_risk_metrics(state, 17.9, now)
+        self.assertGreater(risk["drawdown_pct"], MAX_DRAWDOWN_PCT)
+        self.assertTrue(risk["halted"])
+        self.assertIn("drawdown_limit", risk["halt_reason"])
+
+    def test_position_budget_is_configured_below_full_equity(self):
+        self.assertLess(MAX_POSITION_FRACTION, 1.0)
+        self.assertEqual(MAX_POSITION_FRACTION, 0.50)
 
 
 if __name__ == "__main__":
