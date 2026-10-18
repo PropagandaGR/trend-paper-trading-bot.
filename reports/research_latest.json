@@ -1,6 +1,6 @@
 {
-  "started_at": "2026-10-18T18:22:33.942717+00:00",
-  "completed_at": "2026-10-18T18:24:02.778339+00:00",
+  "started_at": "2026-10-18T18:27:57.354224+00:00",
+  "completed_at": "2026-10-18T18:30:28.664072+00:00",
   "days": 90,
   "symbols": [
     "BTCUSDT",
@@ -144,7 +144,7 @@
       "train": {
         "total_return_pct": 2.0303,
         "max_drawdown_pct": 2.2807,
-        "sharpe": 2.688,
+        "sharpe": 2.687,
         "trades": 14
       },
       "test": {
@@ -180,7 +180,7 @@
       "train": {
         "total_return_pct": 2.0303,
         "max_drawdown_pct": 2.2807,
-        "sharpe": 2.688,
+        "sharpe": 2.687,
         "trades": 14
       },
       "test": {
@@ -292,18 +292,18 @@
         "trades": 62
       },
       "test": {
-        "total_return_pct": 1.6623,
+        "total_return_pct": 1.6551,
         "max_drawdown_pct": 1.0695,
-        "sharpe": 3.08,
+        "sharpe": 3.067,
         "trades": 31
       },
       "stress": {
-        "total_return_pct": -2.9648,
+        "total_return_pct": -2.9716,
         "max_drawdown_pct": 3.0811,
-        "sharpe": -4.922,
+        "sharpe": -4.933,
         "trades": 31
       },
-      "score": 0.5501750000000001,
+      "score": 0.542975,
       "passed_validation": false
     },
     {
@@ -328,18 +328,18 @@
         "trades": 62
       },
       "test": {
-        "total_return_pct": 1.6623,
+        "total_return_pct": 1.6551,
         "max_drawdown_pct": 1.0695,
-        "sharpe": 3.08,
+        "sharpe": 3.067,
         "trades": 31
       },
       "stress": {
-        "total_return_pct": -2.9648,
+        "total_return_pct": -2.9716,
         "max_drawdown_pct": 3.0811,
-        "sharpe": -4.922,
+        "sharpe": -4.933,
         "trades": 31
       },
-      "score": 0.5501750000000001,
+      "score": 0.542975,
       "passed_validation": false
     },
     {
