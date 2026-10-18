@@ -493,12 +493,18 @@ def run_once() -> dict[str, Any]:
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
-    if not champion_price_fresh:
+    try:
+        strategy_close_time = pd.to_datetime(bars["close_time"].iloc[-1], utc=True)
+        strategy_age_seconds = (pd.Timestamp.now(tz="UTC") - strategy_close_time).total_seconds()
+        strategy_bar_fresh = -60 <= strategy_age_seconds <= MAX_PRICE_AGE_SECONDS
+    except (KeyError, IndexError, TypeError, ValueError):
+        strategy_bar_fresh = False
+    if not champion_price_fresh or not strategy_bar_fresh:
         status["data_errors"].append({
             "symbol": symbol,
-            "error": "Champion price is stale, missing, or invalid; no simulated order made."
+            "error": "Champion price or signal candle is stale, missing, or invalid; no simulated order made."
         })
-        status["message"] = "Fresh champion price unavailable; no simulated order made."
+        status["message"] = "Fresh champion price or signal candle unavailable; no simulated order made."
         state.update({"cash": cash, "quantity": qty, "symbol": position_symbol,
                       "last_checked_at": utc_now()})
         STATE_FILE.write_text(json.dumps(state, indent=2))
