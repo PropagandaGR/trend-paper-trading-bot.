@@ -71,6 +71,12 @@ class TestSetIsolationTests(unittest.TestCase):
             test_calls = [call for call in backtest.call_args_list if call.args[0].index[0] >= index[960]]
             self.assertEqual(len(test_calls), 2)
             self.assertTrue((state / "champion.json").exists())
+            history_file = state / "champions" / (summary["champion"]["champion_version"] + ".json")
+            self.assertTrue(history_file.exists())
+            self.assertEqual(
+                pd.read_json(history_file, typ="series")["champion_version"],
+                summary["champion"]["champion_version"],
+            )
 
 
 if __name__ == "__main__":
