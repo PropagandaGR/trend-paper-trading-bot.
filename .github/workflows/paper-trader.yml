@@ -2,7 +2,8 @@ name: Live Market Paper Trading
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # Avoid GitHub's busiest minute boundaries; still runs every 5 minutes.
+    - cron: "3-58/5 * * * *"
   workflow_dispatch:
 
 permissions:
