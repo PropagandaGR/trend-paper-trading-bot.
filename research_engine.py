@@ -175,32 +175,44 @@ def add_features(frame: pd.DataFrame, fast: int, slow: int, momentum: int,
     return x
 
 
-def desired_signal(x: pd.DataFrame, strategy: str, params: dict[str, Any]) -> pd.Series:
+def desired_signal(x: pd.DataFrame, strategy: str, params: dict[str, Any],
+                   allow_short: bool = False) -> pd.Series:
+    """Return delayed position targets: 1=long, 0=flat, -1=short when enabled."""
     fast, slow = int(params["fast"]), int(params["slow"])
     mom = int(params["momentum"])
     breakout = int(params["breakout"])
     f = add_features(x, fast, slow, mom, breakout)
+    f["prior_low"] = f.low.shift(1).rolling(breakout, min_periods=breakout).min()
     if strategy == "trend":
-        enter = (f.ema_fast > f.ema_slow) & (f.momentum > float(params["entry_momentum"]))
-        exit_ = (f.ema_fast < f.ema_slow) | (f.momentum < float(params["exit_momentum"]))
+        enter_long = (f.ema_fast > f.ema_slow) & (f.momentum > float(params["entry_momentum"]))
+        exit_long = (f.ema_fast < f.ema_slow) | (f.momentum < float(params["exit_momentum"]))
+        enter_short = (f.ema_fast < f.ema_slow) & (f.momentum < -abs(float(params["entry_momentum"])))
+        exit_short = (f.ema_fast > f.ema_slow) | (f.momentum > abs(float(params["exit_momentum"])))
     elif strategy == "breakout":
-        enter = (f.close > f.prior_high) & (f.momentum > 0)
-        exit_ = (f.close < f.ema_fast) | (f.momentum < float(params["exit_momentum"]))
+        enter_long = (f.close > f.prior_high) & (f.momentum > 0)
+        exit_long = (f.close < f.ema_fast) | (f.momentum < float(params["exit_momentum"]))
+        enter_short = (f.close < f.prior_low) & (f.momentum < 0)
+        exit_short = (f.close > f.ema_fast) | (f.momentum > abs(float(params["exit_momentum"])))
     elif strategy == "mean_reversion":
-        enter = (f.rsi < float(params["rsi_entry"])) & (f.close < f.ema_slow)
-        exit_ = (f.rsi >= float(params["rsi_exit"])) | (f.close < f.ema_slow * (1 - float(params["stop_pct"])))
+        enter_long = (f.rsi < float(params["rsi_entry"])) & (f.close < f.ema_slow)
+        exit_long = (f.rsi >= float(params["rsi_exit"])) | (f.close < f.ema_slow * (1 - float(params["stop_pct"])))
+        enter_short = (f.rsi > 100 - float(params["rsi_entry"])) & (f.close > f.ema_slow)
+        exit_short = (f.rsi <= 100 - float(params["rsi_exit"])) | (f.close > f.ema_slow * (1 + float(params["stop_pct"])))
     else:
         raise ValueError(f"Unknown strategy: {strategy}")
-    # Keep positions open until a strategy-specific exit, instead of requiring
-    # the entry condition to remain true. Signals are shifted to avoid look-ahead.
     position = np.zeros(len(f), dtype=float)
-    active = False
+    active_side = 0
     for i in range(len(f)):
-        if active and bool(exit_.iloc[i]):
-            active = False
-        elif not active and bool(enter.iloc[i]):
-            active = True
-        position[i] = 1.0 if active else 0.0
+        if active_side == 1 and bool(exit_long.iloc[i]):
+            active_side = 0
+        elif active_side == -1 and bool(exit_short.iloc[i]):
+            active_side = 0
+        elif active_side == 0:
+            if bool(enter_long.iloc[i]):
+                active_side = 1
+            elif allow_short and bool(enter_short.iloc[i]):
+                active_side = -1
+        position[i] = float(active_side)
     return pd.Series(position, index=f.index).shift(1).fillna(0.0)
 
 
@@ -222,10 +234,10 @@ def performance(returns: pd.Series) -> dict[str, float]:
 
 def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
              fee_bps: float = DEFAULT_FEE_BPS,
-             slippage_bps: float = DEFAULT_SLIPPAGE_BPS) -> dict[str, float]:
+             slippage_bps: float = DEFAULT_SLIPPAGE_BPS,\n             allow_short: bool = False) -> dict[str, float]:
     if len(frame) < max(int(params["slow"]) * 3, int(params["breakout"]) + 50):
         return performance(pd.Series(dtype=float))
-    pos = desired_signal(frame, strategy, params)
+    pos = desired_signal(frame, strategy, params, allow_short=allow_short)
     # Signal uses prior closed candle; execute at next candle open, then mark
     # to the next close. Apply cost to each entry/exit change.
     market_return = frame.close.pct_change().fillna(0.0)
@@ -307,7 +319,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
         "symbols": list(SYMBOLS), "intervals": list(INTERVALS),
         "candidate_count": len(candidates), "evaluations": len(results),
         "validated_count": len(valid), "champion": champion,
-        "selection_policy": "positive unseen-period return at 15bps round-trip baseline and 30bps stress; max drawdown under 25%; minimum two position changes",
+        "selection_policy": "positive unseen-period return at 15bps round-trip baseline and 30bps stress; max drawdown under 25%; minimum two position changes; short candidates evaluated separately at 1x only",
         "results": sorted([r for r in results if "score" in r],
                           key=lambda r: r["score"], reverse=True)[:30],
         "errors": [r for r in results if "error" in r],
