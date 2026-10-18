@@ -116,7 +116,7 @@ class PaperExecutionSafetyTests(unittest.TestCase):
             data = {symbol: candles(100) for symbol in paper_trader.SYMBOLS}
             with patch.multiple(paper_trader, STATE=root, REPORTS=reports, STATE_FILE=state_path,
                                 CHAMPION_FILE=champion_path, STATUS_FILE=reports / "paper_status.json"), \\
-                 patch.object(paper_trader, "fetch_klines", side_effect=lambda symbol, *_: data[symbol]), \\
+                 patch.object(paper_trader, "fetch_klines", side_effect=lambda symbol, *_: data[symbol]), \
                  patch.object(paper_trader, "desired_signal", side_effect=lambda bars, *_args, **_kwargs: pd.Series(1.0, index=bars.index)):
                 status = paper_trader.run_once()
             self.assertEqual(status["actions"], [])
