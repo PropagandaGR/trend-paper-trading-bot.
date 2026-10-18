@@ -23,15 +23,17 @@ class Top100UniverseTests(unittest.TestCase):
             {"id": "USDT-USD", "base_currency": "USDT", "quote_currency": "USD", "status": "online"},
             {"id": "FAKE-EUR", "base_currency": "FAKE", "quote_currency": "EUR", "status": "online"},
             {"id": "OFF-USD", "base_currency": "OFF", "quote_currency": "USD", "status": "offline"},
+            {"id": "LOW-USD", "base_currency": "LOW", "quote_currency": "USD", "status": "online"},
         ]
         markets = [
-            {"id": "bitcoin", "symbol": "btc", "market_cap_rank": 1, "market_cap": 1000},
-            {"id": "ethereum", "symbol": "eth", "market_cap_rank": 2, "market_cap": 900},
-            {"id": "tether", "symbol": "usdt", "market_cap_rank": 3, "market_cap": 800},
-            {"id": "solana", "symbol": "sol", "market_cap_rank": 4, "market_cap": 700},
-            {"id": "dogecoin", "symbol": "doge", "market_cap_rank": 5, "market_cap": 600},
-            {"id": "fake", "symbol": "fake", "market_cap_rank": 6, "market_cap": 500},
-            {"id": "offline", "symbol": "off", "market_cap_rank": 7, "market_cap": 400},
+            {"id": "bitcoin", "symbol": "btc", "market_cap_rank": 1, "market_cap": 1000, "total_volume": 100_000_000},
+            {"id": "ethereum", "symbol": "eth", "market_cap_rank": 2, "market_cap": 900, "total_volume": 50_000_000},
+            {"id": "tether", "symbol": "usdt", "market_cap_rank": 3, "market_cap": 800, "total_volume": 200_000_000},
+            {"id": "solana", "symbol": "sol", "market_cap_rank": 4, "market_cap": 700, "total_volume": 20_000_000},
+            {"id": "dogecoin", "symbol": "doge", "market_cap_rank": 5, "market_cap": 600, "total_volume": 10_000_000},
+            {"id": "fake", "symbol": "fake", "market_cap_rank": 6, "market_cap": 500, "total_volume": 20_000_000},
+            {"id": "offline", "symbol": "off", "market_cap_rank": 7, "market_cap": 400, "total_volume": 20_000_000},
+            {"id": "low-volume", "symbol": "low", "market_cap_rank": 8, "market_cap": 300, "total_volume": 1_000_000},
         ]
         first, second = Mock(), Mock()
         first.json.return_value = products
@@ -49,6 +51,8 @@ class Top100UniverseTests(unittest.TestCase):
         self.assertNotIn("USDTUSDT", [x["symbol"] for x in result])
         self.assertNotIn("FAKEUSDT", [x["symbol"] for x in result])
         self.assertNotIn("OFFUSDT", [x["symbol"] for x in result])
+        self.assertNotIn("LOWUSDT", [x["symbol"] for x in result])
+        self.assertTrue(all(x["global_24h_volume_usd"] >= universe.MIN_GLOBAL_24H_VOLUME_USD for x in result))
 
     def test_research_batch_rotates_deterministically(self):
         product_response, market_response = self._responses()
