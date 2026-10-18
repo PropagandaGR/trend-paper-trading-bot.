@@ -10,13 +10,13 @@
   "starting_cash": 15.0,
   "completed_trades": 1,
   "realized_pnl": 0.08402665981011737,
-  "last_checked_at": "2026-10-18T23:52:28.523667+00:00",
+  "last_checked_at": "2026-10-18T23:55:02.043674+00:00",
   "last_price": 2370.666266206137,
   "last_prices": {
-    "ZECUSDT": 1132.0864289004146
+    "ZECUSDT": 1130.413016270338
   },
   "last_price_timestamps": {
-    "ZECUSDT": "2026-10-18T23:50:00+00:00"
+    "ZECUSDT": "2026-10-18T23:55:00+00:00"
   },
   "risk_day": "2026-10-18",
   "daily_start_equity": 15.106679125158289,
