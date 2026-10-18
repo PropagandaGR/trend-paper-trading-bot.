@@ -26,7 +26,17 @@ class PaperTraderWrongSymbolIntegrationTests(unittest.TestCase):
             }))
             champion_file.write_text(json.dumps({
                 "symbol": "BTCUSDT", "interval": "5m", "strategy": "trend",
-                "params": {"fast": 2, "slow": 3, "momentum": 1, "breakout": 2}
+                "params": {"fast": 2, "slow": 3, "momentum": 1, "breakout": 2},
+                "champion_version": "champion-test1234567890",
+                "validation_metadata": {
+                    "created_at": pd.Timestamp.now(tz="UTC").isoformat(),
+                    "status": "validated", "test_used_for_selection": False,
+                    "validation_metrics": {"total_return_pct": 1.0},
+                    "validation_stress_metrics": {"total_return_pct": 0.5},
+                    "test_metrics": {"total_return_pct": 0.2},
+                    "test_stress_metrics": {"total_return_pct": 0.1},
+                    "cost_convention": {"fee_basis": "executed notional"}
+                }
             }))
             index = pd.date_range("2026-01-01", periods=2, freq="5min", tz="UTC")
             eth = pd.DataFrame({"close": [1_990.0, 2_000.0]}, index=index)

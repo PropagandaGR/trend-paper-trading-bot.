@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,51 @@ CHAMPION_FILE = STATE / "champion.json"
 STATUS_FILE = REPORTS / "paper_status.json"
 
 
+def champion_validation_error(champion: Any, now: datetime | None = None) -> str | None:
+    """Return a fail-closed rejection reason for any unvalidated/stale champion."""
+    if not isinstance(champion, dict):
+        return "No champion is available."
+    if champion.get("symbol") not in SYMBOLS:
+        return "Champion symbol is unsupported."
+    if champion.get("interval") not in INTERVALS:
+        return "Champion interval is unsupported."
+    if champion.get("strategy") not in {"trend", "breakout", "mean_reversion"}:
+        return "Champion strategy is unsupported."
+    params = champion.get("params")
+    if not isinstance(params, dict) or not {"fast", "slow", "momentum", "breakout"}.issubset(params):
+        return "Champion parameters are incomplete."
+    if not isinstance(champion.get("champion_version"), str) or not champion["champion_version"].startswith("champion-"):
+        return "Champion version is missing."
+    metadata = champion.get("validation_metadata")
+    if not isinstance(metadata, dict) or metadata.get("status") != "validated":
+        return "Champion has no explicit validation metadata."
+    if metadata.get("test_used_for_selection") is not False:
+        return "Champion metadata does not confirm final-test isolation."
+    for field in ("validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
+        if not isinstance(metadata.get(field), dict):
+            return f"Champion validation metadata is missing {field}."
+    cost = metadata.get("cost_convention")
+    if not isinstance(cost, dict) or cost.get("fee_basis") != "executed notional":
+        return "Champion cost convention is missing or unsupported."
+    created_at = metadata.get("created_at")
+    if not isinstance(created_at, str):
+        return "Champion validation timestamp is missing."
+    try:
+        validated_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    except ValueError:
+        return "Champion validation timestamp is invalid."
+    if validated_at.tzinfo is None:
+        return "Champion validation timestamp must include a timezone."
+    now = now or datetime.now(timezone.utc)
+    validated_at = validated_at.astimezone(timezone.utc)
+    age = now.astimezone(timezone.utc) - validated_at
+    if age < -timedelta(minutes=5):
+        return "Champion validation timestamp is in the future."
+    if age > timedelta(hours=24):
+        return "Champion validation is stale (older than 24 hours)."
+    return None
+
+
 def read_json(path: Path, default: Any) -> Any:
     try:
         return json.loads(path.read_text())
@@ -36,13 +82,15 @@ def run_once() -> dict[str, Any]:
         "completed_trades": 0, "realized_pnl": 0.0
     })
     champion = read_json(CHAMPION_FILE, None)
+    champion_error = champion_validation_error(champion)
+    champion_accepted = champion_error is None
     status = {
         "updated_at": utc_now(), "mode": "PAPER_ONLY",
         "starting_cash_usdt": STARTING_CASH, "cash_usdt": round(float(state["cash"]), 8),
         "equity_usdt": round(float(state["cash"]), 8), "unrealized_pnl_usdt": 0.0,
         "realized_pnl_usdt": round(float(state.get("realized_pnl", 0.0)), 8),
         "completed_trades": int(state.get("completed_trades", 0)),
-        "open_position": None, "champion_available": bool(champion),
+        "open_position": None, "champion_available": champion_accepted, "champion_rejection_reason": champion_error,
         "actions": [], "data_errors": [],
         "safety": {"real_orders": False, "exchange_credentials_used": False,
                    "leverage": False, "short_selling": False}
@@ -60,11 +108,40 @@ def run_once() -> dict[str, Any]:
 
     # No strategy has passed validation yet? Stay in cash; research cannot alter the
     # portfolio until it produces a validated champion.
-    if not champion:
+    if not champion_accepted:
+        # Invalid champions must not trade, but an existing paper position still
+        # needs an honest symbol-specific mark in the status report.
+        current_prices = {
+            name: float(frame.close.iloc[-1])
+            for name, frame in frames.items()
+            if not frame.empty and pd.notna(frame.close.iloc[-1]) and float(frame.close.iloc[-1]) > 0
+        }
+        mark_prices = {**state.get("last_prices", {}), **current_prices}
+        state["last_prices"] = mark_prices
+        qty = float(state.get("quantity", 0.0))
+        held_symbol = state.get("symbol")
+        cash = float(state.get("cash", STARTING_CASH))
+        if qty > 0 and held_symbol not in mark_prices:
+            status["data_errors"].append({
+                "symbol": held_symbol,
+                "error": "Missing valid mark for held position; refusing cross-symbol valuation or trade."
+            })
+            status["message"] = "Champion rejected and held position cannot be safely valued; no simulated order made."
+        else:
+            equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
+            entry = float(state.get("entry_price") or mark or 0.0)
+            status.update({
+                "cash_usdt": round(cash, 8),
+                "equity_usdt": round(equity, 8),
+                "total_pnl_usdt": round(equity - STARTING_CASH, 8),
+                "unrealized_pnl_usdt": round((mark - entry) * qty if qty > 0 else 0.0, 8),
+                "open_position": ({"symbol": held_symbol, "quantity": round(qty, 10),
+                                   "mark_price": round(mark, 8), "entry_price": round(entry, 8)}
+                                  if qty > 0 else None),
+                "message": champion_error or "No validated champion; no simulated order made.",
+            })
         state["last_checked_at"] = utc_now()
         STATE_FILE.write_text(json.dumps(state, indent=2))
-        status["equity_usdt"] = round(float(state["cash"]), 8)
-        status["message"] = "No validated champion yet; capital remains in simulated cash."
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 

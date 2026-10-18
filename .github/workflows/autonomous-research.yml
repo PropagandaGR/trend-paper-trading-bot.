@@ -42,8 +42,65 @@ jobs:
           if [ -z "$DAYS" ]; then DAYS=90; fi
           if [ "$DAYS" -lt 30 ] || [ "$DAYS" -gt 365 ]; then DAYS=90; fi
           echo "days=$DAYS" >> "$GITHUB_OUTPUT"
+      - name: Mark research start time
+        id: research_start
+        run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Search and validate strategies
-        run: python research_engine.py --days "${{ steps.window.outputs.days }}"
+        run: python research_engine.py --days "${{ steps.window.outputs.days }}" --require-fresh-report
+      - name: Independently verify fresh research artifacts
+        env:
+          RESEARCH_STARTED_AT: ${{ steps.research_start.outputs.started_at }}
+        run: |
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          report_path = Path("reports/research_latest.json")
+          champion_path = Path("state/champion.json")
+          if not report_path.is_file():
+              raise SystemExit("FAIL: research report missing")
+          report = json.loads(report_path.read_text())
+          if report.get("run_status") != "completed" or report.get("evaluations", 0) <= 0:
+              raise SystemExit("FAIL: research did not complete substantive evaluations")
+          started = datetime.fromisoformat(report["started_at"].replace("Z", "+00:00"))
+          completed = datetime.fromisoformat(report["completed_at"].replace("Z", "+00:00"))
+          workflow_started = datetime.fromisoformat(__import__("os").environ["RESEARCH_STARTED_AT"].replace("Z", "+00:00"))
+          if started.tzinfo is None or completed.tzinfo is None or completed < started:
+              raise SystemExit("FAIL: invalid research timestamps")
+          if started < workflow_started:
+              raise SystemExit("FAIL: report predates this workflow's research invocation")
+          validation = report.get("validation_result")
+          if not isinstance(validation, dict) or validation.get("status") not in {"validated", "no_candidate"}:
+              raise SystemExit("FAIL: missing explicit validation result")
+          if validation.get("evaluations") != report["evaluations"]:
+              raise SystemExit("FAIL: validation/evaluation counts disagree")
+          active = json.loads(champion_path.read_text()) if champion_path.exists() else None
+          if validation["status"] == "validated":
+              if not isinstance(active, dict):
+                  raise SystemExit("FAIL: validated result has no active champion")
+              metadata = active.get("validation_metadata", {})
+              if not active.get("champion_version") or metadata.get("status") != "validated":
+                  raise SystemExit("FAIL: champion version/validation metadata missing")
+              if metadata.get("test_used_for_selection") is not False:
+                  raise SystemExit("FAIL: final-test isolation not recorded")
+              version_file = Path("state/champions") / (active["champion_version"] + ".json")
+              if not version_file.is_file():
+                  raise SystemExit("FAIL: immutable champion snapshot missing")
+              snapshot = json.loads(version_file.read_text())
+              if snapshot.get("champion_version") != active["champion_version"]:
+                  raise SystemExit("FAIL: champion snapshot version mismatch")
+          elif active is not None:
+              raise SystemExit("FAIL: stale champion remains active after no candidate passed")
+          print(json.dumps({
+              "report": str(report_path),
+              "validation_status": validation["status"],
+              "evaluations": report["evaluations"],
+              "validated_candidates": validation.get("validated_candidates"),
+              "champion_version": validation.get("champion_version"),
+              "snapshot_verified": validation["status"] == "validated",
+          }, indent=2))
+          PY
       - name: Commit research evidence and champion
         run: |
           git config user.name "github-actions[bot]"
