@@ -1,24 +1,24 @@
 {
-  "symbol": "SOLUSDT",
+  "symbol": "ZECUSDT",
   "interval": "30m",
-  "strategy": "trend",
+  "strategy": "mean_reversion",
   "params": {
     "fast": 8,
-    "slow": 72,
-    "momentum": 12,
-    "breakout": 48,
+    "slow": 48,
+    "momentum": 6,
+    "breakout": 24,
     "entry_momentum": 0.0,
-    "exit_momentum": -0.01,
-    "rsi_entry": 30,
-    "rsi_exit": 50,
-    "stop_pct": 0.06
+    "exit_momentum": -0.005,
+    "rsi_entry": 20,
+    "rsi_exit": 45,
+    "stop_pct": 0.04
   },
-  "champion_version": "champion-44a31da8b2b1",
+  "champion_version": "champion-0903de97f7aa",
   "validation_metadata": {
-    "created_at": "2026-10-18T22:50:31.092877+00:00",
+    "created_at": "2026-10-18T23:19:38.632907+00:00",
     "status": "validated",
     "selection_metric": "validation_score",
-    "validation_score": 12.472925000000002,
+    "validation_score": 2.69285,
     "validation_criteria": {
       "validation_return_positive": true,
       "validation_stress_return_positive": true,
@@ -27,50 +27,50 @@
     },
     "periods": {
       "train": {
-        "start": "2026-07-20T23:30:00+00:00",
-        "end": "2026-09-12T22:30:00+00:00",
-        "bars": 2591
+        "start": "2026-09-14T00:00:00+00:00",
+        "end": "2026-10-04T23:00:00+00:00",
+        "bars": 1007
       },
       "validation": {
-        "start": "2026-09-12T23:00:00+00:00",
-        "end": "2026-09-30T22:00:00+00:00",
-        "bars": 863
+        "start": "2026-10-04T23:30:00+00:00",
+        "end": "2026-10-11T22:30:00+00:00",
+        "bars": 335
       },
       "test": {
-        "start": "2026-09-30T22:30:00+00:00",
-        "end": "2026-10-18T22:30:00+00:00",
-        "bars": 865
+        "start": "2026-10-11T23:00:00+00:00",
+        "end": "2026-10-18T23:00:00+00:00",
+        "bars": 337
       }
     },
     "train_metrics": {
-      "total_return_pct": 2.6811,
-      "max_drawdown_pct": 13.3579,
-      "sharpe": 0.631,
-      "trades": 92
+      "total_return_pct": -1.3272,
+      "max_drawdown_pct": 1.3272,
+      "sharpe": -4.666,
+      "trades": 2
     },
     "validation_metrics": {
-      "total_return_pct": 17.6031,
-      "max_drawdown_pct": 6.5469,
-      "sharpe": 7.902,
-      "trades": 22
+      "total_return_pct": 2.8252,
+      "max_drawdown_pct": 0.1498,
+      "sharpe": 6.869,
+      "trades": 2
     },
     "validation_stress_metrics": {
-      "total_return_pct": 13.7855,
-      "max_drawdown_pct": 7.8002,
-      "sharpe": 6.285,
-      "trades": 22
+      "total_return_pct": 2.5171,
+      "max_drawdown_pct": 0.2993,
+      "sharpe": 6.437,
+      "trades": 2
     },
     "test_metrics": {
-      "total_return_pct": -11.3022,
-      "max_drawdown_pct": 11.3022,
-      "sharpe": -12.831,
-      "trades": 24
+      "total_return_pct": 2.7479,
+      "max_drawdown_pct": 0.2237,
+      "sharpe": 8.2,
+      "trades": 8
     },
     "test_stress_metrics": {
-      "total_return_pct": -14.4386,
-      "max_drawdown_pct": 14.4386,
-      "sharpe": -15.739,
-      "trades": 24
+      "total_return_pct": 1.5223,
+      "max_drawdown_pct": 0.8206,
+      "sharpe": 4.877,
+      "trades": 8
     },
     "test_used_for_selection": false,
     "cost_convention": {
