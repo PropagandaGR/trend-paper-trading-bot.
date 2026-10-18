@@ -203,7 +203,7 @@ def performance(returns: pd.Series, interval: str = "5m",
     std = float(returns.std(ddof=0))
     sharpe = (float(returns.mean() / std * math.sqrt(bars_per_year(interval)))
               if std > 0 else 0.0)
-    return {"total_return_pct": round((float(equity.iloc[-1]) - 1) * 100, 4),
+    return {"total_return_pct": round((float(equity_values[-1]) - 1) * 100, 4),
             "max_drawdown_pct": round(abs(float(drawdown.min())) * 100, 4),
             "sharpe": round(sharpe, 3), "trades": int(trades)}
 
