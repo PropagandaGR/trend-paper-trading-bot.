@@ -414,7 +414,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
         handle.write(json.dumps({"at": utc_now(), "days": days, "evaluations": len(results),
                                  "validated": len(eligible),
                                  "champion_version": champion["champion_version"] if champion else None},
-                                default=str) + "\\n")
+                                default=str) + "\n")
     if champion:
         (STATE / "champion.json").write_text(json.dumps(champion, indent=2))
     return summary
