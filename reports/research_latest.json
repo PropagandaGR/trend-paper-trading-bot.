@@ -1,7 +1,7 @@
 {
-  "started_at": "2026-10-18T19:42:30.133517+00:00",
-  "completed_at": "2026-10-18T19:43:59.202047+00:00",
-  "days": 91,
+  "started_at": "2026-10-18T21:36:21.191185+00:00",
+  "completed_at": "2026-10-18T21:38:55.884446+00:00",
+  "days": 90,
   "symbols": [
     "BTCUSDT",
     "ETHUSDT",
@@ -34,19 +34,19 @@
     "train": {
       "total_return_pct": 0.672,
       "max_drawdown_pct": 1.1521,
-      "sharpe": 3.405,
+      "sharpe": 3.424,
       "trades": 2
     },
     "test": {
       "total_return_pct": 5.8711,
       "max_drawdown_pct": 2.4163,
-      "sharpe": 12.49,
+      "sharpe": 12.563,
       "trades": 8
     },
     "stress": {
       "total_return_pct": 4.6084,
       "max_drawdown_pct": 2.8558,
-      "sharpe": 9.916,
+      "sharpe": 9.973,
       "trades": 8
     },
     "score": 3.9788750000000004,
@@ -72,19 +72,19 @@
       "train": {
         "total_return_pct": 0.672,
         "max_drawdown_pct": 1.1521,
-        "sharpe": 3.405,
+        "sharpe": 3.424,
         "trades": 2
       },
       "test": {
         "total_return_pct": 5.8711,
         "max_drawdown_pct": 2.4163,
-        "sharpe": 12.49,
+        "sharpe": 12.563,
         "trades": 8
       },
       "stress": {
         "total_return_pct": 4.6084,
         "max_drawdown_pct": 2.8558,
-        "sharpe": 9.916,
+        "sharpe": 9.973,
         "trades": 8
       },
       "score": 3.9788750000000004,
@@ -108,19 +108,19 @@
       "train": {
         "total_return_pct": 0.672,
         "max_drawdown_pct": 1.1521,
-        "sharpe": 3.405,
+        "sharpe": 3.424,
         "trades": 2
       },
       "test": {
         "total_return_pct": 5.8711,
         "max_drawdown_pct": 2.4163,
-        "sharpe": 12.49,
+        "sharpe": 12.563,
         "trades": 8
       },
       "stress": {
         "total_return_pct": 4.6084,
         "max_drawdown_pct": 2.8558,
-        "sharpe": 9.916,
+        "sharpe": 9.973,
         "trades": 8
       },
       "score": 3.9788750000000004,
@@ -144,22 +144,22 @@
       "train": {
         "total_return_pct": 1.3568,
         "max_drawdown_pct": 2.1917,
-        "sharpe": 2.757,
+        "sharpe": 2.772,
         "trades": 8
       },
       "test": {
-        "total_return_pct": 5.3001,
+        "total_return_pct": 6.0136,
         "max_drawdown_pct": 2.6691,
-        "sharpe": 10.646,
-        "trades": 10
+        "sharpe": 12.013,
+        "trades": 11
       },
       "stress": {
-        "total_return_pct": 3.7311,
+        "total_return_pct": 4.2779,
         "max_drawdown_pct": 3.1256,
-        "sharpe": 7.566,
-        "trades": 10
+        "sharpe": 8.641,
+        "trades": 11
       },
-      "score": 3.1982749999999998,
+      "score": 3.901775,
       "passed_validation": true
     },
     {
@@ -180,22 +180,22 @@
       "train": {
         "total_return_pct": 1.3568,
         "max_drawdown_pct": 2.1917,
-        "sharpe": 2.757,
+        "sharpe": 2.772,
         "trades": 8
       },
       "test": {
-        "total_return_pct": 5.3001,
+        "total_return_pct": 6.0136,
         "max_drawdown_pct": 2.6691,
-        "sharpe": 10.646,
-        "trades": 10
+        "sharpe": 12.013,
+        "trades": 11
       },
       "stress": {
-        "total_return_pct": 3.7311,
+        "total_return_pct": 4.2779,
         "max_drawdown_pct": 3.1256,
-        "sharpe": 7.566,
-        "trades": 10
+        "sharpe": 8.641,
+        "trades": 11
       },
-      "score": 3.1982749999999998,
+      "score": 3.901775,
       "passed_validation": true
     },
     {
@@ -216,22 +216,22 @@
       "train": {
         "total_return_pct": 0.7669,
         "max_drawdown_pct": 2.0512,
-        "sharpe": 1.705,
+        "sharpe": 1.714,
         "trades": 8
       },
       "test": {
-        "total_return_pct": 3.1225,
+        "total_return_pct": 3.8212,
         "max_drawdown_pct": 2.6691,
-        "sharpe": 7.0,
-        "trades": 14
+        "sharpe": 8.489,
+        "trades": 15
       },
       "stress": {
-        "total_return_pct": 0.9785,
+        "total_return_pct": 1.5108,
         "max_drawdown_pct": 3.3438,
-        "sharpe": 2.33,
-        "trades": 14
+        "sharpe": 3.495,
+        "trades": 15
       },
-      "score": 0.9806750000000003,
+      "score": 1.6693750000000005,
       "passed_validation": true
     },
     {
@@ -252,22 +252,22 @@
       "train": {
         "total_return_pct": 0.7669,
         "max_drawdown_pct": 2.0512,
-        "sharpe": 1.705,
+        "sharpe": 1.714,
         "trades": 8
       },
       "test": {
-        "total_return_pct": 3.1225,
+        "total_return_pct": 3.8212,
         "max_drawdown_pct": 2.6691,
-        "sharpe": 7.0,
-        "trades": 14
+        "sharpe": 8.489,
+        "trades": 15
       },
       "stress": {
-        "total_return_pct": 0.9785,
+        "total_return_pct": 1.5108,
         "max_drawdown_pct": 3.3438,
-        "sharpe": 2.33,
-        "trades": 14
+        "sharpe": 3.495,
+        "trades": 15
       },
-      "score": 0.9806750000000003,
+      "score": 1.6693750000000005,
       "passed_validation": true
     },
     {
@@ -288,19 +288,19 @@
       "train": {
         "total_return_pct": 0.4758,
         "max_drawdown_pct": 3.8889,
-        "sharpe": 0.465,
+        "sharpe": 0.468,
         "trades": 20
       },
       "test": {
         "total_return_pct": 1.727,
         "max_drawdown_pct": 3.5743,
-        "sharpe": 2.902,
+        "sharpe": 2.918,
         "trades": 10
       },
       "stress": {
         "total_return_pct": 0.2074,
         "max_drawdown_pct": 4.1535,
-        "sharpe": 0.411,
+        "sharpe": 0.413,
         "trades": 10
       },
       "score": -1.0537249999999998,
@@ -324,19 +324,19 @@
       "train": {
         "total_return_pct": 0.4758,
         "max_drawdown_pct": 3.8889,
-        "sharpe": 0.465,
+        "sharpe": 0.468,
         "trades": 20
       },
       "test": {
         "total_return_pct": 1.727,
         "max_drawdown_pct": 3.5743,
-        "sharpe": 2.902,
+        "sharpe": 2.918,
         "trades": 10
       },
       "stress": {
         "total_return_pct": 0.2074,
         "max_drawdown_pct": 4.1535,
-        "sharpe": 0.411,
+        "sharpe": 0.413,
         "trades": 10
       },
       "score": -1.0537249999999998,
@@ -360,19 +360,19 @@
       "train": {
         "total_return_pct": -0.5466,
         "max_drawdown_pct": 1.763,
-        "sharpe": -0.642,
+        "sharpe": -0.645,
         "trades": 24
       },
       "test": {
         "total_return_pct": -0.0742,
         "max_drawdown_pct": 1.2823,
-        "sharpe": -0.217,
+        "sharpe": -0.218,
         "trades": 6
       },
       "stress": {
         "total_return_pct": -0.9724,
         "max_drawdown_pct": 1.6958,
-        "sharpe": -2.969,
+        "sharpe": -2.985,
         "trades": 6
       },
       "score": -1.095925,
@@ -396,19 +396,19 @@
       "train": {
         "total_return_pct": -0.5466,
         "max_drawdown_pct": 1.763,
-        "sharpe": -0.642,
+        "sharpe": -0.645,
         "trades": 24
       },
       "test": {
         "total_return_pct": -0.0742,
         "max_drawdown_pct": 1.2823,
-        "sharpe": -0.217,
+        "sharpe": -0.218,
         "trades": 6
       },
       "stress": {
         "total_return_pct": -0.9724,
         "max_drawdown_pct": 1.6958,
-        "sharpe": -2.969,
+        "sharpe": -2.985,
         "trades": 6
       },
       "score": -1.095925,
@@ -432,19 +432,19 @@
       "train": {
         "total_return_pct": -1.9937,
         "max_drawdown_pct": 2.592,
-        "sharpe": -2.685,
+        "sharpe": -2.7,
         "trades": 24
       },
       "test": {
         "total_return_pct": -0.2725,
         "max_drawdown_pct": 1.3821,
-        "sharpe": -0.919,
+        "sharpe": -0.924,
         "trades": 6
       },
       "stress": {
         "total_return_pct": -1.1689,
         "max_drawdown_pct": 1.8909,
-        "sharpe": -3.631,
+        "sharpe": -3.651,
         "trades": 6
       },
       "score": -1.369075,
@@ -468,19 +468,19 @@
       "train": {
         "total_return_pct": -1.9937,
         "max_drawdown_pct": 2.592,
-        "sharpe": -2.685,
+        "sharpe": -2.7,
         "trades": 24
       },
       "test": {
         "total_return_pct": -0.2725,
         "max_drawdown_pct": 1.3821,
-        "sharpe": -0.919,
+        "sharpe": -0.924,
         "trades": 6
       },
       "stress": {
         "total_return_pct": -1.1689,
         "max_drawdown_pct": 1.8909,
-        "sharpe": -3.631,
+        "sharpe": -3.651,
         "trades": 6
       },
       "score": -1.369075,
@@ -504,19 +504,19 @@
       "train": {
         "total_return_pct": 1.6848,
         "max_drawdown_pct": 0.6277,
-        "sharpe": 7.274,
+        "sharpe": 7.314,
         "trades": 8
       },
       "test": {
         "total_return_pct": -0.6451,
         "max_drawdown_pct": 1.5761,
-        "sharpe": -6.239,
+        "sharpe": -6.276,
         "trades": 2
       },
       "stress": {
         "total_return_pct": -0.9434,
         "max_drawdown_pct": 1.5761,
-        "sharpe": -8.533,
+        "sharpe": -8.582,
         "trades": 2
       },
       "score": -1.847175,
@@ -540,19 +540,19 @@
       "train": {
         "total_return_pct": 1.6848,
         "max_drawdown_pct": 0.6277,
-        "sharpe": 7.274,
+        "sharpe": 7.314,
         "trades": 8
       },
       "test": {
         "total_return_pct": -0.6451,
         "max_drawdown_pct": 1.5761,
-        "sharpe": -6.239,
+        "sharpe": -6.276,
         "trades": 2
       },
       "stress": {
         "total_return_pct": -0.9434,
         "max_drawdown_pct": 1.5761,
-        "sharpe": -8.533,
+        "sharpe": -8.582,
         "trades": 2
       },
       "score": -1.847175,
@@ -576,19 +576,19 @@
       "train": {
         "total_return_pct": 0.844,
         "max_drawdown_pct": 1.5948,
-        "sharpe": 2.343,
+        "sharpe": 2.356,
         "trades": 18
       },
       "test": {
         "total_return_pct": -0.9613,
         "max_drawdown_pct": 1.9571,
-        "sharpe": -5.298,
+        "sharpe": -5.329,
         "trades": 4
       },
       "stress": {
         "total_return_pct": -1.5551,
         "max_drawdown_pct": 2.2524,
-        "sharpe": -8.207,
+        "sharpe": -8.254,
         "trades": 4
       },
       "score": -2.469125,
@@ -612,19 +612,19 @@
       "train": {
         "total_return_pct": 0.844,
         "max_drawdown_pct": 1.5948,
-        "sharpe": 2.343,
+        "sharpe": 2.356,
         "trades": 18
       },
       "test": {
         "total_return_pct": -0.9613,
         "max_drawdown_pct": 1.9571,
-        "sharpe": -5.298,
+        "sharpe": -5.329,
         "trades": 4
       },
       "stress": {
         "total_return_pct": -1.5551,
         "max_drawdown_pct": 2.2524,
-        "sharpe": -8.207,
+        "sharpe": -8.254,
         "trades": 4
       },
       "score": -2.469125,
@@ -648,19 +648,19 @@
       "train": {
         "total_return_pct": 0.844,
         "max_drawdown_pct": 1.5948,
-        "sharpe": 2.343,
+        "sharpe": 2.356,
         "trades": 18
       },
       "test": {
         "total_return_pct": -0.9613,
         "max_drawdown_pct": 1.9571,
-        "sharpe": -5.298,
+        "sharpe": -5.329,
         "trades": 4
       },
       "stress": {
         "total_return_pct": -1.5551,
         "max_drawdown_pct": 2.2524,
-        "sharpe": -8.207,
+        "sharpe": -8.254,
         "trades": 4
       },
       "score": -2.469125,
@@ -684,19 +684,19 @@
       "train": {
         "total_return_pct": 0.5357,
         "max_drawdown_pct": 1.5435,
-        "sharpe": 1.153,
+        "sharpe": 1.159,
         "trades": 18
       },
       "test": {
         "total_return_pct": -1.3448,
         "max_drawdown_pct": 1.8096,
-        "sharpe": -7.538,
+        "sharpe": -7.58,
         "trades": 2
       },
       "stress": {
         "total_return_pct": -1.6418,
         "max_drawdown_pct": 1.9579,
-        "sharpe": -8.316,
+        "sharpe": -8.363,
         "trades": 2
       },
       "score": -2.722,
@@ -720,19 +720,19 @@
       "train": {
         "total_return_pct": 0.5357,
         "max_drawdown_pct": 1.5435,
-        "sharpe": 1.153,
+        "sharpe": 1.159,
         "trades": 18
       },
       "test": {
         "total_return_pct": -1.3448,
         "max_drawdown_pct": 1.8096,
-        "sharpe": -7.538,
+        "sharpe": -7.58,
         "trades": 2
       },
       "stress": {
         "total_return_pct": -1.6418,
         "max_drawdown_pct": 1.9579,
-        "sharpe": -8.316,
+        "sharpe": -8.363,
         "trades": 2
       },
       "score": -2.722,
@@ -756,19 +756,19 @@
       "train": {
         "total_return_pct": 2.1707,
         "max_drawdown_pct": 0.8442,
-        "sharpe": 7.796,
+        "sharpe": 7.839,
         "trades": 8
       },
       "test": {
         "total_return_pct": -1.1525,
         "max_drawdown_pct": 2.0937,
-        "sharpe": -7.911,
+        "sharpe": -7.957,
         "trades": 2
       },
       "stress": {
         "total_return_pct": -1.4492,
         "max_drawdown_pct": 2.0937,
-        "sharpe": -9.618,
+        "sharpe": -9.674,
         "trades": 2
       },
       "score": -2.7427750000000004,
@@ -792,19 +792,19 @@
       "train": {
         "total_return_pct": 2.1707,
         "max_drawdown_pct": 0.8442,
-        "sharpe": 7.796,
+        "sharpe": 7.839,
         "trades": 8
       },
       "test": {
         "total_return_pct": -1.1525,
         "max_drawdown_pct": 2.0937,
-        "sharpe": -7.911,
+        "sharpe": -7.957,
         "trades": 2
       },
       "stress": {
         "total_return_pct": -1.4492,
         "max_drawdown_pct": 2.0937,
-        "sharpe": -9.618,
+        "sharpe": -9.674,
         "trades": 2
       },
       "score": -2.7427750000000004,
@@ -828,19 +828,19 @@
       "train": {
         "total_return_pct": -6.318,
         "max_drawdown_pct": 6.4714,
-        "sharpe": -4.674,
+        "sharpe": -4.7,
         "trades": 48
       },
       "test": {
         "total_return_pct": -1.2405,
         "max_drawdown_pct": 1.7782,
-        "sharpe": -2.137,
+        "sharpe": -2.149,
         "trades": 18
       },
       "stress": {
         "total_return_pct": -3.8781,
         "max_drawdown_pct": 4.1668,
-        "sharpe": -5.961,
+        "sharpe": -5.994,
         "trades": 18
       },
       "score": -2.75415,
@@ -864,19 +864,19 @@
       "train": {
         "total_return_pct": -6.318,
         "max_drawdown_pct": 6.4714,
-        "sharpe": -4.674,
+        "sharpe": -4.7,
         "trades": 48
       },
       "test": {
         "total_return_pct": -1.2405,
         "max_drawdown_pct": 1.7782,
-        "sharpe": -2.137,
+        "sharpe": -2.149,
         "trades": 18
       },
       "stress": {
         "total_return_pct": -3.8781,
         "max_drawdown_pct": 4.1668,
-        "sharpe": -5.961,
+        "sharpe": -5.994,
         "trades": 18
       },
       "score": -2.75415,
@@ -900,19 +900,19 @@
       "train": {
         "total_return_pct": 0.3876,
         "max_drawdown_pct": 1.3139,
-        "sharpe": 0.897,
+        "sharpe": 0.902,
         "trades": 18
       },
       "test": {
         "total_return_pct": -1.4794,
         "max_drawdown_pct": 1.8096,
-        "sharpe": -8.364,
+        "sharpe": -8.411,
         "trades": 2
       },
       "stress": {
         "total_return_pct": -1.776,
         "max_drawdown_pct": 1.9579,
-        "sharpe": -9.06,
+        "sharpe": -9.111,
         "trades": 2
       },
       "score": -2.8566000000000003,
@@ -936,166 +936,94 @@
       "train": {
         "total_return_pct": 0.3876,
         "max_drawdown_pct": 1.3139,
-        "sharpe": 0.897,
+        "sharpe": 0.902,
         "trades": 18
       },
       "test": {
         "total_return_pct": -1.4794,
         "max_drawdown_pct": 1.8096,
-        "sharpe": -8.364,
+        "sharpe": -8.411,
         "trades": 2
       },
       "stress": {
         "total_return_pct": -1.776,
         "max_drawdown_pct": 1.9579,
-        "sharpe": -9.06,
+        "sharpe": -9.111,
         "trades": 2
       },
       "score": -2.8566000000000003,
       "passed_validation": false
     },
     {
-      "symbol": "BTCUSDT",
+      "symbol": "ETHUSDT",
       "interval": "15m",
       "strategy": "mean_reversion",
       "params": {
         "fast": 8,
-        "slow": 30,
-        "momentum": 6,
-        "breakout": 24,
+        "slow": 48,
+        "momentum": 12,
+        "breakout": 12,
         "entry_momentum": 0.0,
         "exit_momentum": -0.005,
-        "rsi_entry": 25,
+        "rsi_entry": 20,
         "rsi_exit": 50,
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": -2.1524,
-        "max_drawdown_pct": 2.9481,
-        "sharpe": -2.481,
-        "trades": 38
+        "total_return_pct": 3.8493,
+        "max_drawdown_pct": 1.0605,
+        "sharpe": 6.059,
+        "trades": 16
       },
       "test": {
-        "total_return_pct": -1.1538,
-        "max_drawdown_pct": 2.4261,
-        "sharpe": -3.074,
+        "total_return_pct": 1.0271,
+        "max_drawdown_pct": 5.3974,
+        "sharpe": 1.719,
         "trades": 13
       },
       "stress": {
-        "total_return_pct": -3.0668,
-        "max_drawdown_pct": 3.8705,
-        "sharpe": -7.772,
+        "total_return_pct": -0.929,
+        "max_drawdown_pct": 5.9679,
+        "sharpe": -1.274,
         "trades": 13
       },
-      "score": -3.1033749999999998,
+      "score": -3.15095,
       "passed_validation": false
     },
     {
-      "symbol": "BTCUSDT",
+      "symbol": "ETHUSDT",
       "interval": "15m",
       "strategy": "mean_reversion",
       "params": {
         "fast": 12,
-        "slow": 30,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 25,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -2.1524,
-        "max_drawdown_pct": 2.9481,
-        "sharpe": -2.481,
-        "trades": 38
-      },
-      "test": {
-        "total_return_pct": -1.1538,
-        "max_drawdown_pct": 2.4261,
-        "sharpe": -3.074,
-        "trades": 13
-      },
-      "stress": {
-        "total_return_pct": -3.0668,
-        "max_drawdown_pct": 3.8705,
-        "sharpe": -7.772,
-        "trades": 13
-      },
-      "score": -3.1033749999999998,
-      "passed_validation": false
-    },
-    {
-      "symbol": "SOLUSDT",
-      "interval": "10m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
         "slow": 48,
         "momentum": 6,
         "breakout": 24,
         "entry_momentum": 0.0,
         "exit_momentum": -0.005,
         "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
+        "rsi_exit": 50,
+        "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 0.9974,
-        "max_drawdown_pct": 3.6289,
-        "sharpe": 1.012,
-        "trades": 20
+        "total_return_pct": 3.8493,
+        "max_drawdown_pct": 1.0605,
+        "sharpe": 6.059,
+        "trades": 16
       },
       "test": {
-        "total_return_pct": -0.0003,
-        "max_drawdown_pct": 4.1912,
-        "sharpe": 0.081,
-        "trades": 14
+        "total_return_pct": 1.0271,
+        "max_drawdown_pct": 5.3974,
+        "sharpe": 1.719,
+        "trades": 13
       },
       "stress": {
-        "total_return_pct": -2.0856,
-        "max_drawdown_pct": 5.3386,
-        "sharpe": -3.154,
-        "trades": 14
+        "total_return_pct": -0.929,
+        "max_drawdown_pct": 5.9679,
+        "sharpe": -1.274,
+        "trades": 13
       },
-      "score": -3.2837000000000005,
-      "passed_validation": false
-    },
-    {
-      "symbol": "SOLUSDT",
-      "interval": "10m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.005,
-        "rsi_entry": 20,
-        "rsi_exit": 45,
-        "stop_pct": 0.04
-      },
-      "train": {
-        "total_return_pct": 0.9974,
-        "max_drawdown_pct": 3.6289,
-        "sharpe": 1.012,
-        "trades": 20
-      },
-      "test": {
-        "total_return_pct": -0.0003,
-        "max_drawdown_pct": 4.1912,
-        "sharpe": 0.081,
-        "trades": 14
-      },
-      "stress": {
-        "total_return_pct": -2.0856,
-        "max_drawdown_pct": 5.3386,
-        "sharpe": -3.154,
-        "trades": 14
-      },
-      "score": -3.2837000000000005,
+      "score": -3.15095,
       "passed_validation": false
     },
     {
@@ -1116,22 +1044,94 @@
       "train": {
         "total_return_pct": -5.0397,
         "max_drawdown_pct": 5.6812,
-        "sharpe": -4.37,
+        "sharpe": -4.394,
         "trades": 62
       },
       "test": {
-        "total_return_pct": -1.2715,
+        "total_return_pct": -1.1626,
         "max_drawdown_pct": 2.4245,
-        "sharpe": -2.561,
+        "sharpe": -2.317,
         "trades": 21
       },
       "stress": {
-        "total_return_pct": -4.3377,
-        "max_drawdown_pct": 4.7406,
-        "sharpe": -8.403,
+        "total_return_pct": -4.2322,
+        "max_drawdown_pct": 4.899,
+        "sharpe": -8.148,
         "trades": 21
       },
-      "score": -3.299875,
+      "score": -3.190975,
+      "passed_validation": false
+    },
+    {
+      "symbol": "BTCUSDT",
+      "interval": "10m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 12,
+        "slow": 30,
+        "momentum": 6,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -5.0397,
+        "max_drawdown_pct": 5.6812,
+        "sharpe": -4.394,
+        "trades": 62
+      },
+      "test": {
+        "total_return_pct": -1.1626,
+        "max_drawdown_pct": 2.4245,
+        "sharpe": -2.317,
+        "trades": 21
+      },
+      "stress": {
+        "total_return_pct": -4.2322,
+        "max_drawdown_pct": 4.899,
+        "sharpe": -8.148,
+        "trades": 21
+      },
+      "score": -3.190975,
+      "passed_validation": false
+    },
+    {
+      "symbol": "BTCUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -2.1524,
+        "max_drawdown_pct": 2.9481,
+        "sharpe": -2.495,
+        "trades": 38
+      },
+      "test": {
+        "total_return_pct": -1.248,
+        "max_drawdown_pct": 2.4261,
+        "sharpe": -3.305,
+        "trades": 13
+      },
+      "stress": {
+        "total_return_pct": -3.1593,
+        "max_drawdown_pct": 3.8705,
+        "sharpe": -7.963,
+        "trades": 13
+      },
+      "score": -3.1975749999999996,
       "passed_validation": false
     }
   ],
