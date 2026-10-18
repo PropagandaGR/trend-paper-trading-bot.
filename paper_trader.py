@@ -83,7 +83,7 @@ def run_once() -> dict[str, Any]:
     if interval != "5m":
         bars = resample_ohlcv(bars, INTERVALS[interval])
     params = champion["params"]
-    signals = desired_signal(bars, champion["strategy"], params)
+    signals = desired_signal(bars, champion["strategy"], params,\n                            allow_short=bool(champion.get("allow_short", False)) and PAPER_ALLOW_SHORTS)
     if len(bars) < 2:
         status["message"] = "Waiting for sufficient closed candles."
         STATUS_FILE.write_text(json.dumps(status, indent=2))
@@ -129,21 +129,12 @@ def run_once() -> dict[str, Any]:
         })
     if cursor == latest_time:
         signal_diagnostics["explanation"] = "This candle was already processed; no duplicate simulated order is placed."
-    elif target_long:
-        signal_diagnostics["explanation"] = "The strategy signal is long; the paper trader should enter or remain invested on this new candle."
-    elif champion["strategy"] == "mean_reversion":
-        failed = []
-        if not signal_diagnostics["rsi_below_entry_threshold"]:
-            failed.append(f"RSI is not below {signal_diagnostics['rsi_entry_threshold']}")
-        if not signal_diagnostics["close_below_ema_slow"]:
-            failed.append("close is not below the slow EMA")
-        signal_diagnostics["explanation"] = (
-            "No entry: " + " and ".join(failed) + "."
-            if failed else
-            "The current candle meets raw entry conditions, but the strategy's one-candle signal shift means the active signal may not have switched long yet."
-        )
+    elif target_side > 0:
+        signal_diagnostics["explanation"] = "Validated strategy signal is long."
+    elif target_side < 0:
+        signal_diagnostics["explanation"] = "Validated strategy signal is short; paper-only shorting is enabled for this candidate."
     else:
-        signal_diagnostics["explanation"] = "The latest strategy signal is flat, so the bot stays in cash rather than forcing a trade."
+        signal_diagnostics["explanation"] = "No directional entry signal; the paper trader stays flat or exits the existing position."
     position_symbol = state.get("symbol")
     qty = float(state.get("quantity", 0.0))
     cash = float(state.get("cash", STARTING_CASH))
@@ -213,7 +204,7 @@ def run_once() -> dict[str, Any]:
         "signal_diagnostics": signal_diagnostics,
         "message": "Paper-only isolated-margin simulation; liquidation and fills are estimates, not exchange execution."
     })
-        STATE_FILE.write_text(json.dumps(state, indent=2))
+    STATE_FILE.write_text(json.dumps(state, indent=2))
     STATUS_FILE.write_text(json.dumps(status, indent=2))
     return status
 
