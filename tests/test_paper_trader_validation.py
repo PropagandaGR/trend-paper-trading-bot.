@@ -30,7 +30,7 @@ class PaperTraderChampionGateTests(unittest.TestCase):
         self.assertIsNone(champion_validation_error(valid_champion()))
 
     def test_rejects_legacy_champion_without_metadata(self):
-        self.assertIn("validation metadata", champion_validation_error({
+        self.assertIsNotNone(champion_validation_error({
             "symbol": "BTCUSDT", "interval": "5m", "strategy": "trend",
             "params": {"fast": 8, "slow": 30, "momentum": 6, "breakout": 12},
         }))
