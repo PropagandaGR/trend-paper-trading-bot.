@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18T18:28:02.545609+00:00",
+  "updated_at": "2026-10-18T18:36:15.073015+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
   "cash_usdt": 15.0,
@@ -35,5 +35,26 @@
     }
   },
   "last_processed_bar": "2026-10-18T18:30:00+00:00",
+  "signal_diagnostics": {
+    "symbol": "ETHUSDT",
+    "strategy": "mean_reversion",
+    "interval": "30m",
+    "latest_bar": "2026-10-18T18:30:00+00:00",
+    "last_processed_bar_before_run": "2026-10-18T18:30:00+00:00",
+    "new_bar_to_process": false,
+    "close_usdt": 2363.49,
+    "signal_long": false,
+    "current_signal": 0.0,
+    "previous_signal": 0.0,
+    "rsi": 29.331,
+    "ema_fast": 2374.11683833,
+    "ema_slow": 2394.19548506,
+    "momentum": -0.00605161,
+    "rsi_entry_threshold": 25.0,
+    "rsi_below_entry_threshold": false,
+    "close_below_ema_slow": true,
+    "raw_entry_conditions_met": false,
+    "explanation": "This candle was already processed; no duplicate simulated order is placed."
+  },
   "message": "Simulated portfolio only; fills are estimates, not exchange orders."
 }
