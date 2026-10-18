@@ -268,6 +268,33 @@ def run_once() -> dict[str, Any]:
             status["message"] = "Champion rejected and held position cannot be safely valued; no simulated order made."
         else:
             equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
+            risk = update_risk_metrics(state, equity)
+            exposure_fraction = (qty * mark / equity) if qty > 0 and equity > 0 else 0.0
+            if exposure_fraction > MAX_POSITION_FRACTION:
+                state["risk_halt"] = True
+                state["risk_halt_reason"] = "position_exposure_limit"
+                risk["halted"] = True
+                risk["halt_reason"] = state["risk_halt_reason"]
+            if risk["halted"] and qty > 0:
+                entry = float(state.get("entry_price") or mark)
+                sale = sell_with_costs(qty, mark, entry, FEE_BPS, SLIPPAGE_BPS)
+                cash += sale.net_proceeds
+                state["realized_pnl"] = float(state.get("realized_pnl", 0.0)) + sale.realized_pnl
+                state["completed_trades"] = int(state.get("completed_trades", 0)) + 1
+                status["actions"].append({
+                    "action": "PAPER_SELL", "symbol": held_symbol,
+                    "price": round(sale.execution_price, 8), "quantity": qty,
+                    "fee_usdt": round(sale.fee, 8), "slippage_usdt": round(sale.slippage, 8),
+                    "net_proceeds_usdt": round(sale.net_proceeds, 8),
+                    "realized_pnl_usdt": round(sale.realized_pnl, 8),
+                    "reason": "risk circuit breaker: " + str(risk["halt_reason"]),
+                })
+                qty, held_symbol, mark = 0.0, None, 0.0
+                state["quantity"], state["symbol"], state["entry_price"] = 0.0, None, None
+                equity = cash
+                risk = update_risk_metrics(state, equity)
+                risk["halted"] = True
+                risk["halt_reason"] = state.get("risk_halt_reason")
             entry = float(state.get("entry_price") or mark or 0.0)
             status.update({
                 "cash_usdt": round(cash, 8),
@@ -277,7 +304,9 @@ def run_once() -> dict[str, Any]:
                 "open_position": ({"symbol": held_symbol, "quantity": round(qty, 10),
                                    "mark_price": round(mark, 8), "entry_price": round(entry, 8)}
                                   if qty > 0 else None),
-                "message": champion_error or "No validated champion; no simulated order made.",
+                "risk": risk,
+                "message": ("Risk circuit breaker is latched; no new simulated buys are allowed."
+                            if risk["halted"] else champion_error or "No validated champion; no simulated order made."),
             })
         state["last_checked_at"] = utc_now()
         STATE_FILE.write_text(json.dumps(state, indent=2))
