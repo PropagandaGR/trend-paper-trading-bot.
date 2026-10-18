@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, "core/coinbase-only-market-data"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
