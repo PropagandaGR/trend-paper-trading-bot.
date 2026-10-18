@@ -217,7 +217,7 @@ def _set_unvalued_position_status(status: dict[str, Any], state: dict[str, Any],
     cash = float(state.get("cash", STARTING_CASH))
     quantity = float(state.get("quantity", 0.0))
     symbol = state.get("symbol")
-    has_position = quantity > 0 and isinstance(symbol, str)
+    has_position = quantity > 0
     entry = state.get("entry_price")
     status.update({
         "cash_usdt": round(cash, 8),
