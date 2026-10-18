@@ -113,5 +113,66 @@ class TestSetIsolationTests(unittest.TestCase):
             self.assertIsNone(json.loads((state / "champion.json").read_text()))
 
 
+
+class ResearchCliFreshnessTests(unittest.TestCase):
+    def _valid_result(self, now):
+        stamp = now.isoformat()
+        champion = {
+            "champion_version": "champion-test123456",
+            "validation_metadata": {
+                "status": "validated",
+                "test_used_for_selection": False,
+                "validation_metrics": {"total_return_pct": 2.0},
+                "test_metrics": {"total_return_pct": -1.0},
+            },
+        }
+        summary = {
+            "started_at": stamp, "completed_at": stamp,
+            "evaluations": 12, "validated_count": 1,
+            "results": [{"passed_validation": True}], "champion": champion,
+        }
+        return summary
+
+    def test_fresh_report_with_validation_and_isolated_test_is_accepted(self):
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        summary = self._valid_result(now)
+        with tempfile.TemporaryDirectory() as tmp:
+            report = Path(tmp) / "research_latest.json"
+            report.write_text(json.dumps(summary))
+            research_engine.validate_research_output(summary, report, now=now)
+
+    def test_missing_report_fails(self):
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(RuntimeError, "was not produced"):
+                research_engine.validate_research_output(
+                    self._valid_result(now), Path(tmp) / "missing.json", now=now
+                )
+
+    def test_stale_report_fails(self):
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        summary = self._valid_result(now - timedelta(minutes=30))
+        with tempfile.TemporaryDirectory() as tmp:
+            report = Path(tmp) / "research_latest.json"
+            report.write_text(json.dumps(summary))
+            with self.assertRaisesRegex(RuntimeError, "not fresh"):
+                research_engine.validate_research_output(summary, report, now=now)
+
+    def test_no_validated_candidate_fails(self):
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        summary = self._valid_result(now)
+        summary["validated_count"] = 0
+        summary["champion"] = None
+        with tempfile.TemporaryDirectory() as tmp:
+            report = Path(tmp) / "research_latest.json"
+            report.write_text(json.dumps(summary))
+            with self.assertRaisesRegex(RuntimeError, "no candidate that passed validation"):
+                research_engine.validate_research_output(summary, report, now=now)
+
+
 if __name__ == "__main__":
     unittest.main()
