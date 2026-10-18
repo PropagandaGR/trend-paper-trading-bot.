@@ -429,3 +429,86 @@ def run_research(days: int = 90) -> dict[str, Any]:
         (STATE / "champion.json").write_text("null")
     return summary
 
+
+
+def validate_research_output(summary: dict[str, Any], report_path: Path | None = None,
+                             now: datetime | None = None,
+                             max_age_minutes: int = 15) -> None:
+    """Raise when this run did not produce a fresh report and validated champion."""
+    path = report_path or (REPORTS / "research_latest.json")
+    current = now or datetime.now(timezone.utc)
+    if not path.is_file():
+        raise RuntimeError(f"Research report was not produced: {path}")
+    age_seconds = current.timestamp() - path.stat().st_mtime
+    if age_seconds < -60 or age_seconds > max_age_minutes * 60:
+        raise RuntimeError(
+            f"Research report is not fresh (age={age_seconds:.1f}s; "
+            f"maximum={max_age_minutes * 60}s)"
+        )
+    try:
+        persisted = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Research report is unreadable or invalid JSON: {exc}") from exc
+
+    completed_at = persisted.get("completed_at")
+    if not isinstance(completed_at, str):
+        raise RuntimeError("Research report is missing completed_at")
+    try:
+        completed = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+        if completed.tzinfo is None:
+            completed = completed.replace(tzinfo=timezone.utc)
+    except ValueError as exc:
+        raise RuntimeError("Research report has an invalid completed_at timestamp") from exc
+    report_age = (current - completed.astimezone(timezone.utc)).total_seconds()
+    if report_age < -60 or report_age > max_age_minutes * 60:
+        raise RuntimeError(
+            f"Research report completion timestamp is stale (age={report_age:.1f}s)"
+        )
+    if persisted.get("started_at") != summary.get("started_at"):
+        raise RuntimeError("Fresh report does not belong to the current research run")
+    if int(persisted.get("evaluations", 0)) < 1 or not persisted.get("results"):
+        raise RuntimeError("Research run produced no candidate evaluation/validation results")
+    if int(persisted.get("validated_count", 0)) < 1:
+        raise RuntimeError("Research run produced no candidate that passed validation")
+    champion = persisted.get("champion")
+    if not isinstance(champion, dict):
+        raise RuntimeError("Research run produced no validated champion")
+    metadata = champion.get("validation_metadata")
+    if not isinstance(metadata, dict) or metadata.get("status") != "validated":
+        raise RuntimeError("Champion is missing validated status metadata")
+    if metadata.get("test_used_for_selection") is not False:
+        raise RuntimeError("Champion metadata does not confirm final-test isolation")
+    if not isinstance(metadata.get("validation_metrics"), dict) or not isinstance(
+        metadata.get("test_metrics"), dict
+    ):
+        raise RuntimeError("Champion is missing validation or report-only test metrics")
+    expected_champion = summary.get("champion")
+    if (not isinstance(expected_champion, dict)
+            or champion.get("champion_version") != expected_champion.get("champion_version")):
+        raise RuntimeError("Persisted champion does not match this run's returned result")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Run Coinbase public-data strategy research and require a fresh validated result."
+    )
+    parser.add_argument("--days", type=int, default=90,
+                        help="lookback days of public market data (default: 90)")
+    args = parser.parse_args(argv)
+    if args.days < 30:
+        parser.error("--days must be at least 30 to support meaningful chronological splits")
+    try:
+        summary = run_research(days=args.days)
+        validate_research_output(summary)
+    except Exception as exc:
+        parser.exit(1, f"Research failed validation/freshness gate: {exc}\\n")
+    print(
+        f"Research complete: evaluations={summary['evaluations']}, "
+        f"validated={summary['validated_count']}, "
+        f"champion={summary['champion']['champion_version']}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
