@@ -158,7 +158,7 @@ class ResearchCliFreshnessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             report = Path(tmp) / "research_latest.json"
             report.write_text(json.dumps(summary))
-            with self.assertRaisesRegex(RuntimeError, "not fresh"):
+            with self.assertRaisesRegex(RuntimeError, "stale"):
                 research_engine.validate_research_output(summary, report, now=now)
 
     def test_no_validated_candidate_fails(self):
