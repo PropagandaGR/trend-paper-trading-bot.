@@ -6,7 +6,7 @@ A **new, isolated research project** for continuous live-market paper trading an
 - Simulated starting equity: **15 USDT**.
 - Spot-only, long/flat: no leverage, no shorting.
 - Public Coinbase Exchange market data only; no API keys or secrets are needed for candle data.
-- Research explores parameterized trend, breakout, and mean-reversion strategies for BTC, ETH, and SOL using Coinbase USD-quoted candles. The simulated ledger remains denominated in USDT, so USD/USDT quote differences must be considered when interpreting results.
+- Research explores parameterized trend, breakout, and mean-reversion strategies for BTC, ETH, and SOL using Coinbase USD-quoted candles converted to approximate USDT prices with same-candle Coinbase USDT-USD closes. This conversion is approximate, not tick-level FX accounting.
 - Candidate strategies must pass chronological train/validation/test splits, realistic fees/slippage stress, and benchmark comparisons before being selected for the paper portfolio.
 - The live paper trader uses the currently validated champion only. Research experiments never directly modify portfolio cash or positions.
 - Results are simulated estimates, not proof of future profitability.
@@ -35,4 +35,4 @@ python paper_trader.py --once
 - `state/paper_state.json`: simulated portfolio and candle cursors
 - `state/champion.json`: latest candidate that passed validation
 
-All generated state is simulated. Do not add exchange credentials. The system deliberately has no real-order code.
+All generated state is simulated. Do not add exchange credentials. The system deliberately has no real-order code. Coinbase public candles are the only market-data source; if Coinbase data or the USDT-USD conversion candles are unavailable, the run should fail rather than silently switch providers.
