@@ -40,6 +40,8 @@ class StalePriceBlocksEntryTests(unittest.TestCase):
                 "validated_at": pd.Timestamp.now(tz="UTC").isoformat(),
                 "symbol": "BTCUSDT", "interval": "5m", "strategy": "trend",
                 "allow_short": False,
+                "test": {"total_return_pct": 1.0, "max_drawdown_pct": 5.0, "trades": 4},
+                "stress": {"total_return_pct": 0.5},
                 "params": {"fast": 8, "slow": 30, "momentum": 6, "breakout": 12,
                            "entry_momentum": 0.0, "exit_momentum": -0.005,
                            "rsi_entry": 20, "rsi_exit": 50, "stop_pct": 0.06},
