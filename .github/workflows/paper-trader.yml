@@ -1,6 +1,16 @@
 name: Live Market Paper Trading
 
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/paper-trader.yml"
+      - "paper_trader.py"
+      - "portfolio_accounting.py"
+      - "research_engine.py"
+      - "universe.py"
+      - "state/champion.json"
+      - "state/champions/**"
   schedule:
     # Avoid GitHub's busiest minute boundaries; still runs every 5 minutes.
     - cron: "3-58/5 * * * *"
