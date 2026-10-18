@@ -315,7 +315,11 @@ def run_research(days: int = 90) -> dict[str, Any]:
             results.append({"symbol": symbol, "error": str(exc)})
     valid = [r for r in results if r.get("passed_validation")]
     valid.sort(key=lambda r: r["score"], reverse=True)
-    champion = valid[0] if valid else None
+    champion = dict(valid[0]) if valid else None
+    if champion is not None:
+        # Timestamp the validation event so the paper trader can reject stale champions.
+        champion["validated_at"] = utc_now()
+        champion["validation_period_days"] = days
     summary = {
         "started_at": started, "completed_at": utc_now(), "days": days,
         "symbols": list(SYMBOLS), "intervals": list(INTERVALS),
