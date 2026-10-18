@@ -441,14 +441,7 @@ def run_once() -> dict[str, Any]:
     mark_prices = current_prices
     state["last_prices"] = current_prices
     state["last_price_timestamps"] = price_timestamps
-    if symbol not in current_prices:
-        status["data_errors"].append({
-            "symbol": symbol,
-            "error": "Champion price is stale, missing, or invalid; no simulated order made."
-        })
-        status["message"] = "Fresh champion price unavailable; no simulated order made."
-        STATUS_FILE.write_text(json.dumps(status, indent=2))
-        return status
+    champion_price_fresh = symbol in current_prices
     if qty > 0 and position_symbol not in mark_prices:
         status["data_errors"].append({
             "symbol": position_symbol,
@@ -496,6 +489,18 @@ def run_once() -> dict[str, Any]:
             "risk": risk,
             "message": "Risk circuit breaker is latched; no new simulated buys are allowed. Manual review/reset required.",
         })
+        STATE_FILE.write_text(json.dumps(state, indent=2))
+        STATUS_FILE.write_text(json.dumps(status, indent=2))
+        return status
+
+    if not champion_price_fresh:
+        status["data_errors"].append({
+            "symbol": symbol,
+            "error": "Champion price is stale, missing, or invalid; no simulated order made."
+        })
+        status["message"] = "Fresh champion price unavailable; no simulated order made."
+        state.update({"cash": cash, "quantity": qty, "symbol": position_symbol,
+                      "last_checked_at": utc_now()})
         STATE_FILE.write_text(json.dumps(state, indent=2))
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
