@@ -42,9 +42,14 @@ jobs:
           if [ -z "$DAYS" ]; then DAYS=90; fi
           if [ "$DAYS" -lt 30 ] || [ "$DAYS" -gt 365 ]; then DAYS=90; fi
           echo "days=$DAYS" >> "$GITHUB_OUTPUT"
+      - name: Mark research start time
+        id: research_start
+        run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Search and validate strategies
         run: python research_engine.py --days "${{ steps.window.outputs.days }}" --require-fresh-report
       - name: Independently verify fresh research artifacts
+        env:
+          RESEARCH_STARTED_AT: ${{ steps.research_start.outputs.started_at }}
         run: |
           python - <<'PY'
           import json
@@ -60,8 +65,11 @@ jobs:
               raise SystemExit("FAIL: research did not complete substantive evaluations")
           started = datetime.fromisoformat(report["started_at"].replace("Z", "+00:00"))
           completed = datetime.fromisoformat(report["completed_at"].replace("Z", "+00:00"))
+          workflow_started = datetime.fromisoformat(__import__("os").environ["RESEARCH_STARTED_AT"].replace("Z", "+00:00"))
           if started.tzinfo is None or completed.tzinfo is None or completed < started:
               raise SystemExit("FAIL: invalid research timestamps")
+          if started < workflow_started:
+              raise SystemExit("FAIL: report predates this workflow's research invocation")
           validation = report.get("validation_result")
           if not isinstance(validation, dict) or validation.get("status") not in {"validated", "no_candidate"}:
               raise SystemExit("FAIL: missing explicit validation result")
