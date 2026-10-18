@@ -317,7 +317,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
             raw = fetch_klines(symbol, "5m", days).sort_index()
             for interval, rule in INTERVALS.items():
                 bars = raw if interval == "5m" else resample_ohlcv(raw, rule)
-                if len(bars) < 1000:
+                if len(bars) < 1100:
                     errors.append({"symbol": symbol, "interval": interval,
                                    "error": "Insufficient bars for independent train/validation/test evaluation"})
                     continue
