@@ -7,7 +7,7 @@ from typing import Any
 import pandas as pd
 
 from research_engine import (
-    INTERVALS, REPORTS, STATE, SYMBOLS, fetch_klines, desired_signal, add_features, utc_now
+    INTERVALS, REPORTS, STATE, SYMBOLS, fetch_klines, desired_signal, add_features, resample_ohlcv, utc_now
 )
 
 STARTING_CASH = 15.0
@@ -74,10 +74,7 @@ def run_once() -> dict[str, Any]:
     interval = champion.get("interval", "5m")
     bars = frames[symbol]
     if interval != "5m":
-        bars = bars.resample(INTERVALS[interval], label="right", closed="right").agg({
-            "open": "first", "high": "max", "low": "min", "close": "last",
-            "volume": "sum", "close_time": "last"
-        }).dropna(subset=["open", "high", "low", "close"])
+        bars = resample_ohlcv(bars, INTERVALS[interval])
     params = champion["params"]
     signals = desired_signal(bars, champion["strategy"], params)
     if len(bars) < 2:
