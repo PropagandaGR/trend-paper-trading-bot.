@@ -55,11 +55,15 @@ class LedgerAccountingRegressionTests(unittest.TestCase):
             100 * (1 - sell.net_proceeds / 15.0), 0.2997, delta=0.02
         )
 
-    def test_invalid_negative_costs_are_rejected(self):
+    def test_invalid_negative_or_non_finite_costs_are_rejected(self):
         with self.assertRaises(ValueError):
             buy_with_costs(15.0, 100.0, fee_bps=-1, slippage_bps=5)
         with self.assertRaises(ValueError):
             sell_with_costs(1.0, 100.0, 100.0, fee_bps=10, slippage_bps=-1)
+        with self.assertRaises(ValueError):
+            buy_with_costs(15.0, 100.0, fee_bps=float("nan"), slippage_bps=5)
+        with self.assertRaises(ValueError):
+            mark_to_market(0.0, 1.0, "BTCUSDT", {"BTCUSDT": float("nan")})
 
 
 if __name__ == "__main__":
