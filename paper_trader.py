@@ -69,9 +69,38 @@ def _valid_champion(champion: Any) -> tuple[bool, str]:
         return False, "Champion interval is unsupported."
     if champion.get("strategy") not in ("trend", "breakout", "mean_reversion"):
         return False, "Champion strategy is unsupported."
-    if not isinstance(champion.get("params"), dict):
-        return False, "Champion parameters are missing."
-    return True, "Champion validation is current."
+    params = champion.get("params")
+    required = ("fast", "slow", "momentum", "breakout", "entry_momentum",
+                "exit_momentum", "rsi_entry", "rsi_exit", "stop_pct")
+    if not isinstance(params, dict) or any(key not in params for key in required):
+        return False, "Champion parameters are incomplete."
+    try:
+        numeric = {key: float(params[key]) for key in required}
+    except (TypeError, ValueError):
+        return False, "Champion parameters contain non-numeric values."
+    if not all(math.isfinite(value) for value in numeric.values()):
+        return False, "Champion parameters contain non-finite values."
+    if (numeric["fast"] < 1 or numeric["slow"] <= numeric["fast"] or
+            numeric["momentum"] < 1 or numeric["breakout"] < 1 or
+            not 0 <= numeric["rsi_entry"] <= 100 or
+            not 0 <= numeric["rsi_exit"] <= 100 or
+            not 0 < numeric["stop_pct"] < 1):
+        return False, "Champion parameters are outside safe bounds."
+    test_metrics, stress_metrics = champion.get("test"), champion.get("stress")
+    if not isinstance(test_metrics, dict) or not isinstance(stress_metrics, dict):
+        return False, "Champion is missing held-out test and cost-stress evidence."
+    try:
+        test_return = float(test_metrics["total_return_pct"])
+        test_drawdown = float(test_metrics["max_drawdown_pct"])
+        test_trades = int(test_metrics["trades"])
+        stress_return = float(stress_metrics["total_return_pct"])
+    except (KeyError, TypeError, ValueError):
+        return False, "Champion validation metrics are incomplete."
+    if not all(math.isfinite(v) for v in (test_return, test_drawdown, stress_return)):
+        return False, "Champion validation metrics are non-finite."
+    if test_return <= 0 or stress_return <= 0 or test_drawdown >= 25 or test_trades < 2:
+        return False, "Champion does not meet the held-out return, drawdown, trade-count and cost-stress gates."
+    return True, "Champion validation is current and evidence-backed."
 
 
 def _prepare_bars(frame: pd.DataFrame, interval: str) -> tuple[pd.DataFrame | None, str]:
@@ -185,6 +214,10 @@ def run_once() -> dict[str, Any]:
 
     # Legacy open spot positions can be migrated safely to 1x accounting only.
     qty = float(state.get("quantity", 0.0))
+    state.setdefault("side", 1 if qty > 0 else 0)
+    state.setdefault("margin", 0.0)
+    state.setdefault("leverage", 1.0)
+    state.setdefault("entry_fee", 0.0)
     if qty > 0 and not state.get("margin") and state.get("entry_price"):
         state["margin"] = qty * float(state["entry_price"])
         state["side"] = 1
