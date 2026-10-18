@@ -4,7 +4,7 @@ A **new, isolated research project** for continuous live-market paper trading an
 
 ## Safety and scope
 - Simulated starting equity: **15 USDT**.
-- Paper margin engine defaults to 1x; leverage above 1x is simulation-only and capped at 2x. Shorting is paper-only.
+- Paper margin engine defaults to 1x; leverage above 1x is simulation-only and capped at 2x. Shorting is paper-only. Set repository Actions variables `PAPER_LEVERAGE` to `2.0` to test 2x, and `PAPER_ALLOW_SHORTS` to `false` to disable shorts.
 - Liquidation is approximated at completed-bar marks and is not an exchange liquidation model.
 - Paper simulation supports long and short positions with configurable isolated leverage (1x–2x maximum). No live derivatives or real orders.
 - Public Binance market data only; no API keys or secrets.
