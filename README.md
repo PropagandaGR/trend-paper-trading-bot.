@@ -39,7 +39,7 @@ All generated state is simulated. Do not add exchange credentials. The system de
 
 ## Validation
 
-Pull requests run `python -m unittest discover -s tests -v` through the GitHub Actions Tests workflow. The research CLI fails unless the current invocation writes a fresh report with a substantive evaluation and explicit validation outcome. The autonomous research workflow independently verifies report freshness, champion metadata, final-test isolation, and the matching immutable snapshot before committing artifacts. Paper trading rejects missing, stale (over 24 hours), or incompletely validated champions. The Coinbase Public Data Smoke Test also checks recent public candles and USDT price conversion; it requires public network access and no exchange credentials.
+Pull requests run `python -m unittest discover -s tests -v` through the GitHub Actions Tests workflow. The research CLI and autonomous research workflow fail unless the current invocation writes a fresh report, performs substantive evaluations, and produces a versioned champion with complete validation metadata. A no-candidate run is recorded in the report but fails the workflow gate. The workflow independently verifies report freshness, champion metadata, final-test isolation, and the matching immutable snapshot before committing artifacts. Paper trading rejects missing, stale (over 24 hours), or incompletely validated champions. The Coinbase Public Data Smoke Test also checks recent public candles and USDT price conversion; it requires public network access and no exchange credentials.
 ## Research validation and backtest contract
 
 - Research uses chronological **60% training / 20% validation / 20% final test** periods per symbol and timeframe.
