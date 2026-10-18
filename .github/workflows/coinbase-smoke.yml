@@ -1,0 +1,38 @@
+name: Coinbase Public Data Smoke Test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "research_engine.py"
+      - "tests/test_coinbase_data_source.py"
+      - ".github/workflows/coinbase-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  coinbase-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Fetch recent Coinbase candles and verify USDT conversion
+        run: |
+          python - <<'PY'
+          from research_engine import fetch_klines
+          for symbol in ("BTCUSDT", "ETHUSDT", "SOLUSDT"):
+              frame = fetch_klines(symbol, "5m", 1)
+              assert not frame.empty, f"No Coinbase candles for {symbol}"
+              assert frame.attrs.get("source") == "coinbase"
+              assert frame.attrs.get("quote_currency") == "USDT"
+              assert frame[["open", "high", "low", "close"]].notna().all().all()
+              assert (frame[["open", "high", "low", "close"]] > 0).all().all()
+              print(f"{symbol}: {len(frame)} closed candles; last close={frame.close.iloc[-1]:.8f} USDT")
+          PY

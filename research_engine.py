@@ -23,65 +23,16 @@ DEFAULT_FEE_BPS = 10.0
 DEFAULT_SLIPPAGE_BPS = 5.0
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "Autonomous-Paper-Trading-Lab/1.0"})
+_USDT_USD_CANDLE_CACHE: dict[tuple[str, int], pd.DataFrame] = {}
 
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _frame_from_binance_rows(rows: list[list[Any]]) -> pd.DataFrame:
-    frame = pd.DataFrame(rows, columns=[
-        "open_time", "open", "high", "low", "close", "volume", "close_time",
-        "quote_volume", "trades", "taker_base", "taker_quote", "ignore"
-    ])
-    frame = frame.drop_duplicates("open_time").sort_values("open_time")
-    for col in ("open", "high", "low", "close", "volume"):
-        frame[col] = pd.to_numeric(frame[col], errors="coerce")
-    frame["open_time"] = pd.to_datetime(frame["open_time"], unit="ms", utc=True)
-    frame["close_time"] = pd.to_datetime(frame["close_time"], unit="ms", utc=True)
-    frame = frame.set_index("open_time")
-    return frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC")]
-
-
-def _fetch_binance(symbol: str, interval: str, days: int) -> pd.DataFrame:
-    end_ms = int(time.time() * 1000)
-    cursor = end_ms - int(days * 86400 * 1000)
-    rows: list[list[Any]] = []
-    # Try the global and US public endpoints. Some hosted runners are region-blocked.
-    last_error: Exception | None = None
-    for base in ("https://api.binance.com", "https://api.binance.us"):
-        try:
-            rows = []
-            page_cursor = cursor
-            while page_cursor < end_ms:
-                response = SESSION.get(
-                    f"{base}/api/v3/klines",
-                    params={"symbol": symbol, "interval": interval, "startTime": page_cursor,
-                            "endTime": end_ms, "limit": 1000},
-                    timeout=20,
-                )
-                response.raise_for_status()
-                batch = response.json()
-                if not batch:
-                    break
-                rows.extend(batch)
-                next_cursor = int(batch[-1][0]) + 1
-                if next_cursor <= page_cursor:
-                    break
-                page_cursor = next_cursor
-                if len(batch) < 1000:
-                    break
-                time.sleep(0.08)
-            if rows:
-                return _frame_from_binance_rows(rows)
-        except Exception as exc:
-            last_error = exc
-    raise RuntimeError(f"Binance public endpoints unavailable for {symbol} {interval}: {last_error}")
-
-
 def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
-    """Fallback to Coinbase Exchange public USD candles when Binance is region-blocked."""
-    product = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD"}.get(symbol)
+    """Fetch Coinbase Exchange public USD candles without account credentials."""
+    product = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD", "SOLUSDT": "SOL-USD", "USDTUSD": "USDT-USD"}.get(symbol)
     if not product:
         raise ValueError(f"No Coinbase fallback mapping for {symbol}")
     granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
@@ -105,7 +56,7 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
         batch = response.json()
         rows.extend(batch)
         cursor = stop
-        time.sleep(0.06)
+        time.sleep(0.12)
     if not rows:
         raise RuntimeError(f"No Coinbase candles returned for {product} {interval}")
     frame = pd.DataFrame(rows, columns=["time", "low", "high", "open", "close", "volume"])
@@ -119,20 +70,46 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
                      ["open", "high", "low", "close", "volume", "close_time"]]
 
 
-def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFrame:
-    """Fetch public closed candles; fallback when Binance is geo-blocked on CI."""
-    errors = []
-    for provider in (_fetch_binance, _fetch_coinbase):
-        try:
-            frame = provider(symbol, interval, days)
-            if not frame.empty:
-                frame.attrs["source"] = "coinbase" if provider is _fetch_coinbase else "binance"
-                return frame.sort_index()
-            errors.append(f"{provider.__name__}: empty data")
-        except Exception as exc:
-            errors.append(f"{provider.__name__}: {exc}")
-    raise RuntimeError(f"All public data providers failed for {symbol} {interval}: " + " | ".join(errors))
+def _convert_usd_candles_to_usdt(frame: pd.DataFrame, fx_frame: pd.DataFrame) -> pd.DataFrame:
+    """Convert USD-quoted OHLC prices to approximate USDT prices using USDT-USD closes.
 
+    Coinbase's USDT-USD close is USD per USDT. Dividing each asset's USD OHLC
+    by that same-candle FX close gives a consistent USDT-denominated price
+    series. This is an approximation, not tick-level FX conversion.
+    """
+    if frame.empty or fx_frame.empty:
+        raise RuntimeError("Cannot convert candles without asset and USDT-USD data")
+    fx = fx_frame["close"].reindex(frame.index).ffill()
+    valid = fx.notna() & (fx > 0)
+    converted = frame.loc[valid].copy()
+    fx = fx.loc[valid]
+    for column in ("open", "high", "low", "close"):
+        converted[column] = converted[column] / fx
+    converted.attrs["source"] = "coinbase"
+    converted.attrs["quote_currency"] = "USDT"
+    converted.attrs["fx_conversion"] = "USDT-USD candle close; approximate"
+    return converted
+
+
+def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFrame:
+    """Fetch closed Coinbase candles and express asset prices in USDT.
+
+    Binance is deliberately not used as a fallback. Candle data is public and
+    does not require API credentials. USD candles are converted using Coinbase
+    USDT-USD candle closes so the simulated USDT ledger uses matching units.
+    """
+    frame = _fetch_coinbase(symbol, interval, days)
+    if frame.empty:
+        raise RuntimeError(f"Coinbase returned no closed candles for {symbol} {interval}")
+    if symbol != "USDTUSD":
+        cache_key = (interval, days)
+        if cache_key not in _USDT_USD_CANDLE_CACHE:
+            _USDT_USD_CANDLE_CACHE[cache_key] = _fetch_coinbase("USDTUSD", interval, days)
+        fx_frame = _USDT_USD_CANDLE_CACHE[cache_key]
+        frame = _convert_usd_candles_to_usdt(frame, fx_frame)
+    frame.attrs["source"] = "coinbase"
+    frame.attrs["quote_currency"] = "USDT"
+    return frame.sort_index()
 
 def resample_ohlcv(frame: pd.DataFrame, rule: str) -> pd.DataFrame:
     """Build only complete higher-timeframe candles from closed 5m source bars.
@@ -141,7 +118,7 @@ def resample_ohlcv(frame: pd.DataFrame, rule: str) -> pd.DataFrame:
     group [18:00, 18:30) into the candle labeled 18:30, without pulling the
     18:30 candle into the candle that just ended. Require every expected 5m
     source candle and a final close timestamp at the bucket boundary (allowing
-    Binance's close_time to be boundary minus 1 ms).
+    Coinbase candle close timestamps are derived from their open times.
     """
     rule_delta = pd.Timedelta(rule)
     source_delta = pd.Timedelta(minutes=5)
