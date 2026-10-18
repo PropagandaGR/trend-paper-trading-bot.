@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -74,7 +75,7 @@ class TestSetIsolationTests(unittest.TestCase):
             history_file = state / "champions" / (summary["champion"]["champion_version"] + ".json")
             self.assertTrue(history_file.exists())
             self.assertEqual(
-                pd.read_json(history_file, typ="series")["champion_version"],
+                json.loads(history_file.read_text())["champion_version"],
                 summary["champion"]["champion_version"],
             )
 
