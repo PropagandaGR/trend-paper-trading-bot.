@@ -6,7 +6,7 @@ A **new, isolated research project** for continuous live-market paper trading an
 - Simulated starting equity: **15 USDT**.
 - Spot-only, long/flat: no leverage, no shorting.
 - Public Coinbase Exchange market data only; no API keys or secrets are needed for candle data.
-- Research explores parameterized trend, breakout, and mean-reversion strategies across a rotating batch from the CoinGecko market-cap top 100, intersected with currently online Coinbase USD spot markets. Stablecoins and duplicate/unsupported symbols are excluded. The universe is not a recommendation to buy any asset; Coinbase listing and liquidity availability constrain what can be considered.
+- Research explores parameterized trend, breakout, and mean-reversion strategies across a rotating batch from the CoinGecko market-cap top 100, intersected with currently online Coinbase USD spot markets. Stablecoins, duplicate/unsupported symbols, and coins below US$5 million global 24-hour volume are excluded. The volume threshold is a broad liquidity screen, not Coinbase-specific depth; the universe is not a recommendation to buy any asset.
 - Coinbase USD-quoted candles are converted to approximate USDT prices with same-candle Coinbase USDT-USD closes. This conversion is approximate, not tick-level FX accounting.
 - To keep research runs bounded, each run evaluates up to five eligible coins and rotates through the ranked universe by UTC hour. Coverage of all Coinbase-supported top-100 assets therefore takes multiple runs; the active champion is selected only from the current batch.
 - Candidate strategies must pass chronological train/validation/test splits, realistic fees/slippage stress, and benchmark comparisons before being selected for the paper portfolio.
