@@ -109,10 +109,39 @@ def run_once() -> dict[str, Any]:
     # No strategy has passed validation yet? Stay in cash; research cannot alter the
     # portfolio until it produces a validated champion.
     if not champion_accepted:
+        # Invalid champions must not trade, but an existing paper position still
+        # needs an honest symbol-specific mark in the status report.
+        current_prices = {
+            name: float(frame.close.iloc[-1])
+            for name, frame in frames.items()
+            if not frame.empty and pd.notna(frame.close.iloc[-1]) and float(frame.close.iloc[-1]) > 0
+        }
+        mark_prices = {**state.get("last_prices", {}), **current_prices}
+        state["last_prices"] = mark_prices
+        qty = float(state.get("quantity", 0.0))
+        held_symbol = state.get("symbol")
+        cash = float(state.get("cash", STARTING_CASH))
+        if qty > 0 and held_symbol not in mark_prices:
+            status["data_errors"].append({
+                "symbol": held_symbol,
+                "error": "Missing valid mark for held position; refusing cross-symbol valuation or trade."
+            })
+            status["message"] = "Champion rejected and held position cannot be safely valued; no simulated order made."
+        else:
+            equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
+            entry = float(state.get("entry_price") or mark or 0.0)
+            status.update({
+                "cash_usdt": round(cash, 8),
+                "equity_usdt": round(equity, 8),
+                "total_pnl_usdt": round(equity - STARTING_CASH, 8),
+                "unrealized_pnl_usdt": round((mark - entry) * qty if qty > 0 else 0.0, 8),
+                "open_position": ({"symbol": held_symbol, "quantity": round(qty, 10),
+                                   "mark_price": round(mark, 8), "entry_price": round(entry, 8)}
+                                  if qty > 0 else None),
+                "message": champion_error or "No validated champion; no simulated order made.",
+            })
         state["last_checked_at"] = utc_now()
         STATE_FILE.write_text(json.dumps(state, indent=2))
-        status["equity_usdt"] = round(float(state["cash"]), 8)
-        status["message"] = champion_error or "No validated champion; capital remains in simulated cash."
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
