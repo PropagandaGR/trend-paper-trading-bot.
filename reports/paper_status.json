@@ -1,0 +1,21 @@
+{
+  "updated_at": "2026-10-18T18:22:43.063881+00:00",
+  "mode": "PAPER_ONLY",
+  "starting_cash_usdt": 15.0,
+  "cash_usdt": 15.0,
+  "equity_usdt": 15.0,
+  "unrealized_pnl_usdt": 0.0,
+  "realized_pnl_usdt": 0.0,
+  "completed_trades": 0,
+  "open_position": null,
+  "champion_available": false,
+  "actions": [],
+  "data_errors": [],
+  "safety": {
+    "real_orders": false,
+    "exchange_credentials_used": false,
+    "leverage": false,
+    "short_selling": false
+  },
+  "message": "No validated champion yet; capital remains in simulated cash."
+}
