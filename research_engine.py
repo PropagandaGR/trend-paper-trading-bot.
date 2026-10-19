@@ -42,16 +42,24 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
-    """Fetch Coinbase Exchange public USD candles without account credentials."""
+def _fetch_coinbase(symbol: str, interval: str, days: int, *,
+                    window_start: pd.Timestamp | None = None,
+                    window_end: pd.Timestamp | None = None) -> pd.DataFrame:
+    """Fetch Coinbase Exchange public USD candles over aligned UTC boundaries."""
     product = get_coinbase_product_id(symbol)
     if not product:
         raise ValueError(f"No Coinbase fallback mapping for {symbol}")
     granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
     if granularity is None:
         raise ValueError(f"Unsupported Coinbase candle interval: {interval}")
-    end = pd.Timestamp.now(tz="UTC").floor(f"{granularity}s")
-    start = end - pd.Timedelta(days=days)
+    if window_start is None or window_end is None:
+        window_start, window_end = _aligned_candle_window(interval, days)
+    start, end = pd.Timestamp(window_start), pd.Timestamp(window_end)
+    if start.tzinfo is None or end.tzinfo is None or start >= end:
+        raise ValueError("Coinbase window boundaries must be ordered timezone-aware timestamps")
+    start, end = start.tz_convert("UTC"), end.tz_convert("UTC")
+    if start != start.floor(f"{granularity}s") or end != end.floor(f"{granularity}s"):
+        raise ValueError("Coinbase window boundaries must align to candle intervals")
     # Coinbase caps each response at 300 candles; page through the period.
     rows: list[list[Any]] = []
     chunk = pd.Timedelta(seconds=granularity * 280)
@@ -249,9 +257,6 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
             raise RuntimeError(
                 f"No same-candle USDT-USD FX closes available to convert {symbol} {interval}"
             )
-    granularity = {"1m": 60, "3m": 180, "5m": 300,
-                   "15m": 900, "30m": 1800, "1h": 3600}[interval]
-    expected_slots = int(days * 86400 // granularity)
     quality = dict(source_quality)
     converted_quality = candle_quality_report(
         frame, interval, days, window_start=window_start, window_end=window_end
