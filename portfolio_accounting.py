@@ -25,6 +25,21 @@ class SellResult:
     slippage: float
 
 
+MAX_POSITION_FRACTION = 0.50
+ENTRY_BUDGET_BUFFER = 0.995
+
+
+def entry_budget(cash: float, equity: float,
+                 max_fraction: float = MAX_POSITION_FRACTION,
+                 buffer: float = ENTRY_BUDGET_BUFFER) -> float:
+    """Shared paper/backtest entry budget, leaving room for execution costs."""
+    if not all(math.isfinite(value) for value in (cash, equity, max_fraction, buffer)):
+        raise ValueError("cash, equity, max_fraction, and buffer must be finite")
+    if cash < 0 or equity < 0 or not 0 <= max_fraction <= 1 or not 0 <= buffer <= 1:
+        raise ValueError("cash/equity must be non-negative and fractions must be in [0, 1]")
+    return min(cash, equity * max_fraction * buffer)
+
+
 def _validate_costs(fee_bps: float, slippage_bps: float) -> tuple[float, float]:
     if (not math.isfinite(fee_bps) or not math.isfinite(slippage_bps)
             or fee_bps < 0 or slippage_bps < 0):
