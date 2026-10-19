@@ -275,9 +275,31 @@ def candidate_params() -> list[dict[str, Any]]:
     return candidates[::max(1, len(candidates) // 48)][:48]
 
 
+TRAIN_MIN_RETURN_PCT = 0.0
+TRAIN_MAX_DRAWDOWN_PCT = 35.0
+
+
 def score(metrics: dict[str, float]) -> float:
     # Prefer return while explicitly penalizing drawdown and excessive churn.
     return metrics["total_return_pct"] - 0.75 * metrics["max_drawdown_pct"] - 0.01 * metrics["trades"]
+
+
+def candidate_passes_gates(train: dict[str, float], validation: dict[str, float],
+                           validation_stress: dict[str, float]) -> bool:
+    """Require baseline training robustness as well as positive validation performance.
+
+    The final test is deliberately excluded: it remains report-only and is never
+    used to rank or accept candidates. These gates are necessary, not proof of
+    future profitability or a substitute for forward paper trading.
+    """
+    return (
+        train["total_return_pct"] > TRAIN_MIN_RETURN_PCT
+        and train["max_drawdown_pct"] < TRAIN_MAX_DRAWDOWN_PCT
+        and validation["total_return_pct"] > 0
+        and validation_stress["total_return_pct"] > 0
+        and validation["max_drawdown_pct"] < 25
+        and validation["trades"] >= 2
+    )
 
 
 def chronological_split(frame: pd.DataFrame, train_fraction: float = 0.60,
@@ -337,10 +359,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
                         train_m = backtest(train, strategy, params, 10, 5, interval)
                         validation_m = backtest(validation, strategy, params, 10, 5, interval)
                         validation_stress = backtest(validation, strategy, params, 20, 10, interval)
-                        passed = (validation_m["total_return_pct"] > 0
-                                  and validation_stress["total_return_pct"] > 0
-                                  and validation_m["max_drawdown_pct"] < 25
-                                  and validation_m["trades"] >= 2)
+                        passed = candidate_passes_gates(train_m, validation_m, validation_stress)
                         results.append({
                             "symbol": symbol, "interval": interval, "strategy": strategy,
                             "params": params, "train": train_m, "validation": validation_m,
@@ -382,10 +401,13 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 "selection_metric": "validation_score",
                 "validation_score": selected["validation_score"],
                 "validation_criteria": {
+                    "training_return_positive": True,
+                    "training_max_drawdown_below_pct": TRAIN_MAX_DRAWDOWN_PCT,
                     "validation_return_positive": True,
                     "validation_stress_return_positive": True,
                     "validation_max_drawdown_below_pct": 25,
                     "minimum_validation_position_changes": 2,
+                    "final_test_used_for_selection": False,
                 },
                 "periods": {"train": _period_metadata(train),
                             "validation": _period_metadata(validation),
@@ -426,7 +448,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
         "symbols": list(research_symbols), "universe": universe_metadata, "intervals": list(INTERVALS),
         "candidate_count": len(candidates), "evaluations": len(results),
         "validated_count": len(eligible), "champion": champion,
-        "selection_policy": "Select only by validation score; require positive validation and validation stress returns, validation drawdown under 25%, and at least two validation position changes. Final test metrics are report-only.",
+        "selection_policy": "Require positive training return, training max drawdown under 35%, positive validation and validation-stress returns, validation drawdown under 25%, and at least two validation position changes; rank eligible candidates by validation score only. Final test metrics are report-only and never used for selection.",
         "results": sorted(results, key=lambda r: r["validation_score"], reverse=True)[:30],
         "errors": errors,
         "warning": "Test metrics are not used for selection. Repeated runs over the same dates can still contaminate broader research decisions.",
@@ -503,9 +525,14 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
         raise RuntimeError("Champion is missing explicit validated metadata")
     if metadata.get("test_used_for_selection") is not False:
         raise RuntimeError("Champion metadata does not prove final-test isolation")
-    for field in ("validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
+    for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
         if not isinstance(metadata.get(field), dict):
             raise RuntimeError(f"Champion validation metadata is missing {field}")
+    train_metrics = metadata["train_metrics"]
+    if train_metrics.get("total_return_pct", float("-inf")) <= TRAIN_MIN_RETURN_PCT:
+        raise RuntimeError("Champion failed training robustness gate: training return must be positive")
+    if train_metrics.get("max_drawdown_pct", float("inf")) >= TRAIN_MAX_DRAWDOWN_PCT:
+        raise RuntimeError("Champion failed training robustness gate: training drawdown must be below 35%")
     cost = metadata.get("cost_convention")
     if not isinstance(cost, dict) or cost.get("fee_basis") != "executed notional":
         raise RuntimeError("Champion cost convention is missing or invalid")
