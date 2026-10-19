@@ -261,6 +261,13 @@ class DurableOOSPolicyTests(unittest.TestCase):
                 )
                 with self.assertRaisesRegex(RuntimeError, "history is empty or uncertain"):
                     research_engine._load_local_oos_ledger()
+                (state / "oos_evaluation_ledger.json").write_text(json.dumps({
+                    "policy_version": "chronological-oos-v1",
+                    "last_test_end": "2026-01-01T00:00:00+00:00",
+                    "last_result": "passed",
+                }))
+                with self.assertRaisesRegex(RuntimeError, "missing or incompatible"):
+                    research_engine._load_local_oos_ledger()
 
     def test_missing_history_prevents_backtesting_and_champion_promotion(self):
         with tempfile.TemporaryDirectory() as tmp:
