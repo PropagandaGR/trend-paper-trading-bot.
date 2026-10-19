@@ -27,7 +27,9 @@ REPORTS = ROOT / "reports"
 STATE = ROOT / "state"
 SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT")
 INTERVALS = {"5m": "5min", "10m": "10min", "15m": "15min", "30m": "30min"}
-MIN_CANDLE_COVERAGE_PCT = 95.0
+MIN_CANDLE_COVERAGE_PCT = 99.0
+MAX_CONSECUTIVE_MISSING_SLOTS = 3
+MAX_FX_MISSING_PCT = 1.0
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "Autonomous-Paper-Trading-Lab/1.0"})
 _USDT_USD_CANDLE_CACHE: dict[tuple[str, int], pd.DataFrame] = {}
@@ -90,9 +92,21 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     return closed
 
 
+def _max_consecutive_missing_slots(index: pd.Index, granularity: int) -> int:
+    """Return the longest run of missing interval slots between observed candles."""
+    if len(index) < 2:
+        return 0
+    stamps = pd.DatetimeIndex(index)
+    differences = stamps.to_series().diff().dropna().dt.total_seconds().to_numpy()
+    if not len(differences):
+        return 0
+    slot_counts = np.rint(differences / granularity).astype(int)
+    return int(max(0, int(slot_counts.max()) - 1))
+
+
 def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int = 90,
                           now: pd.Timestamp | None = None) -> dict[str, Any]:
-    """Summarize expected-window coverage and OHLC integrity without filling gaps."""
+    """Summarize coverage, timestamp cadence, duplicates, and OHLC integrity."""
     granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
     if granularity is None:
         raise ValueError(f"Unsupported candle-quality interval: {interval}")
@@ -119,6 +133,14 @@ def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int =
     duplicate_count = int(frame.attrs.get("duplicate_candles_dropped", 0))
     conflicting_duplicate_groups = int(frame.attrs.get("conflicting_duplicate_groups", 0))
     source_was_sorted = bool(frame.attrs.get("source_was_sorted", frame.index.is_monotonic_increasing))
+    unique_timestamps = not frame.index.has_duplicates
+    monotonic_timestamps = bool(frame.index.is_monotonic_increasing)
+    if len(frame) > 1:
+        diffs = pd.DatetimeIndex(frame.index).to_series().diff().dropna().dt.total_seconds().to_numpy()
+        irregular_timestamp_gaps = int(np.count_nonzero(np.abs(diffs / granularity - np.rint(diffs / granularity)) > 1e-6))
+    else:
+        irregular_timestamp_gaps = 0
+    max_consecutive_missing_slots = _max_consecutive_missing_slots(frame.index, granularity)
     return {
         "interval": interval,
         "requested_days": int(days),
@@ -130,8 +152,12 @@ def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int =
         "conflicting_duplicate_groups": conflicting_duplicate_groups,
         "response_was_sorted": bool(frame.attrs.get("response_was_sorted", source_was_sorted)),
         "source_was_sorted": source_was_sorted,
+        "unique_timestamps": unique_timestamps,
+        "monotonic_timestamps": monotonic_timestamps,
+        "irregular_timestamp_gaps": irregular_timestamp_gaps,
+        "max_consecutive_missing_slots": max_consecutive_missing_slots,
         "invalid_ohlc_rows": invalid_ohlc_rows,
-        "coverage_note": "Missing slots can be no-trade intervals or unavailable candles; they are not interpolated.",
+        "coverage_note": "Missing slots are never interpolated; long gaps, no-trade intervals, and unavailable candles are treated as data-quality risk.",
     }
 
 
@@ -193,13 +219,23 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
         "converted_coverage_pct": round(min(100.0, len(frame) / expected_slots * 100.0), 4),
         "fx_missing_candles": fx_missing_candles,
         "fx_missing_pct_of_source": round(fx_missing_candles / max(source_candle_count, 1) * 100.0, 4),
+        "converted_max_consecutive_missing_slots": _max_consecutive_missing_slots(frame.index, granularity),
+        "converted_unique_timestamps": not frame.index.has_duplicates,
+        "converted_monotonic_timestamps": bool(frame.index.is_monotonic_increasing),
     })
     quality["quality_gate_passed"] = bool(
         quality["source_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
         and quality["converted_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
+        and quality["fx_missing_pct_of_source"] <= MAX_FX_MISSING_PCT
         and quality["invalid_ohlc_rows"] == 0
         and quality["conflicting_duplicate_groups"] == 0
-        and quality["source_was_sorted"]
+        and quality["unique_timestamps"]
+        and quality["monotonic_timestamps"]
+        and quality["irregular_timestamp_gaps"] == 0
+        and quality["max_consecutive_missing_slots"] <= MAX_CONSECUTIVE_MISSING_SLOTS
+        and quality["converted_max_consecutive_missing_slots"] <= MAX_CONSECUTIVE_MISSING_SLOTS
+        and quality["converted_unique_timestamps"]
+        and quality["converted_monotonic_timestamps"]
     )
     frame.attrs["data_quality"] = quality
     frame.attrs["source"] = "coinbase"
@@ -468,20 +504,41 @@ TRAIN_MIN_RETURN_PCT = 0.0
 TRAIN_MAX_DRAWDOWN_PCT = 35.0
 
 
-def score(metrics: dict[str, float]) -> float:
-    # Prefer return while explicitly penalizing drawdown and excessive churn.
-    return metrics["total_return_pct"] - 0.75 * metrics["max_drawdown_pct"] - 0.01 * metrics["trades"]
+def score(metrics: dict[str, float], benchmarks: dict[str, dict[str, float]] | None = None) -> float:
+    """Rank using validation-only excess return, drawdown, and turnover."""
+    benchmark_return = max(
+        (item.get("total_return_pct", 0.0) for item in (benchmarks or {}).values()),
+        default=0.0,
+    )
+    excess_return = metrics["total_return_pct"] - benchmark_return
+    return excess_return - 0.75 * metrics["max_drawdown_pct"] - 0.01 * metrics["trades"]
+
+
+def _beats_benchmarks(metrics: dict[str, float],
+                      benchmarks: dict[str, dict[str, float]] | None) -> bool:
+    if not isinstance(benchmarks, dict) or not {"cash", "buy_and_hold"}.issubset(benchmarks):
+        return False
+    try:
+        candidate_return = float(metrics["total_return_pct"])
+        benchmark_returns = [float(benchmarks[name]["total_return_pct"])
+                             for name in ("cash", "buy_and_hold")]
+    except (KeyError, TypeError, ValueError):
+        return False
+    return all(math.isfinite(value) for value in [candidate_return, *benchmark_returns]) and all(
+        candidate_return > benchmark_return for benchmark_return in benchmark_returns
+    )
 
 
 def candidate_passes_gates(train: dict[str, float], validation: dict[str, float],
-                           validation_stress: dict[str, float]) -> bool:
-    """Require baseline training robustness as well as positive validation performance.
+                           validation_stress: dict[str, float],
+                           validation_benchmarks: dict[str, dict[str, float]] | None = None,
+                           validation_stress_benchmarks: dict[str, dict[str, float]] | None = None) -> bool:
+    """Require training robustness and after-cost validation advantage over cash and buy-and-hold.
 
-    The final test is deliberately excluded: it remains report-only and is never
-    used to rank or accept candidates. These gates are necessary, not proof of
-    future profitability or a substitute for forward paper trading.
+    The final test is excluded from selection. After validation-only ranking fixes
+    one candidate, a separate held-out deployment veto decides whether it can be promoted.
     """
-    return (
+    core_gates = (
         train["total_return_pct"] > TRAIN_MIN_RETURN_PCT
         and train["max_drawdown_pct"] < TRAIN_MAX_DRAWDOWN_PCT
         and validation["total_return_pct"] > 0
@@ -489,6 +546,33 @@ def candidate_passes_gates(train: dict[str, float], validation: dict[str, float]
         and validation["max_drawdown_pct"] < 25
         and validation["trades"] >= 2
     )
+    if not core_gates:
+        return False
+    if validation_benchmarks is None and validation_stress_benchmarks is None:
+        return True
+    return (
+        _beats_benchmarks(validation, validation_benchmarks)
+        and _beats_benchmarks(validation_stress, validation_stress_benchmarks)
+    )
+
+
+def deployment_gate_failures(test_metrics: dict[str, float],
+                             test_stress_metrics: dict[str, float],
+                             test_benchmarks: dict[str, dict[str, float]],
+                             test_stress_benchmarks: dict[str, dict[str, float]]) -> list[str]:
+    """Out-of-sample veto; never used to rank candidates or fall back to another one."""
+    failures: list[str] = []
+    for label, metrics, benchmarks in (
+        ("test", test_metrics, test_benchmarks),
+        ("stress_test", test_stress_metrics, test_stress_benchmarks),
+    ):
+        if not _beats_benchmarks(metrics, benchmarks):
+            failures.append(f"{label} return must beat both cash and buy-and-hold after costs")
+        if not math.isfinite(float(metrics.get("max_drawdown_pct", float("nan")))) or metrics["max_drawdown_pct"] >= 25:
+            failures.append(f"{label} drawdown must be below 25%")
+        if not math.isfinite(float(metrics.get("trades", float("nan")))) or metrics["trades"] < 2:
+            failures.append(f"{label} must contain at least two position changes")
+    return failures
 
 
 def chronological_split(frame: pd.DataFrame, train_fraction: float = 0.60,
@@ -554,7 +638,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
             if not quality.get("quality_gate_passed", False):
                 errors.append({
                     "symbol": symbol,
-                    "error": "Candle quality gate failed: require at least 95% source and converted coverage, sorted unique candles, and valid OHLCV.",
+                    "error": "Candle quality gate failed: require at least 99% source/converted coverage, <=1% missing FX, no invalid OHLCV or conflicting duplicates, unique monotonic timestamps, and no gap longer than three bars.",
                     "data_quality": quality,
                 })
                 continue
@@ -564,22 +648,57 @@ def run_research(days: int = 90) -> dict[str, Any]:
                     errors.append({"symbol": symbol, "interval": interval,
                                    "error": "Insufficient bars for independent train/validation/test evaluation"})
                     continue
+                closes = pd.to_numeric(bars["close"], errors="coerce")
+                if (not bars.index.is_monotonic_increasing or bars.index.has_duplicates
+                        or not np.isfinite(closes).all() or (closes <= 0).any()):
+                    errors.append({"symbol": symbol, "interval": interval,
+                                   "error": "Resampled data failed unique, monotonic, finite-positive close validation"})
+                    continue
                 evaluation_frames[(symbol, interval)] = bars.copy()
                 train, validation, test = chronological_split(bars)
+                validation_benchmarks = {
+                    "cash": cash_benchmark(validation, interval),
+                    "buy_and_hold": buy_and_hold_benchmark(
+                        validation, interval, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS
+                    ),
+                }
+                validation_stress_benchmarks = {
+                    "cash": cash_benchmark(validation, interval),
+                    "buy_and_hold": buy_and_hold_benchmark(
+                        validation, interval, STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS
+                    ),
+                }
                 for strategy in strategies:
                     for params in strategy_candidates[strategy]:
                         train_m = backtest(train, strategy, params, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
                         validation_m = backtest(validation, strategy, params, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
                         validation_stress = backtest(validation, strategy, params, STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
-                        passed = candidate_passes_gates(train_m, validation_m, validation_stress)
+                        passed = candidate_passes_gates(
+                            train_m, validation_m, validation_stress,
+                            validation_benchmarks, validation_stress_benchmarks,
+                        )
                         results.append({
                             "symbol": symbol, "interval": interval, "strategy": strategy,
                             "params": params,
                             "effective_params": effective_strategy_params(strategy, params),
                             "train": train_m, "validation": validation_m,
                             "validation_stress": validation_stress,
-                            "validation_score": score(validation_m),
+                            "validation_benchmarks": validation_benchmarks,
+                            "validation_stress_benchmarks": validation_stress_benchmarks,
+                            "validation_score": score(validation_m, validation_benchmarks),
                             "passed_validation": bool(passed),
+                            "validation_rejection_reasons": [
+                                reason for condition, reason in (
+                                    (train_m["total_return_pct"] <= TRAIN_MIN_RETURN_PCT, "training return is not positive"),
+                                    (train_m["max_drawdown_pct"] >= TRAIN_MAX_DRAWDOWN_PCT, "training drawdown is >= 35%"),
+                                    (validation_m["total_return_pct"] <= 0, "validation return is not positive after costs"),
+                                    (validation_stress["total_return_pct"] <= 0, "stressed validation return is not positive"),
+                                    (validation_m["max_drawdown_pct"] >= 25, "validation drawdown is >= 25%"),
+                                    (validation_m["trades"] < 2, "validation has fewer than two position changes"),
+                                    (not _beats_benchmarks(validation_m, validation_benchmarks), "validation does not beat cash and buy-and-hold"),
+                                    (not _beats_benchmarks(validation_stress, validation_stress_benchmarks), "stressed validation does not beat cash and stressed buy-and-hold"),
+                                ) if condition
+                            ],
                             "periods": {"train": _period_metadata(train),
                                         "validation": _period_metadata(validation),
                                         "test": _period_metadata(test)},
@@ -591,8 +710,10 @@ def run_research(days: int = 90) -> dict[str, Any]:
     eligible.sort(key=lambda r: r["validation_score"], reverse=True)
     selected = eligible[0] if eligible else None
     champion = None
+    selected_test_gate: dict[str, Any] | None = None
     if selected is not None:
-        # The final test is only evaluated after the validation-only selection is fixed.
+        # Freeze selection on training/validation only. The final test is a one-way
+        # deployment veto; failure never triggers fallback to the next candidate.
         symbol, interval = selected["symbol"], selected["interval"]
         bars = evaluation_frames[(symbol, interval)]
         train, validation, test = chronological_split(bars)
@@ -606,53 +727,104 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 test, interval, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS
             ),
         }
-        version_material = json.dumps({
-            "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
-            "params": selected["params"], "train": _period_metadata(train),
-            "validation": _period_metadata(validation), "test": _period_metadata(test),
-            "created_at": started,
-        }, sort_keys=True)
-        import hashlib
-        version_hash = hashlib.sha256(version_material.encode()).hexdigest()[:12]
-        champion = {
-            "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
-            "params": selected["params"],
-            "effective_params": effective_strategy_params(selected["strategy"], selected["params"]),
-            "champion_version": f"champion-{version_hash}",
-            "validation_metadata": {
-                "created_at": started, "status": "validated",
-                "selection_metric": "validation_score",
-                "validation_score": selected["validation_score"],
-                "validation_criteria": {
-                    "training_return_positive": True,
-                    "training_max_drawdown_below_pct": TRAIN_MAX_DRAWDOWN_PCT,
-                    "validation_return_positive": True,
-                    "validation_stress_return_positive": True,
-                    "validation_max_drawdown_below_pct": 25,
-                    "minimum_validation_position_changes": 2,
-                    "final_test_used_for_selection": False,
+        test_stress_benchmarks = {
+            "cash": cash_benchmark(test, interval),
+            "buy_and_hold": buy_and_hold_benchmark(
+                test, interval, STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS
+            ),
+        }
+        test_gate_failures = deployment_gate_failures(
+            test_metrics, test_stress, test_benchmarks, test_stress_benchmarks
+        )
+        selected_test_gate = {
+            "candidate": {"symbol": symbol, "interval": interval,
+                          "strategy": selected["strategy"], "params": selected["params"]},
+            "passed": not test_gate_failures,
+            "failures": test_gate_failures,
+            "test_metrics": test_metrics,
+            "test_stress_metrics": test_stress,
+            "test_benchmarks": test_benchmarks,
+            "test_stress_benchmarks": test_stress_benchmarks,
+            "selection_note": "Candidate was fixed by validation score before test evaluation; test failure does not trigger selection of another candidate.",
+        }
+        selected["test_deployment_gate"] = {
+            "passed": not test_gate_failures, "failures": test_gate_failures
+        }
+        if not test_gate_failures:
+            version_material = json.dumps({
+                "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
+                "params": selected["params"], "train": _period_metadata(train),
+                "validation": _period_metadata(validation), "test": _period_metadata(test),
+                "created_at": started,
+            }, sort_keys=True)
+            import hashlib
+            version_hash = hashlib.sha256(version_material.encode()).hexdigest()[:12]
+            champion = {
+                "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
+                "params": selected["params"],
+                "effective_params": effective_strategy_params(selected["strategy"], selected["params"]),
+                "champion_version": f"champion-{version_hash}",
+                "validation_metadata": {
+                    "created_at": started, "status": "validated",
+                    "selection_metric": "validation_excess_return_score",
+                    "validation_score": selected["validation_score"],
+                    "validation_criteria": {
+                        "training_return_positive": True,
+                        "training_max_drawdown_below_pct": TRAIN_MAX_DRAWDOWN_PCT,
+                        "validation_return_positive": True,
+                        "validation_stress_return_positive": True,
+                        "validation_max_drawdown_below_pct": 25,
+                        "minimum_validation_position_changes": 2,
+                        "beats_cash_and_buy_and_hold": True,
+                        "stressed_validation_beats_cash_and_buy_and_hold": True,
+                        "final_test_used_for_selection": False,
+                    },
+                    "periods": {"train": _period_metadata(train),
+                                "validation": _period_metadata(validation),
+                                "test": _period_metadata(test)},
+                    "train_metrics": selected["train"],
+                    "validation_metrics": selected["validation"],
+                    "validation_stress_metrics": selected["validation_stress"],
+                    "validation_benchmarks": selected["validation_benchmarks"],
+                    "validation_stress_benchmarks": selected["validation_stress_benchmarks"],
+                    "test_metrics": test_metrics, "test_stress_metrics": test_stress,
+                    "test_benchmarks": test_benchmarks,
+                    "test_stress_benchmarks": test_stress_benchmarks,
+                    "test_deployment_gate": {"passed": True, "failures": []},
+                    "test_used_for_selection": False,
+                    "cost_convention": {
+                        "fee_bps_per_side": DEFAULT_FEE_BPS,
+                        "slippage_bps_per_side": DEFAULT_SLIPPAGE_BPS,
+                        "stress_fee_bps_per_side": STRESS_FEE_BPS,
+                        "stress_slippage_bps_per_side": STRESS_SLIPPAGE_BPS,
+                        "fill_timing": "closed candle close after one-candle signal shift",
+                        "fee_basis": "executed notional",
+                        "slippage": "execution price adjusted per side",
+                    },
+                    "sharpe_annualization": {"bars_per_year": bars_per_year(interval),
+                                             "interval": interval, "calendar_days_per_year": 365},
+                    "warning": "The untouched test was used only as a one-way deployment veto after validation selection was frozen; it was never used to rank candidates or choose a fallback.",
                 },
-                "periods": {"train": _period_metadata(train),
-                            "validation": _period_metadata(validation),
-                            "test": _period_metadata(test)},
-                "train_metrics": selected["train"],
-                "validation_metrics": selected["validation"],
-                "validation_stress_metrics": selected["validation_stress"],
-                "test_metrics": test_metrics, "test_stress_metrics": test_stress,
-                "test_benchmarks": test_benchmarks,
-                "test_used_for_selection": False,
-                "cost_convention": {
-                    "fee_bps_per_side": DEFAULT_FEE_BPS,
-                    "slippage_bps_per_side": DEFAULT_SLIPPAGE_BPS,
-                    "stress_fee_bps_per_side": STRESS_FEE_BPS, "stress_slippage_bps_per_side": STRESS_SLIPPAGE_BPS,
-                    "fill_timing": "closed candle close after one-candle signal shift",
-                    "fee_basis": "executed notional",
-                    "slippage": "execution price adjusted per side",
-                },
-                "sharpe_annualization": {"bars_per_year": bars_per_year(interval),
-                                         "interval": interval, "calendar_days_per_year": 365},
-                "warning": "Test metrics are report-only and were not used to rank, select, or validate this champion.",
-            },
+            }
+    strategy_benchmark_summary: dict[str, Any] = {}
+    for strategy in strategies:
+        strategy_rows = [row for row in results if row["strategy"] == strategy]
+        ranked_rows = sorted(strategy_rows, key=lambda row: row["validation_score"], reverse=True)
+        best = ranked_rows[0] if ranked_rows else None
+        strategy_benchmark_summary[strategy] = {
+            "evaluated_candidates": len(strategy_rows),
+            "validation_eligible_candidates": sum(bool(row["passed_validation"]) for row in strategy_rows),
+            "best_validation_candidate": ({
+                "symbol": best["symbol"], "interval": best["interval"],
+                "params": best["params"], "validation": best["validation"],
+                "validation_stress": best["validation_stress"],
+                "cash_benchmark": best.get("validation_benchmarks", {}).get("cash"),
+                "buy_and_hold_benchmark": best.get("validation_benchmarks", {}).get("buy_and_hold"),
+                "stress_cash_benchmark": best.get("validation_stress_benchmarks", {}).get("cash"),
+                "stress_buy_and_hold_benchmark": best.get("validation_stress_benchmarks", {}).get("buy_and_hold"),
+                "passed_validation": best["passed_validation"],
+                "rejection_reasons": best.get("validation_rejection_reasons", []),
+            } if best else None),
         }
     validation_status = "validated" if champion else ("no_candidate" if results else "insufficient_data")
     summary = {
@@ -665,22 +837,37 @@ def run_research(days: int = 90) -> dict[str, Any]:
             "validated_candidates": len(eligible),
             "champion_version": champion["champion_version"] if champion else None,
             "reason": None if champion else (
-                "No candidate passed validation gates" if results
-                else "No candidate evaluations completed; check market data and history coverage"
+                ("Top validation-selected candidate failed the untouched-test deployment gate: "
+                 + "; ".join((selected_test_gate or {}).get("failures", []))
+                 + ". No fallback was selected to preserve test isolation.")
+                if selected_test_gate is not None else (
+                    "No candidate passed training/validation benchmark gates" if results
+                    else "No candidate evaluations completed; check market data and history coverage"
+                )
             ),
         },
         "symbols": list(research_symbols), "universe": universe_metadata, "intervals": list(INTERVALS),
         "minimum_candle_coverage_pct": MIN_CANDLE_COVERAGE_PCT,
+        "maximum_consecutive_missing_slots": MAX_CONSECUTIVE_MISSING_SLOTS,
+        "maximum_fx_missing_pct": MAX_FX_MISSING_PCT,
+        "cost_assumptions": {
+            "fee_bps_per_side": DEFAULT_FEE_BPS,
+            "slippage_bps_per_side": DEFAULT_SLIPPAGE_BPS,
+            "stress_fee_bps_per_side": STRESS_FEE_BPS,
+            "stress_slippage_bps_per_side": STRESS_SLIPPAGE_BPS,
+        },
         "data_quality": data_quality,
         "candidate_count": len(candidates),
         "effective_candidate_counts": effective_candidate_counts,
         "total_unique_strategy_configs": sum(effective_candidate_counts.values()),
         "evaluations": len(results),
         "validated_count": len(eligible), "champion": champion,
-        "selection_policy": "Require positive training return, training max drawdown under 35%, positive validation and validation-stress returns, validation drawdown under 25%, and at least two validation position changes; rank eligible candidates by validation score only. Final test metrics are report-only and never used for selection.",
+        "strategy_benchmark_summary": strategy_benchmark_summary,
+        "selected_candidate_test_gate": selected_test_gate,
+        "selection_policy": "Require positive training return, training drawdown below 35%, positive baseline/stress validation returns, validation drawdown below 25%, at least two position changes, and validation outperformance versus cash and buy-and-hold under baseline and stress costs. Rank using validation-only excess-return score. Freeze the top candidate before evaluating the untouched test; the test can veto promotion but never rank candidates or trigger fallback.",
         "results": sorted(results, key=lambda r: r["validation_score"], reverse=True)[:30],
         "errors": errors,
-        "warning": "Test metrics are not used for selection. Repeated runs over the same dates can still contaminate broader research decisions.",
+        "warning": "The untouched test is used only as a one-way deployment veto after validation selection is frozen. Repeatedly inspecting the same test period and then changing rules can contaminate it; a new later holdout is required for further tuning.",
     }
     (REPORTS / "research_latest.json").write_text(json.dumps(summary, indent=2))
     with (REPORTS / "experiments.jsonl").open("a") as handle:
@@ -757,6 +944,15 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
     for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
         if not isinstance(metadata.get(field), dict):
             raise RuntimeError(f"Champion validation metadata is missing {field}")
+    train_metrics = metadata["train_metrics"]
+    if not isinstance(metadata.get("test_benchmarks"), dict) or not isinstance(metadata.get("test_stress_benchmarks"), dict):
+        raise RuntimeError("Champion is missing held-out cash/buy-and-hold benchmark comparisons")
+    test_gate = deployment_gate_failures(
+        metadata["test_metrics"], metadata["test_stress_metrics"],
+        metadata["test_benchmarks"], metadata["test_stress_benchmarks"],
+    )
+    if test_gate or not isinstance(metadata.get("test_deployment_gate"), dict) or metadata["test_deployment_gate"].get("passed") is not True:
+        raise RuntimeError("Champion failed held-out deployment gate: " + "; ".join(test_gate or ["gate metadata missing"]))
     train_metrics = metadata["train_metrics"]
     if train_metrics.get("total_return_pct", float("-inf")) <= TRAIN_MIN_RETURN_PCT:
         raise RuntimeError("Champion failed training robustness gate: training return must be positive")
