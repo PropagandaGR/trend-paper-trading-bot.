@@ -3,7 +3,7 @@ name: Coinbase Public Data Smoke Test
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [main, "core/fix-exposure-fx-freshness"]
     paths:
       - "research_engine.py"
       - "tests/test_coinbase_data_source.py"
