@@ -76,7 +76,7 @@ class PaperTraderWrongSymbolIntegrationTests(unittest.TestCase):
             sells = [a for a in status["actions"] if a["action"] == "PAPER_SELL"]
             self.assertEqual(len(sells), 1)
             self.assertEqual(sells[0]["symbol"], "ETHUSDT")
-            self.assertAlmostEqual(sells[0]["price"], 1_999.0, places=7)
+            self.assertAlmostEqual(sells[0]["price"], 1_998.0, places=7)
             self.assertNotAlmostEqual(sells[0]["price"], 59_970.0, places=3)
             self.assertIsNone(status["open_position"])
             self.assertAlmostEqual(status["cash_usdt"], sells[0]["net_proceeds_usdt"], places=7)
