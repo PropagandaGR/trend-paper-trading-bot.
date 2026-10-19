@@ -20,6 +20,11 @@ class ResearchWorkflowPersistencePolicyTests(unittest.TestCase):
         )
         self.assertIn("OOS_LEDGER_BRANCH: oos-ledger", workflow)
         self.assertIn("actions/upload-artifact@v4", workflow)
+        self.assertIn("consumed OOS history is unknown", workflow)
+        self.assertIn("OOS ledger is empty/incomplete", workflow)
+        self.assertNotIn('data.get("last_test_start") or end', workflow)
+        self.assertNotIn('data.get("last_window_bars", 1)', workflow)
+        self.assertNotIn('path.write_text(json.dumps({', workflow)
 
     def test_workflow_does_not_cancel_runs_after_reservation(self):
         workflow = (ROOT / ".github" / "workflows" / "autonomous-research.yml").read_text()
@@ -31,6 +36,10 @@ class ResearchWorkflowPersistencePolicyTests(unittest.TestCase):
         self.assertIn('f"HEAD:refs/heads/{branch}"', source)
         self.assertIn("normal fast-forward push", source)
         self.assertNotIn('f"HEAD:refs/heads/main"', source)
+        self.assertIn("Authoritative OOS ledger is missing", source)
+        self.assertIn("OOS history is empty or uncertain", source)
+        self.assertIn("refusing to initialize empty history", source)
+        self.assertNotIn("return _empty_oos_ledger()", source)
 
 
 if __name__ == "__main__":
