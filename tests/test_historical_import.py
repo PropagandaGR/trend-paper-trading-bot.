@@ -69,6 +69,29 @@ class HistoricalImportTests(unittest.TestCase):
         self.assertEqual(historical_import.parse_utc("2024-01-01").isoformat(),
                          "2024-01-01T00:00:00+00:00")
 
+    def test_checksum_mismatch_forces_partition_refetch(self):
+        start = pd.Timestamp("2025-01-01T00:00:00Z")
+        end = pd.Timestamp("2025-02-01T00:00:00Z")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            csv_path = root / "BTCUSDT" / "1h" / "2025-01.csv"
+            manifest_path = root / "BTCUSDT" / "1h" / "2025-01.manifest.json"
+            csv_path.parent.mkdir(parents=True)
+            csv_path.write_text("stale partition")
+            manifest_path.write_text(json.dumps({
+                "symbol": "BTCUSDT", "product_id": "BTC-USD", "interval": "1h",
+                "requested_start": start.isoformat(), "requested_end_exclusive": end.isoformat(),
+                "status": "complete", "checksum_sha256": "not-the-real-checksum",
+            }))
+            with (
+                patch.object(historical_import, "get_coinbase_product_id", return_value="BTC-USD"),
+                patch.object(historical_import, "_fetch_coinbase_range",
+                             side_effect=RuntimeError("refetch requested")) as fetch,
+            ):
+                result = historical_import.import_range("BTCUSDT", "1h", start, end, root)
+            fetch.assert_called_once()
+            self.assertEqual(result["status"], "incomplete")
+
 
 if __name__ == "__main__":
     unittest.main()
