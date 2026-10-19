@@ -64,11 +64,12 @@ class TestSetIsolationTests(unittest.TestCase):
             ):
                 summary = research_engine.run_research(days=30)
 
-            self.assertIsNotNone(summary["champion"])
-            self.assertEqual(summary["champion"]["validation_metadata"]["test_metrics"]["total_return_pct"], -50.0)
-            self.assertFalse(summary["champion"]["validation_metadata"]["test_used_for_selection"])
-            self.assertIn("test_benchmarks", summary["champion"]["validation_metadata"])
-            self.assertIn("buy_and_hold", summary["champion"]["validation_metadata"]["test_benchmarks"])
+            self.assertIsNone(summary["champion"])
+            self.assertEqual(summary["selected_candidate_test_gate"]["test_metrics"]["total_return_pct"], -50.0)
+            self.assertFalse(summary["selected_candidate_test_gate"]["passed"])
+            self.assertTrue(summary["selected_candidate_test_gate"]["failures"])
+            self.assertIsNone(json.loads((state / "champion.json").read_text()))
+            self.assertEqual(summary["selected_candidate_test_gate"]["selection_note"].find("does not trigger selection") >= 0, True)
             self.assertEqual(summary["effective_candidate_counts"],
                              {"trend": 1, "breakout": 1, "mean_reversion": 1})
             self.assertEqual(summary["total_unique_strategy_configs"], 3)
@@ -77,8 +78,8 @@ class TestSetIsolationTests(unittest.TestCase):
             self.assertEqual(summary["champion"]["validation_metadata"]["periods"]["train"]["bars"], 720)
             self.assertEqual(summary["champion"]["validation_metadata"]["periods"]["validation"]["bars"], 240)
             self.assertEqual(summary["champion"]["validation_metadata"]["periods"]["test"]["bars"], 240)
-            # All candidate evaluations use train/validation only. The test split
-            # is passed to backtest only twice for the selected champion (base + stress).
+            # All candidates use train/validation only. The test split is passed
+            # only to the single validation winner as a one-way promotion veto.
             test_calls = [call for call in backtest.call_args_list if call.args[0].index[0] >= index[960]]
             self.assertEqual(len(test_calls), 2)
             self.assertTrue((state / "champion.json").exists())
