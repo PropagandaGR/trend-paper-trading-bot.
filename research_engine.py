@@ -568,9 +568,15 @@ def deployment_gate_failures(test_metrics: dict[str, float],
     ):
         if not _beats_benchmarks(metrics, benchmarks):
             failures.append(f"{label} return must beat both cash and buy-and-hold after costs")
-        if not math.isfinite(float(metrics.get("max_drawdown_pct", float("nan")))) or metrics["max_drawdown_pct"] >= 25:
+        try:
+            drawdown = float(metrics.get("max_drawdown_pct", float("nan")))
+            trades = float(metrics.get("trades", float("nan")))
+        except (AttributeError, TypeError, ValueError):
+            failures.append(f"{label} metrics are missing valid drawdown/trade values")
+            continue
+        if not math.isfinite(drawdown) or drawdown >= 25:
             failures.append(f"{label} drawdown must be below 25%")
-        if not math.isfinite(float(metrics.get("trades", float("nan")))) or metrics["trades"] < 2:
+        if not math.isfinite(trades) or trades < 2:
             failures.append(f"{label} must contain at least two position changes")
     return failures
 
