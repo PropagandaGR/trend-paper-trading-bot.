@@ -10,14 +10,10 @@
   "starting_cash": 15.0,
   "completed_trades": 1,
   "realized_pnl": 0.08402665981011737,
-  "last_checked_at": "2026-10-19T14:03:26.415129+00:00",
+  "last_checked_at": "2026-10-19T19:01:31.890092+00:00",
   "last_price": 2370.666266206137,
-  "last_prices": {
-    "ETHFIUSDT": 0.6847943614592928
-  },
-  "last_price_timestamps": {
-    "ETHFIUSDT": "2026-10-19T14:00:00+00:00"
-  },
+  "last_prices": {},
+  "last_price_timestamps": {},
   "risk_day": "2026-10-19",
   "daily_start_equity": 15.084026659810116,
   "peak_equity": 15.106679125158289,
