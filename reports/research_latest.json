@@ -1,14 +1,14 @@
 {
-  "started_at": "2026-10-18T23:41:05.833341+00:00",
-  "completed_at": "2026-10-18T23:49:38.549900+00:00",
+  "started_at": "2026-10-18T23:56:40.793363+00:00",
+  "completed_at": "2026-10-19T00:03:24.207265+00:00",
   "days": 90,
   "run_status": "completed",
   "validation_status": "validated",
   "validation_result": {
     "status": "validated",
     "evaluations": 2880,
-    "validated_candidates": 238,
-    "champion_version": "champion-5bd705471457",
+    "validated_candidates": 239,
+    "champion_version": "champion-31ba92189f0f",
     "reason": null
   },
   "symbols": [
@@ -31,8 +31,8 @@
         "base": "ZEC",
         "product_id": "ZEC-USD",
         "market_cap_rank": 10,
-        "market_cap_usd": 19121136669,
-        "global_24h_volume_usd": 779610740.0,
+        "market_cap_usd": 19202068989,
+        "global_24h_volume_usd": 786962996.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       },
       {
@@ -40,8 +40,8 @@
         "base": "HYPE",
         "product_id": "HYPE-USD",
         "market_cap_rank": 11,
-        "market_cap_usd": 17560449719,
-        "global_24h_volume_usd": 548473952.0,
+        "market_cap_usd": 17552315864,
+        "global_24h_volume_usd": 551116255.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       },
       {
@@ -49,8 +49,8 @@
         "base": "DOGE",
         "product_id": "DOGE-USD",
         "market_cap_rank": 12,
-        "market_cap_usd": 12411267966,
-        "global_24h_volume_usd": 548577399.0,
+        "market_cap_usd": 12405722230,
+        "global_24h_volume_usd": 551543747.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       },
       {
@@ -58,8 +58,8 @@
         "base": "LINK",
         "product_id": "LINK-USD",
         "market_cap_rank": 16,
-        "market_cap_usd": 9218017475,
-        "global_24h_volume_usd": 263311109.0,
+        "market_cap_usd": 9223983074,
+        "global_24h_volume_usd": 264247541.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       },
       {
@@ -67,8 +67,8 @@
         "base": "ADA",
         "product_id": "ADA-USD",
         "market_cap_rank": 18,
-        "market_cap_usd": 8275648292,
-        "global_24h_volume_usd": 249795952.0,
+        "market_cap_usd": 8303271170,
+        "global_24h_volume_usd": 250950736.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       }
     ]
@@ -81,7 +81,7 @@
   ],
   "candidate_count": 48,
   "evaluations": 2880,
-  "validated_count": 238,
+  "validated_count": 239,
   "champion": {
     "symbol": "ZECUSDT",
     "interval": "30m",
@@ -97,9 +97,9 @@
       "rsi_exit": 50,
       "stop_pct": 0.06
     },
-    "champion_version": "champion-5bd705471457",
+    "champion_version": "champion-31ba92189f0f",
     "validation_metadata": {
-      "created_at": "2026-10-18T23:41:05.833341+00:00",
+      "created_at": "2026-10-18T23:56:40.793363+00:00",
       "status": "validated",
       "selection_metric": "validation_score",
       "validation_score": 31.6221,
@@ -1238,112 +1238,6 @@
     },
     {
       "symbol": "ZECUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 12,
-        "slow": 72,
-        "momentum": 12,
-        "breakout": 24,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 50.0292,
-        "max_drawdown_pct": 22.098,
-        "sharpe": 3.966,
-        "trades": 200
-      },
-      "validation": {
-        "total_return_pct": 24.1915,
-        "max_drawdown_pct": 8.5202,
-        "sharpe": 5.622,
-        "trades": 62
-      },
-      "validation_stress": {
-        "total_return_pct": 13.1625,
-        "max_drawdown_pct": 9.747,
-        "sharpe": 3.374,
-        "trades": 62
-      },
-      "validation_score": 17.18135,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:30:00+00:00",
-          "bars": 5183
-        },
-        "validation": {
-          "start": "2026-09-12T23:45:00+00:00",
-          "end": "2026-09-30T23:15:00+00:00",
-          "bars": 1727
-        },
-        "test": {
-          "start": "2026-09-30T23:30:00+00:00",
-          "end": "2026-10-18T23:30:00+00:00",
-          "bars": 1729
-        }
-      }
-    },
-    {
-      "symbol": "ZECUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 72,
-        "momentum": 12,
-        "breakout": 48,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 38.456,
-        "max_drawdown_pct": 24.6071,
-        "sharpe": 3.295,
-        "trades": 196
-      },
-      "validation": {
-        "total_return_pct": 23.2866,
-        "max_drawdown_pct": 7.4469,
-        "sharpe": 5.508,
-        "trades": 62
-      },
-      "validation_stress": {
-        "total_return_pct": 12.3379,
-        "max_drawdown_pct": 10.7195,
-        "sharpe": 3.231,
-        "trades": 62
-      },
-      "validation_score": 17.081425,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:30:00+00:00",
-          "bars": 5183
-        },
-        "validation": {
-          "start": "2026-09-12T23:45:00+00:00",
-          "end": "2026-09-30T23:15:00+00:00",
-          "bars": 1727
-        },
-        "test": {
-          "start": "2026-09-30T23:30:00+00:00",
-          "end": "2026-10-18T23:30:00+00:00",
-          "bars": 1729
-        }
-      }
-    },
-    {
-      "symbol": "ZECUSDT",
       "interval": "30m",
       "strategy": "trend",
       "params": {
@@ -1400,10 +1294,10 @@
       "interval": "15m",
       "strategy": "trend",
       "params": {
-        "fast": 8,
+        "fast": 20,
         "slow": 72,
         "momentum": 12,
-        "breakout": 12,
+        "breakout": 48,
         "entry_momentum": -0.002,
         "exit_momentum": -0.01,
         "rsi_entry": 30,
@@ -1411,39 +1305,92 @@
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 46.0899,
-        "max_drawdown_pct": 21.575,
-        "sharpe": 3.703,
-        "trades": 208
+        "total_return_pct": 38.189,
+        "max_drawdown_pct": 24.6071,
+        "sharpe": 3.278,
+        "trades": 196
       },
       "validation": {
-        "total_return_pct": 25.9364,
-        "max_drawdown_pct": 11.5317,
-        "sharpe": 5.855,
-        "trades": 70
+        "total_return_pct": 23.1019,
+        "max_drawdown_pct": 7.4469,
+        "sharpe": 5.472,
+        "trades": 63
       },
       "validation_stress": {
-        "total_return_pct": 13.3836,
-        "max_drawdown_pct": 13.2402,
-        "sharpe": 3.371,
-        "trades": 70
+        "total_return_pct": 12.0017,
+        "max_drawdown_pct": 10.7195,
+        "sharpe": 3.158,
+        "trades": 63
       },
-      "validation_score": 16.587625,
+      "validation_score": 16.886725000000002,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:30:00+00:00",
+          "start": "2026-07-21T00:15:00+00:00",
+          "end": "2026-09-12T23:45:00+00:00",
           "bars": 5183
         },
         "validation": {
-          "start": "2026-09-12T23:45:00+00:00",
-          "end": "2026-09-30T23:15:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:30:00+00:00",
           "bars": 1727
         },
         "test": {
-          "start": "2026-09-30T23:30:00+00:00",
-          "end": "2026-10-18T23:30:00+00:00",
+          "start": "2026-09-30T23:45:00+00:00",
+          "end": "2026-10-18T23:45:00+00:00",
+          "bars": 1729
+        }
+      }
+    },
+    {
+      "symbol": "ZECUSDT",
+      "interval": "15m",
+      "strategy": "trend",
+      "params": {
+        "fast": 12,
+        "slow": 72,
+        "momentum": 12,
+        "breakout": 24,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 50.0292,
+        "max_drawdown_pct": 22.098,
+        "sharpe": 3.966,
+        "trades": 200
+      },
+      "validation": {
+        "total_return_pct": 24.0055,
+        "max_drawdown_pct": 8.6572,
+        "sharpe": 5.585,
+        "trades": 63
+      },
+      "validation_stress": {
+        "total_return_pct": 12.8238,
+        "max_drawdown_pct": 10.0171,
+        "sharpe": 3.302,
+        "trades": 63
+      },
+      "validation_score": 16.882600000000004,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T00:15:00+00:00",
+          "end": "2026-09-12T23:45:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:30:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T23:45:00+00:00",
+          "end": "2026-10-18T23:45:00+00:00",
           "bars": 1729
         }
       }
@@ -1502,6 +1449,59 @@
       }
     },
     {
+      "symbol": "ZECUSDT",
+      "interval": "15m",
+      "strategy": "trend",
+      "params": {
+        "fast": 8,
+        "slow": 72,
+        "momentum": 12,
+        "breakout": 12,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 46.469,
+        "max_drawdown_pct": 21.575,
+        "sharpe": 3.726,
+        "trades": 208
+      },
+      "validation": {
+        "total_return_pct": 25.7477,
+        "max_drawdown_pct": 11.6642,
+        "sharpe": 5.819,
+        "trades": 71
+      },
+      "validation_stress": {
+        "total_return_pct": 13.0442,
+        "max_drawdown_pct": 13.4999,
+        "sharpe": 3.301,
+        "trades": 71
+      },
+      "validation_score": 16.28955,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T00:15:00+00:00",
+          "end": "2026-09-12T23:45:00+00:00",
+          "bars": 5183
+        },
+        "validation": {
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:30:00+00:00",
+          "bars": 1727
+        },
+        "test": {
+          "start": "2026-09-30T23:45:00+00:00",
+          "end": "2026-10-18T23:45:00+00:00",
+          "bars": 1729
+        }
+      }
+    },
+    {
       "symbol": "LINKUSDT",
       "interval": "15m",
       "strategy": "trend",
@@ -1519,37 +1519,37 @@
       "train": {
         "total_return_pct": -16.1455,
         "max_drawdown_pct": 21.1951,
-        "sharpe": -2.02,
+        "sharpe": -2.019,
         "trades": 192
       },
       "validation": {
-        "total_return_pct": 21.9803,
+        "total_return_pct": 21.7975,
         "max_drawdown_pct": 7.6193,
-        "sharpe": 6.394,
-        "trades": 46
+        "sharpe": 6.347,
+        "trades": 47
       },
       "validation_stress": {
-        "total_return_pct": 13.8474,
+        "total_return_pct": 13.5067,
         "max_drawdown_pct": 9.4386,
-        "sharpe": 4.27,
-        "trades": 46
+        "sharpe": 4.178,
+        "trades": 47
       },
-      "validation_score": 15.805824999999999,
+      "validation_score": 15.613024999999999,
       "passed_validation": true,
       "periods": {
         "train": {
           "start": "2026-07-21T00:15:00+00:00",
-          "end": "2026-09-12T23:45:00+00:00",
-          "bars": 5182
+          "end": "2026-09-13T00:00:00+00:00",
+          "bars": 5183
         },
         "validation": {
-          "start": "2026-09-13T00:00:00+00:00",
-          "end": "2026-09-30T23:30:00+00:00",
+          "start": "2026-09-13T00:15:00+00:00",
+          "end": "2026-09-30T23:45:00+00:00",
           "bars": 1727
         },
         "test": {
-          "start": "2026-09-30T23:45:00+00:00",
-          "end": "2026-10-18T23:45:00+00:00",
+          "start": "2026-10-01T00:00:00+00:00",
+          "end": "2026-10-19T00:00:00+00:00",
           "bars": 1729
         }
       }
@@ -1594,59 +1594,6 @@
           "start": "2026-07-21T00:30:00+00:00",
           "end": "2026-09-12T23:30:00+00:00",
           "bars": 2591
-        },
-        "validation": {
-          "start": "2026-09-13T00:00:00+00:00",
-          "end": "2026-09-30T23:00:00+00:00",
-          "bars": 863
-        },
-        "test": {
-          "start": "2026-09-30T23:30:00+00:00",
-          "end": "2026-10-18T23:30:00+00:00",
-          "bars": 865
-        }
-      }
-    },
-    {
-      "symbol": "LINKUSDT",
-      "interval": "30m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 30,
-        "momentum": 24,
-        "breakout": 12,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 7.8343,
-        "max_drawdown_pct": 15.7394,
-        "sharpe": 1.253,
-        "trades": 74
-      },
-      "validation": {
-        "total_return_pct": 20.998,
-        "max_drawdown_pct": 7.6426,
-        "sharpe": 6.638,
-        "trades": 24
-      },
-      "validation_stress": {
-        "total_return_pct": 16.7195,
-        "max_drawdown_pct": 8.3909,
-        "sharpe": 5.415,
-        "trades": 24
-      },
-      "validation_score": 15.026050000000001,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T00:30:00+00:00",
-          "end": "2026-09-12T23:30:00+00:00",
-          "bars": 2590
         },
         "validation": {
           "start": "2026-09-13T00:00:00+00:00",
@@ -1714,6 +1661,59 @@
       }
     },
     {
+      "symbol": "LINKUSDT",
+      "interval": "30m",
+      "strategy": "trend",
+      "params": {
+        "fast": 20,
+        "slow": 30,
+        "momentum": 24,
+        "breakout": 12,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 7.8343,
+        "max_drawdown_pct": 15.7394,
+        "sharpe": 1.253,
+        "trades": 74
+      },
+      "validation": {
+        "total_return_pct": 20.5087,
+        "max_drawdown_pct": 7.6426,
+        "sharpe": 6.506,
+        "trades": 24
+      },
+      "validation_stress": {
+        "total_return_pct": 16.2475,
+        "max_drawdown_pct": 8.3909,
+        "sharpe": 5.287,
+        "trades": 24
+      },
+      "validation_score": 14.536750000000001,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T00:30:00+00:00",
+          "end": "2026-09-13T00:00:00+00:00",
+          "bars": 2591
+        },
+        "validation": {
+          "start": "2026-09-13T00:30:00+00:00",
+          "end": "2026-09-30T23:30:00+00:00",
+          "bars": 863
+        },
+        "test": {
+          "start": "2026-10-01T00:00:00+00:00",
+          "end": "2026-10-19T00:00:00+00:00",
+          "bars": 865
+        }
+      }
+    },
+    {
       "symbol": "ZECUSDT",
       "interval": "15m",
       "strategy": "trend",
@@ -1729,39 +1729,39 @@
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 47.7614,
+        "total_return_pct": 48.1448,
         "max_drawdown_pct": 20.8182,
-        "sharpe": 3.822,
+        "sharpe": 3.845,
         "trades": 200
       },
       "validation": {
-        "total_return_pct": 23.4461,
-        "max_drawdown_pct": 11.5317,
-        "sharpe": 5.402,
-        "trades": 68
+        "total_return_pct": 23.2611,
+        "max_drawdown_pct": 11.6642,
+        "sharpe": 5.366,
+        "trades": 69
       },
       "validation_stress": {
-        "total_return_pct": 11.4754,
-        "max_drawdown_pct": 13.2402,
-        "sharpe": 2.982,
-        "trades": 68
+        "total_return_pct": 11.1418,
+        "max_drawdown_pct": 13.4999,
+        "sharpe": 2.912,
+        "trades": 69
       },
-      "validation_score": 14.117325000000001,
+      "validation_score": 13.82295,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T00:00:00+00:00",
-          "end": "2026-09-12T23:30:00+00:00",
+          "start": "2026-07-21T00:15:00+00:00",
+          "end": "2026-09-12T23:45:00+00:00",
           "bars": 5183
         },
         "validation": {
-          "start": "2026-09-12T23:45:00+00:00",
-          "end": "2026-09-30T23:15:00+00:00",
+          "start": "2026-09-13T00:00:00+00:00",
+          "end": "2026-09-30T23:30:00+00:00",
           "bars": 1727
         },
         "test": {
-          "start": "2026-09-30T23:30:00+00:00",
-          "end": "2026-10-18T23:30:00+00:00",
+          "start": "2026-09-30T23:45:00+00:00",
+          "end": "2026-10-18T23:45:00+00:00",
           "bars": 1729
         }
       }

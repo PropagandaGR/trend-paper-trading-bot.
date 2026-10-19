@@ -13,9 +13,9 @@
     "rsi_exit": 50,
     "stop_pct": 0.06
   },
-  "champion_version": "champion-5bd705471457",
+  "champion_version": "champion-31ba92189f0f",
   "validation_metadata": {
-    "created_at": "2026-10-18T23:41:05.833341+00:00",
+    "created_at": "2026-10-18T23:56:40.793363+00:00",
     "status": "validated",
     "selection_metric": "validation_score",
     "validation_score": 31.6221,
