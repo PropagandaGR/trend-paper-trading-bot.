@@ -24,6 +24,7 @@ def make_champion():
             "selection_metric": "validation_score",
             "validation_score": 1.0,
             "test_used_for_selection": False,
+            "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
             "periods": {
                 "train": {"start": "2026-01-01T00:00:00+00:00", "end": "2026-01-02T00:00:00+00:00"},
                 "validation": {"start": "2026-01-03T00:00:00+00:00", "end": "2026-01-04T00:00:00+00:00"},
