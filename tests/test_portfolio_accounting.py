@@ -1,6 +1,20 @@
 import unittest
 
-from portfolio_accounting import buy_with_costs, mark_to_market, sell_with_costs
+from portfolio_accounting import (MAX_POSITION_FRACTION, buy_with_costs, entry_budget,
+                                  mark_to_market, sell_with_costs)
+
+
+class SharedEntryBudgetTests(unittest.TestCase):
+    def test_entry_budget_caps_new_position_at_half_equity_with_buffer(self):
+        self.assertAlmostEqual(entry_budget(15.0, 15.0), 15.0 * MAX_POSITION_FRACTION * 0.995)
+        self.assertAlmostEqual(entry_budget(4.0, 15.0), 4.0)
+        self.assertEqual(entry_budget(0.0, 15.0), 0.0)
+
+    def test_entry_budget_rejects_invalid_inputs(self):
+        for args in ((-1.0, 15.0), (15.0, -1.0), (15.0, 15.0, 1.5, 0.9)):
+            with self.subTest(args=args):
+                with self.assertRaises(ValueError):
+                    entry_budget(*args)
 
 
 class WrongSymbolValuationRegressionTests(unittest.TestCase):
