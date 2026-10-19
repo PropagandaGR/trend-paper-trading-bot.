@@ -78,7 +78,7 @@ class ResearchTests(unittest.TestCase):
         train = {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12}
         validation = {"total_return_pct": 10.0, "max_drawdown_pct": 10.0, "sharpe": 1.0, "trades": 4}
         stress = {"total_return_pct": 2.0, "max_drawdown_pct": 12.0, "sharpe": 0.5, "trades": 4}
-        cash = {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": 3.0}}
+        cash = {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": 12.0}}
         stress_cash = {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": 1.0}}
         self.assertFalse(candidate_passes_gates(train, validation, stress, cash, stress_cash))
         cash["buy_and_hold"]["total_return_pct"] = 1.0
