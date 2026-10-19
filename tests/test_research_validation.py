@@ -36,6 +36,11 @@ class TestSetIsolationTests(unittest.TestCase):
             "volume": [1.0] * len(index),
             "close_time": index + pd.Timedelta(minutes=5),
         }, index=index)
+        frame.attrs["data_quality"] = {
+            "quality_gate_passed": True, "source_coverage_pct": 100.0,
+            "converted_coverage_pct": 100.0, "invalid_ohlc_rows": 0,
+            "duplicate_candles_dropped": 0, "source_was_sorted": True,
+        }
         params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
 
         def fake_backtest(part, strategy, candidate, fee_bps=10, slippage_bps=5, interval="5m", starting_cash=15):
@@ -88,6 +93,11 @@ class TestSetIsolationTests(unittest.TestCase):
             "volume": [1.0] * len(index),
             "close_time": index + pd.Timedelta(minutes=5),
         }, index=index)
+        frame.attrs["data_quality"] = {
+            "quality_gate_passed": True, "source_coverage_pct": 100.0,
+            "converted_coverage_pct": 100.0, "invalid_ohlc_rows": 0,
+            "duplicate_candles_dropped": 0, "source_was_sorted": True,
+        }
         params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
 
         with tempfile.TemporaryDirectory() as tmp:
