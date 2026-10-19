@@ -68,7 +68,13 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
         raise RuntimeError(f"No Coinbase candles returned for {product} {interval}")
     frame = pd.DataFrame(rows, columns=["time", "low", "high", "open", "close", "volume"])
     duplicate_candles_dropped = int(frame["time"].duplicated().sum())
-    source_was_sorted = bool(frame["time"].is_monotonic_increasing)
+    response_was_sorted = bool(frame["time"].is_monotonic_increasing)
+    conflicting_duplicate_groups = 0
+    duplicated = frame.loc[frame["time"].duplicated(keep=False)]
+    if not duplicated.empty:
+        for _, group in duplicated.groupby("time", sort=False):
+            if group[["low", "high", "open", "close", "volume"]].nunique(dropna=False).gt(1).any():
+                conflicting_duplicate_groups += 1
     frame = frame.drop_duplicates("time").sort_values("time")
     frame["open_time"] = pd.to_datetime(frame["time"], unit="s", utc=True)
     frame["close_time"] = frame["open_time"] + pd.to_timedelta(granularity, unit="s")
@@ -78,7 +84,9 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     closed = frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC"),
                        ["open", "high", "low", "close", "volume", "close_time"]]
     closed.attrs["duplicate_candles_dropped"] = duplicate_candles_dropped
-    closed.attrs["source_was_sorted"] = source_was_sorted
+    closed.attrs["conflicting_duplicate_groups"] = conflicting_duplicate_groups
+    closed.attrs["response_was_sorted"] = response_was_sorted
+    closed.attrs["source_was_sorted"] = bool(closed.index.is_monotonic_increasing)
     return closed
 
 
@@ -109,6 +117,7 @@ def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int =
                       & valid_range & nonnegative_volume)
         invalid_ohlc_rows = int((~valid_rows).sum())
     duplicate_count = int(frame.attrs.get("duplicate_candles_dropped", 0))
+    conflicting_duplicate_groups = int(frame.attrs.get("conflicting_duplicate_groups", 0))
     source_was_sorted = bool(frame.attrs.get("source_was_sorted", frame.index.is_monotonic_increasing))
     return {
         "interval": interval,
@@ -118,6 +127,8 @@ def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int =
         "missing_expected_slots": max(0, expected_slots - observed_slots),
         "source_coverage_pct": round(coverage_pct, 4),
         "duplicate_candles_dropped": duplicate_count,
+        "conflicting_duplicate_groups": conflicting_duplicate_groups,
+        "response_was_sorted": bool(frame.attrs.get("response_was_sorted", source_was_sorted)),
         "source_was_sorted": source_was_sorted,
         "invalid_ohlc_rows": invalid_ohlc_rows,
         "coverage_note": "Missing slots can be no-trade intervals or unavailable candles; they are not interpolated.",
@@ -187,7 +198,7 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
         quality["source_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
         and quality["converted_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
         and quality["invalid_ohlc_rows"] == 0
-        and quality["duplicate_candles_dropped"] == 0
+        and quality["conflicting_duplicate_groups"] == 0
         and quality["source_was_sorted"]
     )
     frame.attrs["data_quality"] = quality
