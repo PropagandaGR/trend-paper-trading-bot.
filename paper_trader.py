@@ -9,7 +9,7 @@ from typing import Any
 
 import pandas as pd
 
-from portfolio_accounting import buy_with_costs, mark_to_market, sell_with_costs
+from portfolio_accounting import buy_with_costs, entry_budget, mark_to_market, sell_with_costs
 
 from research_engine import (
     INTERVALS, REPORTS, STATE, SYMBOLS, fetch_klines, desired_signal, add_features, resample_ohlcv, utc_now
@@ -659,10 +659,7 @@ def run_once() -> dict[str, Any]:
             if qty <= 0 and target_long:
                 # Leave a small buffer so fees/slippage do not push post-fill marked
                 # exposure above the circuit-breaker threshold on the next run.
-                spend_cash = min(
-                    cash,
-                    max(0.0, equity_before * MAX_POSITION_FRACTION * ENTRY_BUDGET_BUFFER),
-                )
+                spend_cash = entry_budget(cash, equity_before)
                 buy = buy_with_costs(spend_cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
                 qty = max(0.0, buy.quantity)
                 cash = max(0.0, cash - spend_cash + buy.cash_remaining)
