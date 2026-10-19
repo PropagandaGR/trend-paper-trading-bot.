@@ -1,9 +1,11 @@
+import os
 import unittest
 from unittest.mock import patch
 
 import pandas as pd
 
 import research_engine
+from portfolio_accounting import _cost_setting
 
 
 class ResearchCostModelTests(unittest.TestCase):
@@ -34,6 +36,11 @@ class ResearchCostModelTests(unittest.TestCase):
         self.assertEqual(research_engine.DEFAULT_SLIPPAGE_BPS, 10.0)
         self.assertGreater(research_engine.STRESS_FEE_BPS, research_engine.DEFAULT_FEE_BPS)
         self.assertGreater(research_engine.STRESS_SLIPPAGE_BPS, research_engine.DEFAULT_SLIPPAGE_BPS)
+
+    def test_environment_override_cannot_reduce_conservative_cost_floor(self):
+        with patch.dict(os.environ, {"PAPER_FEE_BPS": "10"}):
+            with self.assertRaisesRegex(ValueError, "at least the conservative floor"):
+                _cost_setting("PAPER_FEE_BPS", 60.0)
 
     def test_sharpe_annualization_matches_each_timeframe(self):
         self.assertEqual(research_engine.bars_per_year("5m"), 105120)
