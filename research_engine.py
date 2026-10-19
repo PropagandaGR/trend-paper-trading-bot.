@@ -728,10 +728,11 @@ def reserve_oos_test_window(test: pd.DataFrame) -> tuple[bool, str | None, dict[
         return False, "Held-out test timestamps must be unique, monotonic, and timezone-aware.", {}
     start, end = index[0].tz_convert("UTC"), index[-1].tz_convert("UTC")
     window = {"start": start.isoformat(), "end": end.isoformat(), "bars": str(len(test))}
+    ledger_path = STATE / "oos_evaluation_ledger.json"
     ledger: dict[str, Any] = {"policy_version": OOS_POLICY_VERSION, "last_test_end": None}
-    if OOS_LEDGER_FILE.exists():
+    if ledger_path.exists():
         try:
-            loaded = json.loads(OOS_LEDGER_FILE.read_text())
+            loaded = json.loads(ledger_path.read_text())
         except (OSError, json.JSONDecodeError):
             return False, "Out-of-sample ledger is unreadable; refusing to reuse a test window.", window
         if not isinstance(loaded, dict) or loaded.get("policy_version") != OOS_POLICY_VERSION:
@@ -755,26 +756,27 @@ def reserve_oos_test_window(test: pd.DataFrame) -> tuple[bool, str | None, dict[
         "last_test_end": end.isoformat(), "last_window_bars": int(len(test)),
         "last_result": "reserved", "reserved_at": utc_now(),
     })
-    OOS_LEDGER_FILE.parent.mkdir(parents=True, exist_ok=True)
-    temporary = OOS_LEDGER_FILE.with_suffix(".tmp")
+    ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = ledger_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(ledger, indent=2))
-    temporary.replace(OOS_LEDGER_FILE)
+    temporary.replace(ledger_path)
     return True, None, window
 
 
 def record_oos_test_result(passed: bool) -> None:
     """Record only pass/fail; never persist candidate metrics for optimization."""
+    ledger_path = STATE / "oos_evaluation_ledger.json"
     try:
-        ledger = json.loads(OOS_LEDGER_FILE.read_text())
+        ledger = json.loads(ledger_path.read_text())
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError("Out-of-sample reservation disappeared during evaluation") from exc
     if ledger.get("policy_version") != OOS_POLICY_VERSION or ledger.get("last_result") != "reserved":
         raise RuntimeError("Out-of-sample reservation is not active under the current policy")
     ledger["last_result"] = "passed" if passed else "failed"
     ledger["evaluated_at"] = utc_now()
-    temporary = OOS_LEDGER_FILE.with_suffix(".tmp")
+    temporary = ledger_path.with_suffix(".tmp")
     temporary.write_text(json.dumps(ledger, indent=2))
-    temporary.replace(OOS_LEDGER_FILE)
+    temporary.replace(ledger_path)
 
 
 def run_research(days: int = 90) -> dict[str, Any]:
