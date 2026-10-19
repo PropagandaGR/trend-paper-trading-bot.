@@ -16,7 +16,7 @@ A **new, isolated research project** for continuous live-market paper trading an
 
 ## What runs
 - **Paper trader**: every 5 minutes, fetches closed candles, updates a persistent $15 simulated portfolio and writes one status report per run.
-- **Research engine**: hourly, downloads recent history, tests candidate configurations across 5/10/15/30-minute bars, evaluates costs and out-of-sample performance, and records experiments.
+- **Research engine**: hourly, downloads recent history, deduplicates configurations by strategy-effective parameters, tests candidates across 5/10/15/30-minute bars, evaluates baseline/stressed costs and out-of-sample performance, reports same-period cash and buy-and-hold benchmarks (report-only), and records experiments.
 - **Weekly research**: broadens the history window for a more robust evaluation.
 
 GitHub Actions schedules are best-effort, not a guaranteed always-on server. Scheduled workflows can be delayed or disabled by GitHub; the repository's Actions settings and usage limits apply.
