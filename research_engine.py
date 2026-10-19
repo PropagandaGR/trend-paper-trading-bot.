@@ -1349,7 +1349,10 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
     if (not isinstance(policy, dict) or policy.get("version") != OOS_POLICY_VERSION
             or policy.get("one_evaluation_per_non_overlapping_window") is not True
             or policy.get("rejected_windows_are_consumed") is not True
-            or policy.get("test_failure_feedback_to_optimizer") is not False):
+            or policy.get("test_failure_feedback_to_optimizer") is not False
+            or policy.get("test_history_excluded_from_training_validation") is not True
+            or policy.get("new_windows_require_strictly_later_data") is not True
+            or policy.get("reservation_persisted_before_test_evaluation") is not True):
         raise RuntimeError("Research report does not declare the approved versioned OOS isolation policy")
     if not isinstance(report.get("evaluations"), int) or report["evaluations"] <= 0:
         raise RuntimeError("Research produced no candidate evaluations")
