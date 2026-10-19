@@ -38,9 +38,9 @@ Every safety claim needs a regression test and evidence from the current code he
 ## Current verified state
 
 ### Integration branch / PR #16
-- Last code/test-verified head before this documentation update: `b21089d486ad62ff7125c24403ff5411a01682da`.
-- [Tests run #39213205032](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213205032): **83 tests passed** (`Ran 83 tests`, `OK`).
-- [Coinbase public-data smoke test #39213205074](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213205074): success.
+- Last code/test-verified head before this documentation update: `7d311407f048a55f959f200fc9119cacd51b82f0`.
+- [Tests run #39213330327](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213330327): **83 tests passed** (`Ran 83 tests`, `OK`).
+- [Coinbase public-data smoke test #39213330332](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213330332): success.
 - These results apply to that exact code head. This master-spec update will trigger a new CI run; the PR is still a **draft**, unmerged, and requires review. No live readiness is implied.
 
 ### Latest saved research artifact observed during audit
