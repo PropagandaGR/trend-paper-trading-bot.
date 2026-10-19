@@ -73,22 +73,19 @@ class TestSetIsolationTests(unittest.TestCase):
             self.assertEqual(summary["effective_candidate_counts"],
                              {"trend": 1, "breakout": 1, "mean_reversion": 1})
             self.assertEqual(summary["total_unique_strategy_configs"], 3)
-            self.assertEqual(summary["champion"]["validation_metadata"]["selection_metric"], "validation_score")
-            self.assertTrue(summary["champion"]["champion_version"].startswith("champion-"))
-            self.assertEqual(summary["champion"]["validation_metadata"]["periods"]["train"]["bars"], 720)
-            self.assertEqual(summary["champion"]["validation_metadata"]["periods"]["validation"]["bars"], 240)
-            self.assertEqual(summary["champion"]["validation_metadata"]["periods"]["test"]["bars"], 240)
-            # All candidates use train/validation only. The test split is passed
-            # only to the single validation winner as a one-way promotion veto.
+            self.assertEqual(set(summary["strategy_benchmark_summary"]),
+                             {"trend", "breakout", "mean_reversion"})
+            self.assertEqual(summary["selected_candidate_test_gate"]["candidate"]["strategy"], "trend")
+            self.assertEqual(summary["results"][0]["periods"]["train"]["bars"], 720)
+            self.assertEqual(summary["results"][0]["periods"]["validation"]["bars"], 240)
+            self.assertEqual(summary["results"][0]["periods"]["test"]["bars"], 240)
+            # Every candidate is ranked on train/validation only. The held-out test
+            # is evaluated only for the validation winner and can veto promotion.
             test_calls = [call for call in backtest.call_args_list if call.args[0].index[0] >= index[960]]
             self.assertEqual(len(test_calls), 2)
             self.assertTrue((state / "champion.json").exists())
-            history_file = state / "champions" / (summary["champion"]["champion_version"] + ".json")
-            self.assertTrue(history_file.exists())
-            self.assertEqual(
-                json.loads(history_file.read_text())["champion_version"],
-                summary["champion"]["champion_version"],
-            )
+            self.assertIsNone(json.loads((state / "champion.json").read_text()))
+            self.assertFalse((state / "champions").exists())
 
 
     def test_no_validated_candidate_clears_stale_active_champion(self):
