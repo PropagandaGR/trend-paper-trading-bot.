@@ -117,8 +117,15 @@ class TestSetIsolationTests(unittest.TestCase):
         }, index=index)
         frame.attrs["data_quality"] = {
             "quality_gate_passed": True, "source_coverage_pct": 100.0,
-            "converted_coverage_pct": 100.0, "invalid_ohlc_rows": 0,
-            "duplicate_candles_dropped": 0, "source_was_sorted": True,
+            "converted_coverage_pct": 100.0, "fx_missing_pct_of_source": 0.0,
+            "invalid_ohlc_rows": 0, "converted_invalid_ohlc_rows": 0,
+            "duplicate_candles_dropped": 0, "conflicting_duplicate_groups": 0,
+            "unique_timestamps": True, "monotonic_timestamps": True,
+            "timezone_aware_timestamps": True, "unaligned_timestamps": 0,
+            "irregular_timestamp_gaps": 0, "max_consecutive_missing_slots": 0,
+            "converted_unique_timestamps": True, "converted_monotonic_timestamps": True,
+            "converted_unaligned_timestamps": 0, "converted_max_consecutive_missing_slots": 0,
+            "source_was_sorted": True,
         }
         params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
 
@@ -178,8 +185,15 @@ class TestSetIsolationTests(unittest.TestCase):
         }, index=index)
         frame.attrs["data_quality"] = {
             "quality_gate_passed": True, "source_coverage_pct": 100.0,
-            "converted_coverage_pct": 100.0, "invalid_ohlc_rows": 0,
-            "duplicate_candles_dropped": 0, "source_was_sorted": True,
+            "converted_coverage_pct": 100.0, "fx_missing_pct_of_source": 0.0,
+            "invalid_ohlc_rows": 0, "converted_invalid_ohlc_rows": 0,
+            "duplicate_candles_dropped": 0, "conflicting_duplicate_groups": 0,
+            "unique_timestamps": True, "monotonic_timestamps": True,
+            "timezone_aware_timestamps": True, "unaligned_timestamps": 0,
+            "irregular_timestamp_gaps": 0, "max_consecutive_missing_slots": 0,
+            "converted_unique_timestamps": True, "converted_monotonic_timestamps": True,
+            "converted_unaligned_timestamps": 0, "converted_max_consecutive_missing_slots": 0,
+            "source_was_sorted": True,
         }
         params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
 
