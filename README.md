@@ -32,6 +32,8 @@ python paper_trader.py --once
 
 # Import a multi-year public Coinbase candle history (end date is exclusive)
 python historical_import.py --symbol BTCUSDT --interval 1h --start 2023-01-01 --end 2026-01-01
+
+For a hosted import, use **Actions → Import Historical Coinbase Candles → Run workflow**. The workflow uploads monthly CSV partitions and quality manifests as a 30-day artifact; it does not commit downloaded datasets to Git. Start with 1h candles over multiple years, inspect each manifest, and only then consider higher-resolution history. Any month below the coverage threshold is marked rejected and causes the import run to fail.
 ```
 
 ## Reports and state
