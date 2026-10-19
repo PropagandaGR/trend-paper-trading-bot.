@@ -210,8 +210,9 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
             raise RuntimeError(
                 f"No same-candle USDT-USD FX closes available to convert {symbol} {interval}"
             )
-    expected_slots = int(days * 86400 // {"1m": 60, "3m": 180, "5m": 300,
-                                          "15m": 900, "30m": 1800, "1h": 3600}[interval])
+    granularity = {"1m": 60, "3m": 180, "5m": 300,
+                   "15m": 900, "30m": 1800, "1h": 3600}[interval]
+    expected_slots = int(days * 86400 // granularity)
     quality = dict(source_quality)
     quality.update({
         "source_candle_count": source_candle_count,
