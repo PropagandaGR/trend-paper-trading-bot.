@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import math
+import os
 import re
+from collections import deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -352,7 +355,7 @@ def _set_unvalued_position_status(status: dict[str, Any], state: dict[str, Any],
         }
 
 
-def run_once() -> dict[str, Any]:
+def _run_once_impl() -> dict[str, Any]:
     STATE.mkdir(exist_ok=True)
     REPORTS.mkdir(exist_ok=True)
     state = load_paper_state()
@@ -768,6 +771,132 @@ def run_once() -> dict[str, Any]:
     STATE_FILE.write_text(json.dumps(state, indent=2))
     _sync_ledger_status(status, state)
     STATUS_FILE.write_text(json.dumps(status, indent=2))
+    return status
+
+
+def _recent_event_ids(path: Path, max_bytes: int = 1_000_000) -> set[str]:
+    """Read a bounded tail of the append-only event file for crash-safe deduplication."""
+    if not path.exists():
+        return set()
+    with path.open("rb") as handle:
+        handle.seek(0, os.SEEK_END)
+        size = handle.tell()
+        handle.seek(max(0, size - max_bytes), os.SEEK_SET)
+        chunk = handle.read().decode("utf-8", errors="replace")
+    lines = chunk.splitlines()
+    if size > max_bytes and lines:
+        lines = lines[1:]  # first line may be a truncated JSON record
+    ids: set[str] = set()
+    for line in lines[-5000:]:
+        try:
+            event = json.loads(line)
+            event_id = event.get("event_id")
+            if isinstance(event_id, str):
+                ids.add(event_id)
+        except (json.JSONDecodeError, AttributeError):
+            continue
+    return ids
+
+
+def _append_paper_events(status: dict[str, Any], error: str | None = None) -> None:
+    """Append idempotent run/action records so state changes can be independently audited."""
+    REPORTS.mkdir(exist_ok=True)
+    path = REPORTS / "paper_events.jsonl"
+    state = read_json(STATE_FILE, {})
+    if not isinstance(state, dict):
+        state = {}
+    run_id = os.environ.get("GITHUB_RUN_ID", "local")
+    attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
+    event_time = str(status.get("updated_at") or utc_now())
+    champion = status.get("champion") if isinstance(status.get("champion"), dict) else {}
+    champion_version = status.get("champion_version") or champion.get("champion_version")
+    bar_time = status.get("last_processed_bar")
+    events: list[dict[str, Any]] = []
+
+    actions = status.get("actions") if isinstance(status.get("actions"), list) else []
+    for index, action in enumerate(actions):
+        if not isinstance(action, dict):
+            continue
+        action_payload = {
+            "event_type": "PAPER_ACTION",
+            "timestamp": event_time,
+            "champion_version": champion_version,
+            "bar_timestamp": bar_time or state.get("last_processed_bars", {}).get(action.get("symbol")),
+            "action": action,
+        }
+        canonical = json.dumps(action_payload, sort_keys=True, separators=(",", ":"), default=str)
+        action_payload["event_id"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        action_payload.update({
+            "workflow_run_id": run_id, "workflow_run_attempt": attempt,
+            "portfolio": {
+                "cash_usdt": status.get("cash_usdt"),
+                "equity_usdt": status.get("equity_usdt"),
+                "total_pnl_usdt": status.get("total_pnl_usdt"),
+                "unrealized_pnl_usdt": status.get("unrealized_pnl_usdt"),
+            },
+            "risk": status.get("risk"),
+            "state_snapshot": {
+                key: state.get(key) for key in (
+                    "cash", "quantity", "symbol", "entry_price", "realized_pnl",
+                    "completed_trades", "risk_halt", "risk_halt_reason",
+                    "daily_start_equity", "peak_equity",
+                )
+            },
+        })
+        events.append(action_payload)
+
+    run_payload = {
+        "event_type": "PAPER_ERROR" if error else "PAPER_RUN",
+        "timestamp": event_time,
+        "workflow_run_id": run_id,
+        "workflow_run_attempt": attempt,
+        "champion_version": champion_version,
+        "bar_timestamp": bar_time,
+        "message": error or status.get("message"),
+        "data_errors": status.get("data_errors", []),
+        "portfolio": {
+            "cash_usdt": status.get("cash_usdt"),
+            "equity_usdt": status.get("equity_usdt"),
+            "total_pnl_usdt": status.get("total_pnl_usdt"),
+            "realized_pnl_usdt": status.get("realized_pnl_usdt"),
+            "unrealized_pnl_usdt": status.get("unrealized_pnl_usdt"),
+            "completed_trades": status.get("completed_trades"),
+            "open_position": status.get("open_position"),
+        },
+        "risk": status.get("risk"),
+        "state_snapshot": {
+            key: state.get(key) for key in (
+                "cash", "quantity", "symbol", "entry_price", "realized_pnl",
+                "completed_trades", "risk_halt", "risk_halt_reason",
+                "daily_start_equity", "peak_equity",
+            )
+        },
+    }
+    run_canonical = json.dumps(run_payload, sort_keys=True, separators=(",", ":"), default=str)
+    run_payload["event_id"] = hashlib.sha256(
+        f"{run_id}|{attempt}|{run_canonical}".encode("utf-8")
+    ).hexdigest()
+    events.append(run_payload)
+
+    existing_ids = _recent_event_ids(path)
+    new_events = [event for event in events if event["event_id"] not in existing_ids]
+    if not new_events:
+        return
+    with path.open("a", encoding="utf-8") as handle:
+        for event in new_events:
+            handle.write(json.dumps(event, sort_keys=True, default=str) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def run_once() -> dict[str, Any]:
+    """Run the paper trader and persist an audit record for every outcome."""
+    try:
+        status = _run_once_impl()
+    except Exception as exc:
+        _append_paper_events({}, error=f"{type(exc).__name__}: {exc}")
+        raise
+    _append_paper_events(status)
     return status
 
 
