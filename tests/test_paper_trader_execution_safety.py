@@ -150,8 +150,11 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         )
         self.assertEqual([x["action"] for x in status["actions"]], ["PAPER_BUY"])
         invested = state["quantity"] * 100.0
+        equity_after_fill = state["cash"] + invested
+        exposure_after_fill = invested / equity_after_fill
         self.assertLessEqual(invested, 7.5)
         self.assertGreaterEqual(state["cash"], 7.49)
+        self.assertLessEqual(exposure_after_fill, paper_trader.MAX_POSITION_FRACTION)
 
 
     def test_stale_resampled_signal_candle_cannot_trigger_buy(self):
