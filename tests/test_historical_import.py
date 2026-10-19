@@ -1,3 +1,4 @@
+import hashlib
 import json
 import tempfile
 import unittest
@@ -53,7 +54,7 @@ class HistoricalImportTests(unittest.TestCase):
             manifest_path.write_text(json.dumps({
                 "symbol": "BTCUSDT", "product_id": "BTC-USD", "interval": "1h",
                 "requested_start": start.isoformat(), "requested_end_exclusive": end.isoformat(),
-                "status": "complete", "checksum_sha256": "verified",
+                "status": "complete", "checksum_sha256": hashlib.sha256(csv_path.read_bytes()).hexdigest(),
             }))
             with (
                 patch.object(historical_import, "get_coinbase_product_id", return_value="BTC-USD"),
