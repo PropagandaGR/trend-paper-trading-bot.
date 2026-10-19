@@ -762,19 +762,28 @@ def _validate_oos_ledger(ledger: Any) -> dict[str, Any]:
     return ledger
 
 
+def _require_nonempty_oos_history(ledger: dict[str, Any]) -> dict[str, Any]:
+    """Reject an empty ledger unless a separately reviewed recovery policy exists."""
+    if not ledger.get("windows") or not ledger.get("last_test_end"):
+        raise RuntimeError(
+            "OOS history is empty or uncertain; no reviewed recovery/exclusion policy "
+            "is recorded; refusing research."
+        )
+    return ledger
+
+
 def _load_local_oos_ledger() -> dict[str, Any]:
     path = STATE / "oos_evaluation_ledger.json"
-    if not path.exists():
-        if os.environ.get("OOS_LEDGER_BRANCH"):
-            # The workflow restore step is responsible for fetching/migrating the
-            # authoritative branch. Missing local state in that mode is unsafe.
-            raise RuntimeError("Authoritative OOS ledger was not restored before research.")
-        return _empty_oos_ledger()
+    if not path.is_file():
+        raise RuntimeError(
+            "Authoritative OOS ledger is missing; consumed test history is unknown; "
+            "refusing research."
+        )
     try:
         ledger = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError("Out-of-sample ledger is unreadable; refusing research.") from exc
-    return _validate_oos_ledger(ledger)
+    return _require_nonempty_oos_history(_validate_oos_ledger(ledger))
 
 
 def _atomic_write_local_ledger(ledger: dict[str, Any]) -> None:
@@ -833,13 +842,16 @@ def _update_oos_ledger(mutator) -> dict[str, Any]:
                 worktree_added = True
                 ledger_path = worktree / "state" / "oos_evaluation_ledger.json"
                 local_path = STATE / "oos_evaluation_ledger.json"
-                if local_path.is_file():
-                    try:
-                        current = _validate_oos_ledger(json.loads(local_path.read_text()))
-                    except (OSError, json.JSONDecodeError) as exc:
-                        raise RuntimeError("Cannot bootstrap dedicated branch from unreadable local ledger.") from exc
-                else:
-                    current = _empty_oos_ledger()
+                if not local_path.is_file():
+                    raise RuntimeError(
+                        "Dedicated OOS ledger branch is missing and no authoritative local ledger "
+                        "exists; refusing to initialize empty history."
+                    )
+                try:
+                    current = _validate_oos_ledger(json.loads(local_path.read_text()))
+                except (OSError, json.JSONDecodeError) as exc:
+                    raise RuntimeError("Cannot bootstrap dedicated branch from unreadable local ledger.") from exc
+            current = _require_nonempty_oos_history(current)
             updated = mutator(current)
             _validate_oos_ledger(updated)
             ledger_path.parent.mkdir(parents=True, exist_ok=True)
