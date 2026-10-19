@@ -29,7 +29,8 @@ permissions:
 
 concurrency:
   group: autonomous-research
-  cancel-in-progress: true
+  # Never cancel a run after it has consumed an OOS reservation.
+  cancel-in-progress: false
 
 jobs:
   research:
@@ -58,20 +59,58 @@ jobs:
         id: research_start
         run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Search and validate strategies
+        env:
+          OOS_LEDGER_BRANCH: oos-ledger
         run: python research_engine.py --days "${{ steps.window.outputs.days }}" --require-fresh-report
-      - name: Persist one-way OOS reservation even if research validation fails
-        if: always()
+      - name: Restore authoritative OOS ledger from dedicated branch
+        shell: bash
         run: |
-          if [ -f state/oos_evaluation_ledger.json ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add state/oos_evaluation_ledger.json
-            if ! git diff --cached --quiet; then
-              git commit -m "Record consumed out-of-sample evaluation window"
-              git pull --rebase origin main
-              git push origin HEAD:main
-            fi
-          fi
+          set -euo pipefail
+          mkdir -p state
+          if git ls-remote --exit-code --heads origin refs/heads/oos-ledger >/dev/null; then
+            git fetch origin refs/heads/oos-ledger:refs/remotes/origin/oos-ledger
+            git show refs/remotes/origin/oos-ledger:state/oos_evaluation_ledger.json > state/oos_evaluation_ledger.json
+          else
+            # Bootstrap from the previous main-branch ledger if one exists. Keep
+            # its last consumed boundary so old test periods can never re-enter
+            # optimization. An unreadable/ambiguous legacy ledger fails closed.
+            python - <<'PY'
+            import hashlib, json
+            from pathlib import Path
+            from datetime import datetime, timezone
+            path = Path("state/oos_evaluation_ledger.json")
+            if path.exists():
+                data = json.loads(path.read_text())
+                if data.get("policy_version") == "chronological-oos-v2":
+                    pass
+                elif data.get("policy_version") == "chronological-oos-v1":
+                    end = data.get("last_test_end")
+                    if not end:
+                        raise SystemExit("FAIL: legacy OOS ledger has no last_test_end; manual audit required")
+                    start = data.get("last_test_start") or end
+                    identity = hashlib.sha256(f"legacy|{start}|{end}".encode()).hexdigest()[:20]
+                    status = data.get("last_result")
+                    if status not in {"passed", "failed"}:
+                        status = "reserved"
+                    data = {
+                        "policy_version": "chronological-oos-v2",
+                        "windows": [{
+                            "id": identity, "start": start, "end": end,
+                            "bars": int(data.get("last_window_bars", 1)),
+                            "status": status, "reserved_at": data.get("reserved_at", "legacy-migration"),
+                            "legacy_migrated": True,
+                        }],
+                        "last_test_start": start, "last_test_end": end, "last_result": status,
+                    }
+                    path.write_text(json.dumps(data, indent=2, sort_keys=True))
+                else:
+                    raise SystemExit("FAIL: unknown legacy OOS ledger format; refusing research")
+            else:
+                path.write_text(json.dumps({
+                    "policy_version": "chronological-oos-v2", "windows": [],
+                    "last_test_start": None, "last_test_end": None, "last_result": None,
+                }, indent=2, sort_keys=True))
+            PY
       - name: Independently verify fresh research artifacts
         env:
           RESEARCH_STARTED_AT: ${{ steps.research_start.outputs.started_at }}
@@ -91,10 +130,13 @@ jobs:
           if report.get("minimum_candle_coverage_pct") != 99.0 or report.get("maximum_consecutive_missing_slots") != 3 or report.get("maximum_fx_missing_pct") != 1.0:
               raise SystemExit("FAIL: report does not declare the strict candle/FX data-quality gates")
           policy = report.get("out_of_sample_policy")
-          if (not isinstance(policy, dict) or policy.get("version") != "chronological-oos-v1"
+          if (not isinstance(policy, dict) or policy.get("version") != "chronological-oos-v2"
               or policy.get("one_evaluation_per_non_overlapping_window") is not True
               or policy.get("rejected_windows_are_consumed") is not True
-              or policy.get("test_failure_feedback_to_optimizer") is not False):
+              or policy.get("test_failure_feedback_to_optimizer") is not False
+              or policy.get("test_history_excluded_from_training_validation") is not True
+              or policy.get("new_windows_require_strictly_later_data") is not True
+              or policy.get("reservation_persisted_before_test_evaluation") is not True):
               raise SystemExit("FAIL: report does not enforce the versioned one-way OOS policy")
           quality = report.get("data_quality")
           if not isinstance(quality, dict) or not quality:
@@ -166,7 +208,7 @@ jobs:
               raise SystemExit("FAIL: active champion does not match fresh report champion")
           if metadata.get("test_used_for_selection") is not False:
               raise SystemExit("FAIL: final-test isolation not recorded")
-          if metadata.get("oos_evaluation_policy_version") != "chronological-oos-v1":
+          if metadata.get("oos_evaluation_policy_version") != "chronological-oos-v2":
               raise SystemExit("FAIL: champion is missing the current versioned OOS policy")
           for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
               if not isinstance(metadata.get(field), dict):
@@ -230,12 +272,15 @@ jobs:
               "snapshot_verified": True,
           }, indent=2))
           PY
-      - name: Commit research evidence and champion
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p reports state
-          git add -A -- reports state
-          git diff --cached --quiet || git commit -m "Update autonomous strategy research"
-          git pull --rebase origin main
-          git push origin HEAD:main
+      - name: Upload research evidence for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-research-evidence-${{ github.run_id }}
+          path: |
+            reports/research_latest.json
+            state/champion.json
+            state/champions/
+            state/oos_evaluation_ledger.json
+          if-no-files-found: warn
+          retention-days: 30
