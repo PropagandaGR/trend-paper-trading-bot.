@@ -980,8 +980,12 @@ def run_research(days: int = 90) -> dict[str, Any]:
     for symbol in research_symbols:
         try:
             raw = fetch_klines(symbol, "5m", days).sort_index()
+            source_quality = raw.attrs.get("data_quality")
             if previous_test_end is not None:
                 raw = raw.loc[raw.index > previous_test_end].copy()
+                if isinstance(source_quality, dict):
+                    # Pandas slicing may discard attrs; retain source integrity warnings.
+                    raw.attrs["data_quality"] = source_quality
                 if raw.empty:
                     errors.append({
                         "symbol": symbol,
