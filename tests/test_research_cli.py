@@ -29,6 +29,7 @@ class ResearchCliTests(unittest.TestCase):
                     "selection_metric": "validation_excess_return_score",
                     "validation_score": 1.0,
                     "test_used_for_selection": False,
+                    "oos_evaluation_policy_version": "chronological-oos-v1",
                     "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
                     "validation_metrics": {"total_return_pct": 2.0, "max_drawdown_pct": 5.0, "sharpe": 1.0, "trades": 4},
                     "validation_stress_metrics": {"total_return_pct": 1.0, "max_drawdown_pct": 8.0, "sharpe": 0.5, "trades": 4},
@@ -61,6 +62,12 @@ class ResearchCliTests(unittest.TestCase):
             },
             "evaluations": evaluations,
             "validated_count": validated_candidates,
+            "out_of_sample_policy": {
+                "version": "chronological-oos-v1",
+                "one_evaluation_per_non_overlapping_window": True,
+                "rejected_windows_are_consumed": True,
+                "test_failure_feedback_to_optimizer": False,
+            },
             "champion": champion,
         }
         (reports / "research_latest.json").write_text(json.dumps(report))
