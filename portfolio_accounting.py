@@ -33,8 +33,8 @@ def _cost_setting(name: str, default: float) -> float:
         value = float(raw) if raw is not None else default
     except (TypeError, ValueError) as exc:
         raise ValueError(f"{name} must be a finite non-negative basis-point value") from exc
-    if not math.isfinite(value) or value < 0:
-        raise ValueError(f"{name} must be a finite non-negative basis-point value")
+    if not math.isfinite(value) or value < default:
+        raise ValueError(f"{name} must be finite and at least the conservative floor of {default:g} bps")
     return value
 
 
@@ -44,6 +44,8 @@ DEFAULT_FEE_BPS = _cost_setting("PAPER_FEE_BPS", 60.0)
 DEFAULT_SLIPPAGE_BPS = _cost_setting("PAPER_SLIPPAGE_BPS", 10.0)
 STRESS_FEE_BPS = _cost_setting("PAPER_STRESS_FEE_BPS", 100.0)
 STRESS_SLIPPAGE_BPS = _cost_setting("PAPER_STRESS_SLIPPAGE_BPS", 20.0)
+if STRESS_FEE_BPS < DEFAULT_FEE_BPS or STRESS_SLIPPAGE_BPS < DEFAULT_SLIPPAGE_BPS:
+    raise ValueError("stress fees and slippage must be at least as high as baseline assumptions")
 MAX_POSITION_FRACTION = 0.50
 ENTRY_BUDGET_BUFFER = 0.995
 MAX_DAILY_LOSS_PCT = 5.0
@@ -68,8 +70,8 @@ def _validate_costs(fee_bps: float, slippage_bps: float) -> tuple[float, float]:
     return fee_bps / 10_000.0, slippage_bps / 10_000.0
 
 
-def buy_with_costs(cash: float, market_price: float, fee_bps: float = 10.0,
-                   slippage_bps: float = 5.0) -> BuyResult:
+def buy_with_costs(cash: float, market_price: float, fee_bps: float = DEFAULT_FEE_BPS,
+                   slippage_bps: float = DEFAULT_SLIPPAGE_BPS) -> BuyResult:
     """Buy with all available cash; entry basis includes execution slippage and fee."""
     fee_rate, slippage_rate = _validate_costs(fee_bps, slippage_bps)
     if not math.isfinite(cash) or not math.isfinite(market_price) or cash < 0 or market_price <= 0:
@@ -88,7 +90,7 @@ def buy_with_costs(cash: float, market_price: float, fee_bps: float = 10.0,
 
 
 def sell_with_costs(quantity: float, market_price: float, entry_cost_per_unit: float,
-                    fee_bps: float = 10.0, slippage_bps: float = 5.0) -> SellResult:
+                    fee_bps: float = DEFAULT_FEE_BPS, slippage_bps: float = DEFAULT_SLIPPAGE_BPS) -> SellResult:
     """Sell a long position; realized P/L uses net proceeds minus all-in entry basis."""
     fee_rate, slippage_rate = _validate_costs(fee_bps, slippage_bps)
     if (not all(math.isfinite(value) for value in (quantity, market_price, entry_cost_per_unit))
