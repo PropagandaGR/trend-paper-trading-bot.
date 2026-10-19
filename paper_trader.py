@@ -88,6 +88,19 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
                 return f"Champion {field}.{metric} must be a finite number."
         if float(metrics["max_drawdown_pct"]) < 0 or float(metrics["trades"]) < 0:
             return f"Champion {field} contains invalid drawdown/trade metrics."
+    # Final-test metrics never rank or select candidates, but they are an independent
+    # deployment gate: a candidate that failed out-of-sample testing must not trade.
+    test_metrics = metadata["test_metrics"]
+    test_stress_metrics = metadata["test_stress_metrics"]
+    if (float(test_metrics["total_return_pct"]) <= 0
+            or float(test_stress_metrics["total_return_pct"]) <= 0):
+        return "Champion held-out test and cost-stress returns must both be positive for paper deployment."
+    if (float(test_metrics["max_drawdown_pct"]) >= 25
+            or float(test_stress_metrics["max_drawdown_pct"]) >= 25):
+        return "Champion held-out test and cost-stress drawdown must both be below 25% for paper deployment."
+    if float(test_metrics["trades"]) < 2:
+        return "Champion held-out test must contain at least two trades for paper deployment."
+
     validation_score = metadata.get("validation_score")
     if not finite_number(validation_score):
         return "Champion validation_score must be finite."

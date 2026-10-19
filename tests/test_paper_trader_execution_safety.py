@@ -31,8 +31,8 @@ def make_champion():
             },
             "validation_metrics": {"total_return_pct": 1.0, "max_drawdown_pct": 2.0, "sharpe": 0.5, "trades": 3},
             "validation_stress_metrics": {"total_return_pct": 0.5, "max_drawdown_pct": 3.0, "sharpe": 0.2, "trades": 3},
-            "test_metrics": {"total_return_pct": -1.0, "max_drawdown_pct": 4.0, "sharpe": -0.5, "trades": 2},
-            "test_stress_metrics": {"total_return_pct": -2.0, "max_drawdown_pct": 5.0, "sharpe": -0.8, "trades": 2},
+            "test_metrics": {"total_return_pct": 0.2, "max_drawdown_pct": 4.0, "sharpe": 0.1, "trades": 2},
+            "test_stress_metrics": {"total_return_pct": 0.1, "max_drawdown_pct": 5.0, "sharpe": 0.05, "trades": 2},
             "cost_convention": {
                 "fee_basis": "executed notional",
                 "fill_timing": "closed candle close after one-candle signal shift",

@@ -9,7 +9,7 @@ A **new, isolated research project** for continuous live-market paper trading an
 - Research explores parameterized trend, breakout, and mean-reversion strategies across a rotating batch from the CoinGecko market-cap top 100, intersected with currently online Coinbase USD spot markets. Stablecoins, duplicate/unsupported symbols, and coins below US$5 million global 24-hour volume are excluded. The volume threshold is a broad liquidity screen, not Coinbase-specific depth; the universe is not a recommendation to buy any asset.
 - Coinbase USD-quoted candles are converted to approximate USDT prices with same-candle Coinbase USDT-USD closes. This conversion is approximate, not tick-level FX accounting.
 - To keep research runs bounded, each run evaluates up to five eligible coins and rotates through the ranked universe by UTC hour. Coverage of all Coinbase-supported top-100 assets therefore takes multiple runs; the active champion is selected only from the current batch.
-- Candidate strategies must pass chronological train/validation/test splits, realistic fees/slippage stress, and benchmark comparisons before being selected for the paper portfolio.
+- Candidate selection uses validation data only; final-test metrics never rank candidates. Paper deployment separately fails closed unless held-out test and cost-stress returns are positive, both drawdowns are below 25%, and the held-out test has at least two trades.
 - The live paper trader uses the currently validated champion only. Research experiments never directly modify portfolio cash or positions.
 - Results are simulated estimates, not proof of future profitability.
 
