@@ -178,7 +178,7 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         champion = make_champion()
         stale_cursor = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=1)).isoformat()
         state = {
-            "cash": 5.0, "quantity": 0.1, "symbol": "BTCUSDT", "entry_price": 90.0,
+            "cash": 10.0, "quantity": 0.05, "symbol": "BTCUSDT", "entry_price": 90.0,
             "last_processed_bars": {"BTCUSDT": stale_cursor}, "starting_cash": 15.0,
             "realized_pnl": 0.0, "completed_trades": 0,
         }
@@ -189,7 +189,7 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         self.assertIn("missed strategy candles", status["actions"][0]["reason"])
         self.assertEqual(final_state["quantity"], 0.0)
         self.assertIsNone(final_state["symbol"])
-        self.assertGreater(final_state["cash"], 5.0)
+        self.assertGreater(final_state["cash"], 10.0)
 
     def test_stale_resampled_signal_candle_cannot_trigger_buy(self):
         champion = make_champion()
