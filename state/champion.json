@@ -1,24 +1,24 @@
 {
-  "symbol": "SKYUSDT",
-  "interval": "15m",
+  "symbol": "ATOMUSDT",
+  "interval": "30m",
   "strategy": "trend",
   "params": {
-    "fast": 20,
-    "slow": 48,
+    "fast": 12,
+    "slow": 30,
     "momentum": 12,
-    "breakout": 24,
-    "entry_momentum": 0.002,
+    "breakout": 12,
+    "entry_momentum": 0.0,
     "exit_momentum": -0.01,
     "rsi_entry": 30,
     "rsi_exit": 50,
     "stop_pct": 0.06
   },
-  "champion_version": "champion-15b4370ad856",
+  "champion_version": "champion-17d0d18cce13",
   "validation_metadata": {
-    "created_at": "2026-10-19T17:33:11.276815+00:00",
+    "created_at": "2026-10-19T19:01:03.193620+00:00",
     "status": "validated",
     "selection_metric": "validation_score",
-    "validation_score": 22.79025,
+    "validation_score": 8.704775,
     "validation_criteria": {
       "validation_return_positive": true,
       "validation_stress_return_positive": true,
@@ -27,50 +27,50 @@
     },
     "periods": {
       "train": {
-        "start": "2026-07-21T18:15:00+00:00",
-        "end": "2026-09-21T22:15:00+00:00",
-        "bars": 2431
+        "start": "2026-09-04T20:00:00+00:00",
+        "end": "2026-10-02T04:00:00+00:00",
+        "bars": 1182
       },
       "validation": {
-        "start": "2026-09-21T22:45:00+00:00",
-        "end": "2026-10-03T08:45:00+00:00",
-        "bars": 810
+        "start": "2026-10-02T04:30:00+00:00",
+        "end": "2026-10-10T12:30:00+00:00",
+        "bars": 394
       },
       "test": {
-        "start": "2026-10-03T09:00:00+00:00",
-        "end": "2026-10-19T17:15:00+00:00",
-        "bars": 811
+        "start": "2026-10-10T13:00:00+00:00",
+        "end": "2026-10-19T19:00:00+00:00",
+        "bars": 394
       }
     },
     "train_metrics": {
-      "total_return_pct": 7.4727,
-      "max_drawdown_pct": 15.635,
-      "sharpe": 1.855,
-      "trades": 88
+      "total_return_pct": 10.4254,
+      "max_drawdown_pct": 16.1678,
+      "sharpe": 2.603,
+      "trades": 54
     },
     "validation_metrics": {
-      "total_return_pct": 28.5285,
-      "max_drawdown_pct": 7.371,
-      "sharpe": 11.224,
-      "trades": 21
+      "total_return_pct": 14.6716,
+      "max_drawdown_pct": 7.7691,
+      "sharpe": 7.376,
+      "trades": 14
     },
     "validation_stress_metrics": {
-      "total_return_pct": 24.5432,
-      "max_drawdown_pct": 8.2009,
-      "sharpe": 9.839,
-      "trades": 21
+      "total_return_pct": 12.2886,
+      "max_drawdown_pct": 8.0454,
+      "sharpe": 6.295,
+      "trades": 14
     },
     "test_metrics": {
-      "total_return_pct": -21.8376,
-      "max_drawdown_pct": 27.2751,
-      "sharpe": -16.792,
-      "trades": 28
+      "total_return_pct": -10.0083,
+      "max_drawdown_pct": 12.5382,
+      "sharpe": -11.242,
+      "trades": 13
     },
     "test_stress_metrics": {
-      "total_return_pct": -25.0524,
-      "max_drawdown_pct": 29.9519,
-      "sharpe": -19.452,
-      "trades": 28
+      "total_return_pct": -11.746,
+      "max_drawdown_pct": 14.227,
+      "sharpe": -13.229,
+      "trades": 13
     },
     "test_used_for_selection": false,
     "cost_convention": {
@@ -83,8 +83,8 @@
       "slippage": "execution price adjusted per side"
     },
     "sharpe_annualization": {
-      "bars_per_year": 35040,
-      "interval": "15m",
+      "bars_per_year": 17520,
+      "interval": "30m",
       "calendar_days_per_year": 365
     },
     "warning": "Test metrics are report-only and were not used to rank, select, or validate this champion."
