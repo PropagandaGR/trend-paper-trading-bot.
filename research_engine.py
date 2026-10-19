@@ -83,15 +83,19 @@ def _convert_usd_candles_to_usdt(frame: pd.DataFrame, fx_frame: pd.DataFrame) ->
     """
     if frame.empty or fx_frame.empty:
         raise RuntimeError("Cannot convert candles without asset and USDT-USD data")
-    fx = fx_frame["close"].reindex(frame.index).ffill()
-    valid = fx.notna() & (fx > 0)
+    # Do not forward-fill USDT-USD across missing candles: stale FX can silently
+    # distort the entire asset price series. Only exact same-candle timestamps qualify.
+    fx = pd.to_numeric(fx_frame["close"], errors="coerce").reindex(frame.index)
+    valid = fx.notna() & np.isfinite(fx) & (fx > 0)
+    missing_fx_candles = int((~valid).sum())
     converted = frame.loc[valid].copy()
     fx = fx.loc[valid]
     for column in ("open", "high", "low", "close"):
         converted[column] = converted[column] / fx
     converted.attrs["source"] = "coinbase"
     converted.attrs["quote_currency"] = "USDT"
-    converted.attrs["fx_conversion"] = "USDT-USD candle close; approximate"
+    converted.attrs["fx_conversion"] = "same-candle USDT-USD close only; approximate"
+    converted.attrs["fx_missing_candles"] = missing_fx_candles
     return converted
 
 
@@ -111,6 +115,10 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
             _USDT_USD_CANDLE_CACHE[cache_key] = _fetch_coinbase("USDTUSD", interval, days)
         fx_frame = _USDT_USD_CANDLE_CACHE[cache_key]
         frame = _convert_usd_candles_to_usdt(frame, fx_frame)
+        if frame.empty:
+            raise RuntimeError(
+                f"No same-candle USDT-USD FX closes available to convert {symbol} {interval}"
+            )
     frame.attrs["source"] = "coinbase"
     frame.attrs["quote_currency"] = "USDT"
     return frame.sort_index()
