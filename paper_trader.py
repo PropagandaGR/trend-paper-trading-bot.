@@ -22,6 +22,7 @@ STATE_FILE = STATE / "paper_state.json"
 CHAMPION_FILE = STATE / "champion.json"
 STATUS_FILE = REPORTS / "paper_status.json"
 MAX_POSITION_FRACTION = 0.50
+ENTRY_BUDGET_BUFFER = 0.995  # leave headroom for fees/slippage in post-fill exposure
 MAX_DAILY_LOSS_PCT = 5.0
 MAX_DRAWDOWN_PCT = 10.0
 MAX_PRICE_AGE_SECONDS = 15 * 60
@@ -610,8 +611,12 @@ def run_once() -> dict[str, Any]:
             qty, position_symbol = 0.0, None
             state["entry_price"] = None
         if qty <= 0 and target_long:
-            # Cap each new long to 50% of current equity; leave the rest in simulated cash.
-            spend_cash = min(cash, max(0.0, equity_before * MAX_POSITION_FRACTION))
+            # Leave a small buffer so fees/slippage do not push post-fill marked
+            # exposure above the circuit-breaker threshold on the next run.
+            spend_cash = min(
+                cash,
+                max(0.0, equity_before * MAX_POSITION_FRACTION * ENTRY_BUDGET_BUFFER),
+            )
             buy = buy_with_costs(spend_cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
             qty = max(0.0, buy.quantity)
             cash = max(0.0, cash - spend_cash + buy.cash_remaining)
