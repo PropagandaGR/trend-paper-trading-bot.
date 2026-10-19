@@ -19,7 +19,7 @@ from portfolio_accounting import (DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS,
                                   mark_to_market, sell_with_costs)
 
 from research_engine import (
-    INTERVALS, REPORTS, STATE, SYMBOLS, fetch_klines, desired_signal, add_features,
+    INTERVALS, REPORTS, STATE, SYMBOLS, OOS_POLICY_VERSION, fetch_klines, desired_signal, add_features,
     resample_ohlcv, utc_now, candidate_passes_gates, deployment_gate_failures
 )
 
@@ -84,6 +84,8 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
         return "Champion has no explicit validation metadata."
     if metadata.get("test_used_for_selection") is not False:
         return "Champion metadata does not confirm final-test isolation."
+    if metadata.get("oos_evaluation_policy_version") != OOS_POLICY_VERSION:
+        return "Champion is incompatible with the current versioned out-of-sample evaluation policy."
     for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
         metrics = metadata.get(field)
         if not isinstance(metrics, dict):
