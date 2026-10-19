@@ -31,6 +31,7 @@ class PaperTraderWrongSymbolIntegrationTests(unittest.TestCase):
                 "validation_metadata": {
                     "created_at": pd.Timestamp.now(tz="UTC").isoformat(),
                     "status": "validated", "test_used_for_selection": False,
+                    "oos_evaluation_policy_version": "chronological-oos-v1",
                     "validation_score": 1.0,
                     "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
                     "periods": {
