@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from research_engine import backtest, candidate_passes_gates, desired_signal, performance, resample_ohlcv
+from research_engine import (backtest, candidate_passes_gates, desired_signal, performance, resample_ohlcv, deployment_gate_failures, candle_quality_report)
 
 
 def sample_frame(n=500):
@@ -73,6 +73,37 @@ class ResearchTests(unittest.TestCase):
         validation = {"total_return_pct": 10.0, "max_drawdown_pct": 10.0, "sharpe": 1.0, "trades": 4}
         stress = {"total_return_pct": 2.0, "max_drawdown_pct": 12.0, "sharpe": 0.5, "trades": 4}
         self.assertTrue(candidate_passes_gates(train, validation, stress))
+
+    def test_candidate_gate_requires_validation_outperformance_vs_benchmarks(self):
+        train = {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12}
+        validation = {"total_return_pct": 10.0, "max_drawdown_pct": 10.0, "sharpe": 1.0, "trades": 4}
+        stress = {"total_return_pct": 2.0, "max_drawdown_pct": 12.0, "sharpe": 0.5, "trades": 4}
+        cash = {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": 3.0}}
+        stress_cash = {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": 1.0}}
+        self.assertFalse(candidate_passes_gates(train, validation, stress, cash, stress_cash))
+        cash["buy_and_hold"]["total_return_pct"] = 1.0
+        self.assertTrue(candidate_passes_gates(train, validation, stress, cash, stress_cash))
+
+    def test_held_out_gate_rejects_validation_spike_with_negative_test(self):
+        test = {"total_return_pct": -10.0, "max_drawdown_pct": 30.0, "sharpe": -1.0, "trades": 4}
+        stress = {"total_return_pct": -20.0, "max_drawdown_pct": 35.0, "sharpe": -2.0, "trades": 4}
+        cash = {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -5.0}}
+        stress_cash = {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -8.0}}
+        failures = deployment_gate_failures(test, stress, cash, stress_cash)
+        self.assertTrue(any("cash and buy-and-hold" in item for item in failures))
+        self.assertTrue(any("drawdown" in item for item in failures))
+
+    def test_candle_quality_gate_reports_long_missing_data_gaps(self):
+        index = pd.date_range("2026-01-01", periods=8, freq="5min", tz="UTC").delete([3, 4, 5, 6])
+        frame = pd.DataFrame({
+            "open": [100.0] * len(index), "high": [101.0] * len(index),
+            "low": [99.0] * len(index), "close": [100.0] * len(index),
+            "volume": [1.0] * len(index),
+        }, index=index)
+        quality = candle_quality_report(frame, "5m", days=1)
+        self.assertEqual(quality["max_consecutive_missing_slots"], 4)
+        self.assertFalse(quality["unique_timestamps"] is False)
+        self.assertTrue(quality["monotonic_timestamps"])
 
     def test_performance_empty_is_safe(self):
         result = performance(pd.Series(dtype=float))
