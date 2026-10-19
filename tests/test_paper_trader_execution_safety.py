@@ -24,6 +24,7 @@ def make_champion():
             "selection_metric": "validation_score",
             "validation_score": 1.0,
             "test_used_for_selection": False,
+            "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
             "periods": {
                 "train": {"start": "2026-01-01T00:00:00+00:00", "end": "2026-01-02T00:00:00+00:00"},
                 "validation": {"start": "2026-01-03T00:00:00+00:00", "end": "2026-01-04T00:00:00+00:00"},
@@ -36,10 +37,10 @@ def make_champion():
             "cost_convention": {
                 "fee_basis": "executed notional",
                 "fill_timing": "closed candle close after one-candle signal shift",
-                "fee_bps_per_side": 10,
-                "slippage_bps_per_side": 5,
-                "stress_fee_bps_per_side": 20,
-                "stress_slippage_bps_per_side": 10,
+                "fee_bps_per_side": 60.0,
+                "slippage_bps_per_side": 10.0,
+                "stress_fee_bps_per_side": 100.0,
+                "stress_slippage_bps_per_side": 20.0,
             },
         },
     }
@@ -123,9 +124,11 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
 
     def test_risk_liquidation_keeps_status_and_saved_ledger_in_sync(self):
         champion = make_champion()
+        now = datetime.now(timezone.utc)
         state = {
             "cash": 0.0, "quantity": 0.1, "symbol": "ETHUSDT", "entry_price": 100.0,
             "last_processed_bars": {}, "starting_cash": 15.0,
+            "risk_day": now.date().isoformat(), "daily_start_equity": 15.0, "peak_equity": 15.0,
             "realized_pnl": 0.0, "completed_trades": 0,
         }
         status, final_state = self._run_in_temp_repo(
@@ -149,9 +152,46 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         )
         self.assertEqual([x["action"] for x in status["actions"]], ["PAPER_BUY"])
         invested = state["quantity"] * 100.0
+        equity_after_fill = state["cash"] + invested
+        exposure_after_fill = invested / equity_after_fill
         self.assertLessEqual(invested, 7.5)
         self.assertGreaterEqual(state["cash"], 7.49)
+        self.assertLessEqual(exposure_after_fill, paper_trader.MAX_POSITION_FRACTION)
 
+
+    def test_missed_candles_skip_entry_and_advance_cursor_without_backfill(self):
+        champion = make_champion()
+        stale_cursor = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=1)).isoformat()
+        state = {
+            "cash": 15.0, "quantity": 0.0, "symbol": None, "entry_price": None,
+            "last_processed_bars": {"BTCUSDT": stale_cursor}, "starting_cash": 15.0,
+        }
+        status, final_state = self._run_in_temp_repo(
+            state, champion, {"BTCUSDT": make_frame(100.0)}, signal_value=1.0,
+        )
+        self.assertEqual(status["actions"], [])
+        self.assertIn("Missed strategy candles detected", status["message"])
+        self.assertGreater(status["missed_candles"]["count"], 0)
+        self.assertEqual(final_state["cash"], 15.0)
+        self.assertEqual(final_state["quantity"], 0.0)
+        self.assertNotEqual(final_state["last_processed_bars"]["BTCUSDT"], stale_cursor)
+
+    def test_missed_candles_force_close_existing_position_without_reentry(self):
+        champion = make_champion()
+        stale_cursor = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=1)).isoformat()
+        state = {
+            "cash": 5.0, "quantity": 0.1, "symbol": "BTCUSDT", "entry_price": 90.0,
+            "last_processed_bars": {"BTCUSDT": stale_cursor}, "starting_cash": 15.0,
+            "realized_pnl": 0.0, "completed_trades": 0,
+        }
+        status, final_state = self._run_in_temp_repo(
+            state, champion, {"BTCUSDT": make_frame(100.0)}, signal_value=1.0,
+        )
+        self.assertEqual([action["action"] for action in status["actions"]], ["PAPER_SELL"])
+        self.assertIn("missed strategy candles", status["actions"][0]["reason"])
+        self.assertEqual(final_state["quantity"], 0.0)
+        self.assertIsNone(final_state["symbol"])
+        self.assertGreater(final_state["cash"], 5.0)
 
     def test_stale_resampled_signal_candle_cannot_trigger_buy(self):
         champion = make_champion()
@@ -168,6 +208,27 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         self.assertIn("signal candle unavailable", status["message"])
         self.assertEqual(state["cash"], 15.0)
         self.assertEqual(state["quantity"], 0.0)
+
+    def test_price_appreciation_above_entry_cap_does_not_latch_risk_halt(self):
+        champion = make_champion()
+        frame = make_frame(110.0)
+        cursor = frame.index[-1].isoformat()
+        state = {
+            "cash": 7.5, "quantity": 0.075, "symbol": "BTCUSDT",
+            "entry_price": 100.0,
+            "last_processed_bars": {"BTCUSDT": cursor},
+            "starting_cash": 15.0, "realized_pnl": 0.0, "completed_trades": 0,
+        }
+
+        status, final_state = self._run_in_temp_repo(
+            state, champion, {"BTCUSDT": frame}, signal_value=1.0,
+        )
+
+        self.assertEqual(status["actions"], [])
+        self.assertFalse(status["risk"]["halted"])
+        self.assertIsNone(final_state.get("risk_halt_reason"))
+        self.assertEqual(final_state["quantity"], 0.075)
+        self.assertAlmostEqual(status["equity_usdt"], 15.75, places=6)
 
 
 if __name__ == "__main__":

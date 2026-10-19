@@ -32,6 +32,7 @@ class PaperTraderWrongSymbolIntegrationTests(unittest.TestCase):
                     "created_at": pd.Timestamp.now(tz="UTC").isoformat(),
                     "status": "validated", "test_used_for_selection": False,
                     "validation_score": 1.0,
+                    "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
                     "periods": {
                         "train": {"start": "2026-01-01T00:00:00+00:00", "end": "2026-01-02T00:00:00+00:00"},
                         "validation": {"start": "2026-01-03T00:00:00+00:00", "end": "2026-01-04T00:00:00+00:00"},
@@ -44,8 +45,8 @@ class PaperTraderWrongSymbolIntegrationTests(unittest.TestCase):
                     "cost_convention": {
                         "fee_basis": "executed notional",
                         "fill_timing": "closed candle close after one-candle signal shift",
-                        "fee_bps_per_side": 10, "slippage_bps_per_side": 5,
-                        "stress_fee_bps_per_side": 20, "stress_slippage_bps_per_side": 10
+                        "fee_bps_per_side": 60.0, "slippage_bps_per_side": 10.0,
+                        "stress_fee_bps_per_side": 100.0, "stress_slippage_bps_per_side": 20.0
                     }
                 }
             }))
@@ -75,7 +76,7 @@ class PaperTraderWrongSymbolIntegrationTests(unittest.TestCase):
             sells = [a for a in status["actions"] if a["action"] == "PAPER_SELL"]
             self.assertEqual(len(sells), 1)
             self.assertEqual(sells[0]["symbol"], "ETHUSDT")
-            self.assertAlmostEqual(sells[0]["price"], 1_999.0, places=7)
+            self.assertAlmostEqual(sells[0]["price"], 1_998.0, places=7)
             self.assertNotAlmostEqual(sells[0]["price"], 59_970.0, places=3)
             self.assertIsNone(status["open_position"])
             self.assertAlmostEqual(status["cash_usdt"], sells[0]["net_proceeds_usdt"], places=7)

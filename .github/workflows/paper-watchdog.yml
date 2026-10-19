@@ -1,0 +1,41 @@
+name: Paper Trading Heartbeat Watchdog
+
+on:
+  schedule:
+    # Offset from common cron boundaries; this is still best-effort scheduling.
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: paper-trading-heartbeat-watchdog
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Check paper status and state freshness
+        id: check
+        run: python paper_watchdog.py
+      - name: Open one operations issue if heartbeat is stale
+        if: steps.check.outputs.stale == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          existing=$(gh issue list --state open --search "Paper trader heartbeat stale in:title" --json number --jq 'length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create \
+              --title "Paper trader heartbeat stale" \
+              --body-file "$RUNNER_TEMP/paper-heartbeat-issue.txt"
+          else
+            echo "An open paper-trader heartbeat issue already exists; not creating duplicates."
+          fi

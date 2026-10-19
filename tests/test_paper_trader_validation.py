@@ -20,6 +20,7 @@ def valid_champion(created_at=None):
             "status": "validated",
             "test_used_for_selection": False,
             "validation_score": 1.25,
+            "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
             "periods": {
                 "train": {"start": "2026-01-01T00:00:00+00:00", "end": "2026-01-02T00:00:00+00:00"},
                 "validation": {"start": "2026-01-03T00:00:00+00:00", "end": "2026-01-04T00:00:00+00:00"},
@@ -32,10 +33,10 @@ def valid_champion(created_at=None):
             "cost_convention": {
                 "fee_basis": "executed notional",
                 "fill_timing": "closed candle close after one-candle signal shift",
-                "fee_bps_per_side": 10,
-                "slippage_bps_per_side": 5,
-                "stress_fee_bps_per_side": 20,
-                "stress_slippage_bps_per_side": 10,
+                "fee_bps_per_side": 60.0,
+                "slippage_bps_per_side": 10.0,
+                "stress_fee_bps_per_side": 100.0,
+                "stress_slippage_bps_per_side": 20.0,
             },
         },
     }
@@ -44,6 +45,12 @@ def valid_champion(created_at=None):
 class PaperTraderChampionGateTests(unittest.TestCase):
     def test_accepts_fresh_versioned_validated_champion(self):
         self.assertIsNone(champion_validation_error(valid_champion()))
+
+    def test_rejects_champion_evaluated_under_different_cost_assumptions(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["cost_convention"]["fee_bps_per_side"] = 10.0
+        self.assertIn("does not match current paper execution settings",
+                      champion_validation_error(champion))
 
     def test_rejects_legacy_champion_without_metadata(self):
         self.assertIsNotNone(champion_validation_error({
@@ -59,6 +66,22 @@ class PaperTraderChampionGateTests(unittest.TestCase):
         champion = valid_champion()
         champion["validation_metadata"]["test_used_for_selection"] = True
         self.assertIn("final-test isolation", champion_validation_error(champion))
+
+    def test_rejects_champion_with_negative_training_return(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["train_metrics"]["total_return_pct"] = -69.7706
+        self.assertIn("training return must be positive", champion_validation_error(champion))
+
+    def test_rejects_champion_with_excessive_training_drawdown(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["train_metrics"]["max_drawdown_pct"] = 70.0337
+        self.assertIn("training drawdown must be below 35%", champion_validation_error(champion))
+
+    def test_final_test_loss_is_report_only_not_an_acceptance_gate(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["test_metrics"]["total_return_pct"] = -31.84
+        champion["validation_metadata"]["test_stress_metrics"]["total_return_pct"] = -48.82
+        self.assertIsNone(champion_validation_error(champion))
 
     def test_rejects_incomplete_validation_metrics(self):
         champion = valid_champion()
@@ -122,6 +145,15 @@ class PaperTraderAdversarialSafetyTests(unittest.TestCase):
         self.assertGreater(risk["drawdown_pct"], MAX_DRAWDOWN_PCT)
         self.assertTrue(risk["halted"])
         self.assertIn("drawdown_limit", risk["halt_reason"])
+
+    def test_risk_halt_stays_latched_after_equity_recovers(self):
+        now = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+        state = {"risk_day": "2026-01-01", "daily_start_equity": 15.0, "peak_equity": 15.0}
+        first = update_risk_metrics(state, 14.0, now)
+        self.assertTrue(first["halted"])
+        second = update_risk_metrics(state, 15.0, now)
+        self.assertTrue(second["halted"])
+        self.assertEqual(second["halt_reason"], "daily_loss_limit")
 
     def test_position_budget_is_configured_below_full_equity(self):
         self.assertLess(MAX_POSITION_FRACTION, 1.0)

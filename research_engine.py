@@ -15,7 +15,11 @@ import numpy as np
 import pandas as pd
 import requests
 
-from portfolio_accounting import buy_with_costs, sell_with_costs
+from portfolio_accounting import (DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS,
+                                  MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
+                                  MAX_POSITION_FRACTION, STRESS_FEE_BPS,
+                                  STRESS_SLIPPAGE_BPS, buy_with_costs, entry_budget,
+                                  sell_with_costs)
 from universe import get_coinbase_product_id, get_research_batch
 
 ROOT = Path(__file__).resolve().parent
@@ -23,8 +27,7 @@ REPORTS = ROOT / "reports"
 STATE = ROOT / "state"
 SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT")
 INTERVALS = {"5m": "5min", "10m": "10min", "15m": "15min", "30m": "30min"}
-DEFAULT_FEE_BPS = 10.0
-DEFAULT_SLIPPAGE_BPS = 5.0
+MIN_CANDLE_COVERAGE_PCT = 95.0
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "Autonomous-Paper-Trading-Lab/1.0"})
 _USDT_USD_CANDLE_CACHE: dict[tuple[str, int], pd.DataFrame] = {}
@@ -64,14 +67,72 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     if not rows:
         raise RuntimeError(f"No Coinbase candles returned for {product} {interval}")
     frame = pd.DataFrame(rows, columns=["time", "low", "high", "open", "close", "volume"])
+    duplicate_candles_dropped = int(frame["time"].duplicated().sum())
+    response_was_sorted = bool(frame["time"].is_monotonic_increasing)
+    conflicting_duplicate_groups = 0
+    duplicated = frame.loc[frame["time"].duplicated(keep=False)]
+    if not duplicated.empty:
+        for _, group in duplicated.groupby("time", sort=False):
+            if group[["low", "high", "open", "close", "volume"]].nunique(dropna=False).gt(1).any():
+                conflicting_duplicate_groups += 1
     frame = frame.drop_duplicates("time").sort_values("time")
     frame["open_time"] = pd.to_datetime(frame["time"], unit="s", utc=True)
     frame["close_time"] = frame["open_time"] + pd.to_timedelta(granularity, unit="s")
     for col in ("open", "high", "low", "close", "volume"):
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
     frame = frame.set_index("open_time")
-    return frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC"),
-                     ["open", "high", "low", "close", "volume", "close_time"]]
+    closed = frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC"),
+                       ["open", "high", "low", "close", "volume", "close_time"]]
+    closed.attrs["duplicate_candles_dropped"] = duplicate_candles_dropped
+    closed.attrs["conflicting_duplicate_groups"] = conflicting_duplicate_groups
+    closed.attrs["response_was_sorted"] = response_was_sorted
+    closed.attrs["source_was_sorted"] = bool(closed.index.is_monotonic_increasing)
+    return closed
+
+
+def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int = 90,
+                          now: pd.Timestamp | None = None) -> dict[str, Any]:
+    """Summarize expected-window coverage and OHLC integrity without filling gaps."""
+    granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
+    if granularity is None:
+        raise ValueError(f"Unsupported candle-quality interval: {interval}")
+    if days <= 0:
+        raise ValueError("days must be positive")
+    expected_slots = int(days * 86400 // granularity)
+    observed_slots = int(len(frame))
+    coverage_pct = min(100.0, observed_slots / expected_slots * 100.0) if expected_slots else 0.0
+    if frame.empty:
+        invalid_ohlc_rows = 0
+    else:
+        values = frame[["open", "high", "low", "close", "volume"]].apply(
+            pd.to_numeric, errors="coerce"
+        )
+        valid_finite = np.isfinite(values.to_numpy()).all(axis=1)
+        positive_prices = (values[["open", "high", "low", "close"]] > 0).all(axis=1).to_numpy()
+        valid_high = values["high"].to_numpy() >= values[["open", "close"]].max(axis=1).to_numpy()
+        valid_low = values["low"].to_numpy() <= values[["open", "close"]].min(axis=1).to_numpy()
+        valid_range = values["high"].to_numpy() >= values["low"].to_numpy()
+        nonnegative_volume = (values["volume"] >= 0).to_numpy()
+        valid_rows = (valid_finite & positive_prices & valid_high & valid_low
+                      & valid_range & nonnegative_volume)
+        invalid_ohlc_rows = int((~valid_rows).sum())
+    duplicate_count = int(frame.attrs.get("duplicate_candles_dropped", 0))
+    conflicting_duplicate_groups = int(frame.attrs.get("conflicting_duplicate_groups", 0))
+    source_was_sorted = bool(frame.attrs.get("source_was_sorted", frame.index.is_monotonic_increasing))
+    return {
+        "interval": interval,
+        "requested_days": int(days),
+        "expected_window_slots": expected_slots,
+        "observed_source_candles": observed_slots,
+        "missing_expected_slots": max(0, expected_slots - observed_slots),
+        "source_coverage_pct": round(coverage_pct, 4),
+        "duplicate_candles_dropped": duplicate_count,
+        "conflicting_duplicate_groups": conflicting_duplicate_groups,
+        "response_was_sorted": bool(frame.attrs.get("response_was_sorted", source_was_sorted)),
+        "source_was_sorted": source_was_sorted,
+        "invalid_ohlc_rows": invalid_ohlc_rows,
+        "coverage_note": "Missing slots can be no-trade intervals or unavailable candles; they are not interpolated.",
+    }
 
 
 def _convert_usd_candles_to_usdt(frame: pd.DataFrame, fx_frame: pd.DataFrame) -> pd.DataFrame:
@@ -83,15 +144,19 @@ def _convert_usd_candles_to_usdt(frame: pd.DataFrame, fx_frame: pd.DataFrame) ->
     """
     if frame.empty or fx_frame.empty:
         raise RuntimeError("Cannot convert candles without asset and USDT-USD data")
-    fx = fx_frame["close"].reindex(frame.index).ffill()
-    valid = fx.notna() & (fx > 0)
+    # Do not forward-fill USDT-USD across missing candles: stale FX can silently
+    # distort the entire asset price series. Only exact same-candle timestamps qualify.
+    fx = pd.to_numeric(fx_frame["close"], errors="coerce").reindex(frame.index)
+    valid = fx.notna() & np.isfinite(fx) & (fx > 0)
+    missing_fx_candles = int((~valid).sum())
     converted = frame.loc[valid].copy()
     fx = fx.loc[valid]
     for column in ("open", "high", "low", "close"):
         converted[column] = converted[column] / fx
     converted.attrs["source"] = "coinbase"
     converted.attrs["quote_currency"] = "USDT"
-    converted.attrs["fx_conversion"] = "USDT-USD candle close; approximate"
+    converted.attrs["fx_conversion"] = "same-candle USDT-USD close only; approximate"
+    converted.attrs["fx_missing_candles"] = missing_fx_candles
     return converted
 
 
@@ -105,12 +170,38 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
     frame = _fetch_coinbase(symbol, interval, days)
     if frame.empty:
         raise RuntimeError(f"Coinbase returned no closed candles for {symbol} {interval}")
+    source_quality = candle_quality_report(frame, interval, days)
+    source_candle_count = len(frame)
+    fx_missing_candles = 0
     if symbol != "USDTUSD":
         cache_key = (interval, days)
         if cache_key not in _USDT_USD_CANDLE_CACHE:
             _USDT_USD_CANDLE_CACHE[cache_key] = _fetch_coinbase("USDTUSD", interval, days)
         fx_frame = _USDT_USD_CANDLE_CACHE[cache_key]
         frame = _convert_usd_candles_to_usdt(frame, fx_frame)
+        fx_missing_candles = int(frame.attrs.get("fx_missing_candles", 0))
+        if frame.empty:
+            raise RuntimeError(
+                f"No same-candle USDT-USD FX closes available to convert {symbol} {interval}"
+            )
+    expected_slots = int(days * 86400 // {"1m": 60, "3m": 180, "5m": 300,
+                                          "15m": 900, "30m": 1800, "1h": 3600}[interval])
+    quality = dict(source_quality)
+    quality.update({
+        "source_candle_count": source_candle_count,
+        "converted_candle_count": int(len(frame)),
+        "converted_coverage_pct": round(min(100.0, len(frame) / expected_slots * 100.0), 4),
+        "fx_missing_candles": fx_missing_candles,
+        "fx_missing_pct_of_source": round(fx_missing_candles / max(source_candle_count, 1) * 100.0, 4),
+    })
+    quality["quality_gate_passed"] = bool(
+        quality["source_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
+        and quality["converted_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
+        and quality["invalid_ohlc_rows"] == 0
+        and quality["conflicting_duplicate_groups"] == 0
+        and quality["source_was_sorted"]
+    )
+    frame.attrs["data_quality"] = quality
     frame.attrs["source"] = "coinbase"
     frame.attrs["quote_currency"] = "USDT"
     return frame.sort_index()
@@ -210,6 +301,33 @@ def performance(returns: pd.Series, interval: str = "5m",
             "sharpe": round(sharpe, 3), "trades": int(trades)}
 
 
+def cash_benchmark(frame: pd.DataFrame, interval: str = "5m",
+                   starting_cash: float = 15.0) -> dict[str, float]:
+    """Report a zero-return cash benchmark over the same timestamps."""
+    returns = pd.Series(np.zeros(len(frame), dtype=float), index=frame.index)
+    return performance(returns, interval, trades=0)
+
+
+def buy_and_hold_benchmark(frame: pd.DataFrame, interval: str = "5m",
+                           fee_bps: float = DEFAULT_FEE_BPS,
+                           slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
+                           starting_cash: float = 15.0) -> dict[str, float]:
+    """Buy once with the shared entry budget and mark to market without final liquidation."""
+    if frame.empty:
+        return performance(pd.Series(dtype=float), interval, trades=0)
+    prices = pd.to_numeric(frame["close"], errors="coerce")
+    if prices.isna().any() or (~np.isfinite(prices)).any() or (prices <= 0).any():
+        raise ValueError("buy-and-hold benchmark requires finite, positive close prices")
+    spend_cash = entry_budget(starting_cash, starting_cash)
+    buy = buy_with_costs(spend_cash, float(prices.iloc[0]), fee_bps, slippage_bps)
+    cash = max(0.0, starting_cash - spend_cash + buy.cash_remaining)
+    equity = pd.Series(cash + buy.quantity * prices, index=frame.index, dtype=float)
+    returns = equity.pct_change()
+    if not returns.empty:
+        returns.iloc[0] = equity.iloc[0] / starting_cash - 1.0
+    return performance(returns, interval, trades=1 if buy.quantity > 0 else 0)
+
+
 def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
              fee_bps: float = DEFAULT_FEE_BPS,
              slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
@@ -230,19 +348,62 @@ def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
     target = desired_signal(frame, strategy, params).reindex(frame.index).fillna(0.0)
     cash, quantity, entry_basis, changes = float(starting_cash), 0.0, 0.0, 0
     equity_values: list[float] = []
+    risk_day: str | None = None
+    daily_start_equity = float(starting_cash)
+    peak_equity = float(starting_cash)
+    halted = False
     for timestamp, market_price in prices.items():
         price = float(market_price)
+        stamp = pd.Timestamp(timestamp)
+        if stamp.tzinfo is None:
+            raise ValueError("backtest requires timezone-aware candle timestamps")
+        day = stamp.tz_convert("UTC").date().isoformat()
+        equity_before = cash + quantity * price
+        if day != risk_day:
+            risk_day = day
+            daily_start_equity = max(equity_before, 1e-12)
+        peak_equity = max(peak_equity, equity_before)
+        daily_loss_pct = max(0.0, (daily_start_equity - equity_before) / daily_start_equity * 100.0)
+        drawdown_pct = max(0.0, (peak_equity - equity_before) / peak_equity * 100.0)
+        if daily_loss_pct >= MAX_DAILY_LOSS_PCT or drawdown_pct >= MAX_DRAWDOWN_PCT:
+            halted = True
+
+        # Match the paper trader's latched circuit breakers: liquidate at a
+        # current mark once triggered and do not re-enter during this period.
+        if halted:
+            if quantity > 0:
+                sale = sell_with_costs(quantity, price, entry_basis, fee_bps, slippage_bps)
+                cash += sale.net_proceeds
+                quantity, entry_basis = 0.0, 0.0
+                changes += 1
+            equity_values.append(cash)
+            continue
+
         wants_long = bool(float(target.loc[timestamp]) > 0)
         if wants_long and quantity <= 0:
-            buy = buy_with_costs(cash, price, fee_bps, slippage_bps)
-            quantity, cash, entry_basis = buy.quantity, buy.cash_remaining, buy.entry_cost_per_unit
+            # Match the paper trader's shared entry budget rather than investing
+            # the entire simulated portfolio in every position.
+            spend_cash = entry_budget(cash, equity_before)
+            buy = buy_with_costs(spend_cash, price, fee_bps, slippage_bps)
+            quantity = buy.quantity
+            cash = max(0.0, cash - spend_cash + buy.cash_remaining)
+            entry_basis = buy.entry_cost_per_unit
             changes += 1
         elif not wants_long and quantity > 0:
             sale = sell_with_costs(quantity, price, entry_basis, fee_bps, slippage_bps)
             cash += sale.net_proceeds
             quantity, entry_basis = 0.0, 0.0
             changes += 1
-        equity_values.append(cash + quantity * price)
+
+        equity_after = cash + quantity * price
+        peak_equity = max(peak_equity, equity_after)
+        after_daily_loss = max(0.0, (daily_start_equity - equity_after) / daily_start_equity * 100.0)
+        after_drawdown = max(0.0, (peak_equity - equity_after) / peak_equity * 100.0)
+        if after_daily_loss >= MAX_DAILY_LOSS_PCT or after_drawdown >= MAX_DRAWDOWN_PCT:
+            # The paper trader records the latch after the decision and liquidates
+            # on the next decision cycle; mirror that sequencing here.
+            halted = True
+        equity_values.append(equity_after)
 
     equity = pd.Series(equity_values, index=frame.index, dtype=float)
     period_returns = equity.pct_change()
@@ -275,9 +436,59 @@ def candidate_params() -> list[dict[str, Any]]:
     return candidates[::max(1, len(candidates) // 48)][:48]
 
 
+def effective_strategy_params(strategy: str, params: dict[str, Any]) -> dict[str, Any]:
+    """Return only parameters that can change a strategy's rules."""
+    keys = {
+        "trend": ("fast", "slow", "momentum", "entry_momentum", "exit_momentum"),
+        "breakout": ("fast", "momentum", "breakout", "exit_momentum"),
+        "mean_reversion": ("slow", "rsi_entry", "rsi_exit", "stop_pct"),
+    }
+    if strategy not in keys:
+        raise ValueError(f"Unknown strategy: {strategy}")
+    defaults = {"entry_momentum": 0.0, "exit_momentum": -0.005,
+                "rsi_entry": 30, "rsi_exit": 50, "stop_pct": 0.06}
+    return {key: params.get(key, defaults.get(key)) for key in keys[strategy]}
+
+
+def unique_candidates_for_strategy(strategy: str,
+                                   candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Deduplicate grid entries whose strategy-effective parameter sets are identical."""
+    unique: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        effective = effective_strategy_params(strategy, candidate)
+        key = json.dumps(effective, sort_keys=True, separators=(",", ":"), default=str)
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+    return unique
+
+
+TRAIN_MIN_RETURN_PCT = 0.0
+TRAIN_MAX_DRAWDOWN_PCT = 35.0
+
+
 def score(metrics: dict[str, float]) -> float:
     # Prefer return while explicitly penalizing drawdown and excessive churn.
     return metrics["total_return_pct"] - 0.75 * metrics["max_drawdown_pct"] - 0.01 * metrics["trades"]
+
+
+def candidate_passes_gates(train: dict[str, float], validation: dict[str, float],
+                           validation_stress: dict[str, float]) -> bool:
+    """Require baseline training robustness as well as positive validation performance.
+
+    The final test is deliberately excluded: it remains report-only and is never
+    used to rank or accept candidates. These gates are necessary, not proof of
+    future profitability or a substitute for forward paper trading.
+    """
+    return (
+        train["total_return_pct"] > TRAIN_MIN_RETURN_PCT
+        and train["max_drawdown_pct"] < TRAIN_MAX_DRAWDOWN_PCT
+        and validation["total_return_pct"] > 0
+        and validation_stress["total_return_pct"] > 0
+        and validation["max_drawdown_pct"] < 25
+        and validation["trades"] >= 2
+    )
 
 
 def chronological_split(frame: pd.DataFrame, train_fraction: float = 0.60,
@@ -313,7 +524,14 @@ def run_research(days: int = 90) -> dict[str, Any]:
     started = utc_now()
     results: list[dict[str, Any]] = []
     candidates = candidate_params()
+    strategies = ("trend", "breakout", "mean_reversion")
+    strategy_candidates = {
+        strategy: unique_candidates_for_strategy(strategy, candidates)
+        for strategy in strategies
+    }
+    effective_candidate_counts = {strategy: len(items) for strategy, items in strategy_candidates.items()}
     errors: list[dict[str, Any]] = []
+    data_quality: dict[str, Any] = {}
     evaluation_frames: dict[tuple[str, str], pd.DataFrame] = {}
     try:
         research_symbols, universe_metadata = get_research_batch()
@@ -324,6 +542,22 @@ def run_research(days: int = 90) -> dict[str, Any]:
     for symbol in research_symbols:
         try:
             raw = fetch_klines(symbol, "5m", days).sort_index()
+            quality = raw.attrs.get("data_quality")
+            if not isinstance(quality, dict):
+                data_quality[symbol] = {"status": "missing_quality_report"}
+                errors.append({
+                    "symbol": symbol,
+                    "error": "Candle source did not provide a data-quality report; refusing research on unverified coverage.",
+                })
+                continue
+            data_quality[symbol] = quality
+            if not quality.get("quality_gate_passed", False):
+                errors.append({
+                    "symbol": symbol,
+                    "error": "Candle quality gate failed: require at least 95% source and converted coverage, sorted unique candles, and valid OHLCV.",
+                    "data_quality": quality,
+                })
+                continue
             for interval, rule in INTERVALS.items():
                 bars = raw if interval == "5m" else resample_ohlcv(raw, rule)
                 if len(bars) < 1100:
@@ -332,18 +566,17 @@ def run_research(days: int = 90) -> dict[str, Any]:
                     continue
                 evaluation_frames[(symbol, interval)] = bars.copy()
                 train, validation, test = chronological_split(bars)
-                for strategy in ("trend", "breakout", "mean_reversion"):
-                    for params in candidates:
-                        train_m = backtest(train, strategy, params, 10, 5, interval)
-                        validation_m = backtest(validation, strategy, params, 10, 5, interval)
-                        validation_stress = backtest(validation, strategy, params, 20, 10, interval)
-                        passed = (validation_m["total_return_pct"] > 0
-                                  and validation_stress["total_return_pct"] > 0
-                                  and validation_m["max_drawdown_pct"] < 25
-                                  and validation_m["trades"] >= 2)
+                for strategy in strategies:
+                    for params in strategy_candidates[strategy]:
+                        train_m = backtest(train, strategy, params, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
+                        validation_m = backtest(validation, strategy, params, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
+                        validation_stress = backtest(validation, strategy, params, STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
+                        passed = candidate_passes_gates(train_m, validation_m, validation_stress)
                         results.append({
                             "symbol": symbol, "interval": interval, "strategy": strategy,
-                            "params": params, "train": train_m, "validation": validation_m,
+                            "params": params,
+                            "effective_params": effective_strategy_params(strategy, params),
+                            "train": train_m, "validation": validation_m,
                             "validation_stress": validation_stress,
                             "validation_score": score(validation_m),
                             "passed_validation": bool(passed),
@@ -365,7 +598,14 @@ def run_research(days: int = 90) -> dict[str, Any]:
         train, validation, test = chronological_split(bars)
         test_metrics = backtest(test, selected["strategy"], selected["params"],
                                 DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
-        test_stress = backtest(test, selected["strategy"], selected["params"], 20, 10, interval)
+        test_stress = backtest(test, selected["strategy"], selected["params"],
+                               STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
+        test_benchmarks = {
+            "cash": cash_benchmark(test, interval),
+            "buy_and_hold": buy_and_hold_benchmark(
+                test, interval, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS
+            ),
+        }
         version_material = json.dumps({
             "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
             "params": selected["params"], "train": _period_metadata(train),
@@ -376,16 +616,21 @@ def run_research(days: int = 90) -> dict[str, Any]:
         version_hash = hashlib.sha256(version_material.encode()).hexdigest()[:12]
         champion = {
             "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
-            "params": selected["params"], "champion_version": f"champion-{version_hash}",
+            "params": selected["params"],
+            "effective_params": effective_strategy_params(selected["strategy"], selected["params"]),
+            "champion_version": f"champion-{version_hash}",
             "validation_metadata": {
                 "created_at": started, "status": "validated",
                 "selection_metric": "validation_score",
                 "validation_score": selected["validation_score"],
                 "validation_criteria": {
+                    "training_return_positive": True,
+                    "training_max_drawdown_below_pct": TRAIN_MAX_DRAWDOWN_PCT,
                     "validation_return_positive": True,
                     "validation_stress_return_positive": True,
                     "validation_max_drawdown_below_pct": 25,
                     "minimum_validation_position_changes": 2,
+                    "final_test_used_for_selection": False,
                 },
                 "periods": {"train": _period_metadata(train),
                             "validation": _period_metadata(validation),
@@ -394,11 +639,12 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 "validation_metrics": selected["validation"],
                 "validation_stress_metrics": selected["validation_stress"],
                 "test_metrics": test_metrics, "test_stress_metrics": test_stress,
+                "test_benchmarks": test_benchmarks,
                 "test_used_for_selection": False,
                 "cost_convention": {
                     "fee_bps_per_side": DEFAULT_FEE_BPS,
                     "slippage_bps_per_side": DEFAULT_SLIPPAGE_BPS,
-                    "stress_fee_bps_per_side": 20, "stress_slippage_bps_per_side": 10,
+                    "stress_fee_bps_per_side": STRESS_FEE_BPS, "stress_slippage_bps_per_side": STRESS_SLIPPAGE_BPS,
                     "fill_timing": "closed candle close after one-candle signal shift",
                     "fee_basis": "executed notional",
                     "slippage": "execution price adjusted per side",
@@ -424,9 +670,14 @@ def run_research(days: int = 90) -> dict[str, Any]:
             ),
         },
         "symbols": list(research_symbols), "universe": universe_metadata, "intervals": list(INTERVALS),
-        "candidate_count": len(candidates), "evaluations": len(results),
+        "minimum_candle_coverage_pct": MIN_CANDLE_COVERAGE_PCT,
+        "data_quality": data_quality,
+        "candidate_count": len(candidates),
+        "effective_candidate_counts": effective_candidate_counts,
+        "total_unique_strategy_configs": sum(effective_candidate_counts.values()),
+        "evaluations": len(results),
         "validated_count": len(eligible), "champion": champion,
-        "selection_policy": "Select only by validation score; require positive validation and validation stress returns, validation drawdown under 25%, and at least two validation position changes. Final test metrics are report-only.",
+        "selection_policy": "Require positive training return, training max drawdown under 35%, positive validation and validation-stress returns, validation drawdown under 25%, and at least two validation position changes; rank eligible candidates by validation score only. Final test metrics are report-only and never used for selection.",
         "results": sorted(results, key=lambda r: r["validation_score"], reverse=True)[:30],
         "errors": errors,
         "warning": "Test metrics are not used for selection. Repeated runs over the same dates can still contaminate broader research decisions.",
@@ -503,9 +754,14 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
         raise RuntimeError("Champion is missing explicit validated metadata")
     if metadata.get("test_used_for_selection") is not False:
         raise RuntimeError("Champion metadata does not prove final-test isolation")
-    for field in ("validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
+    for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
         if not isinstance(metadata.get(field), dict):
             raise RuntimeError(f"Champion validation metadata is missing {field}")
+    train_metrics = metadata["train_metrics"]
+    if train_metrics.get("total_return_pct", float("-inf")) <= TRAIN_MIN_RETURN_PCT:
+        raise RuntimeError("Champion failed training robustness gate: training return must be positive")
+    if train_metrics.get("max_drawdown_pct", float("inf")) >= TRAIN_MAX_DRAWDOWN_PCT:
+        raise RuntimeError("Champion failed training robustness gate: training drawdown must be below 35%")
     cost = metadata.get("cost_convention")
     if not isinstance(cost, dict) or cost.get("fee_basis") != "executed notional":
         raise RuntimeError("Champion cost convention is missing or invalid")

@@ -1,29 +1,33 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import math
+import os
 import re
+from collections import deque
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from portfolio_accounting import buy_with_costs, mark_to_market, sell_with_costs
+from portfolio_accounting import (DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS,
+                                  MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
+                                  MAX_POSITION_FRACTION, STRESS_FEE_BPS,
+                                  STRESS_SLIPPAGE_BPS, buy_with_costs, entry_budget,
+                                  mark_to_market, sell_with_costs)
 
 from research_engine import (
     INTERVALS, REPORTS, STATE, SYMBOLS, fetch_klines, desired_signal, add_features, resample_ohlcv, utc_now
 )
 
 STARTING_CASH = 15.0
-FEE_BPS = 10.0
-SLIPPAGE_BPS = 5.0
+FEE_BPS = DEFAULT_FEE_BPS
+SLIPPAGE_BPS = DEFAULT_SLIPPAGE_BPS
 STATE_FILE = STATE / "paper_state.json"
 CHAMPION_FILE = STATE / "champion.json"
 STATUS_FILE = REPORTS / "paper_status.json"
-MAX_POSITION_FRACTION = 0.50
-MAX_DAILY_LOSS_PCT = 5.0
-MAX_DRAWDOWN_PCT = 10.0
 MAX_PRICE_AGE_SECONDS = 15 * 60
 
 
@@ -79,7 +83,7 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
         return "Champion has no explicit validation metadata."
     if metadata.get("test_used_for_selection") is not False:
         return "Champion metadata does not confirm final-test isolation."
-    for field in ("validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
+    for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
         metrics = metadata.get(field)
         if not isinstance(metrics, dict):
             return f"Champion validation metadata is missing {field}."
@@ -88,6 +92,12 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
                 return f"Champion {field}.{metric} must be a finite number."
         if float(metrics["max_drawdown_pct"]) < 0 or float(metrics["trades"]) < 0:
             return f"Champion {field} contains invalid drawdown/trade metrics."
+    # Reject strategies that only look good in validation after collapsing in training.
+    # The final test is deliberately not an acceptance criterion to preserve its isolation.
+    if float(metadata["train_metrics"]["total_return_pct"]) <= 0:
+        return "Champion failed training robustness gate: training return must be positive."
+    if float(metadata["train_metrics"]["max_drawdown_pct"]) >= 35:
+        return "Champion failed training robustness gate: training drawdown must be below 35%."
     validation_score = metadata.get("validation_score")
     if not finite_number(validation_score):
         return "Champion validation_score must be finite."
@@ -99,6 +109,15 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
                   "stress_fee_bps_per_side", "stress_slippage_bps_per_side"):
         if not finite_number(cost.get(field)) or float(cost[field]) < 0:
             return f"Champion cost convention field {field} is invalid."
+    expected_costs = {
+        "fee_bps_per_side": FEE_BPS,
+        "slippage_bps_per_side": SLIPPAGE_BPS,
+        "stress_fee_bps_per_side": STRESS_FEE_BPS,
+        "stress_slippage_bps_per_side": STRESS_SLIPPAGE_BPS,
+    }
+    for field, expected in expected_costs.items():
+        if not math.isclose(float(cost[field]), expected, rel_tol=0.0, abs_tol=1e-9):
+            return f"Champion cost convention {field} does not match current paper execution settings."
     periods = metadata.get("periods")
     if not isinstance(periods, dict) or not all(isinstance(periods.get(k), dict) for k in ("train", "validation", "test")):
         return "Champion chronological period metadata is incomplete."
@@ -197,12 +216,107 @@ def finite_positive(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value)) and float(value) > 0
 
 
+def missed_candle_count(bars: pd.DataFrame, cursor: str | None) -> int | None:
+    """Count intermediate closed candles since the last processed candle.
+
+    None means the cursor is malformed, in the future, or falls between known
+    candle timestamps, so the caller must fail closed rather than guess.
+    """
+    if cursor is None:
+        return 0
+    cursor_time = pd.to_datetime(cursor, utc=True, errors="coerce")
+    times = pd.to_datetime(bars.index, utc=True, errors="coerce")
+    if pd.isna(cursor_time) or len(times) == 0 or times.isna().any():
+        return None
+    if cursor_time > times[-1]:
+        return None
+    if cursor_time == times[-1]:
+        return 0
+    later_count = int((times > cursor_time).sum())
+    if later_count <= 0:
+        return 0
+    if cursor_time < times[0]:
+        # The cursor fell outside the fetched window. The exact gap is unknown,
+        # but there is at least one missed decision candle; do not backfill trades.
+        return max(1, later_count - 1)
+    if not bool((times == cursor_time).any()):
+        return None
+    return max(0, later_count - 1)
+
+
 
 def read_json(path: Path, default: Any) -> Any:
     try:
         return json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
         return default
+
+
+def default_paper_state() -> dict[str, Any]:
+    return {
+        "cash": STARTING_CASH, "quantity": 0.0, "symbol": None,
+        "entry_price": None, "last_processed_bars": {},
+        "starting_cash": STARTING_CASH, "completed_trades": 0, "realized_pnl": 0.0,
+    }
+
+
+def load_paper_state() -> dict[str, Any]:
+    """Load portfolio state without silently resetting a corrupt existing ledger."""
+    if not STATE_FILE.exists():
+        return default_paper_state()
+    try:
+        state = json.loads(STATE_FILE.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Paper state is unreadable; refusing to trade: {STATE_FILE}") from exc
+    if not isinstance(state, dict):
+        raise RuntimeError("Paper state must be a JSON object; refusing to trade.")
+    required = {"cash", "quantity", "symbol", "entry_price", "starting_cash"}
+    if not required.issubset(state):
+        missing = sorted(required - set(state))
+        raise RuntimeError(f"Paper state is missing required fields {missing}; refusing to trade.")
+    for field in ("cash", "quantity", "starting_cash", "realized_pnl"):
+        if field == "realized_pnl" and field not in state:
+            state[field] = 0.0
+        value = state.get(field)
+        if (not isinstance(value, (int, float)) or isinstance(value, bool)
+                or not math.isfinite(float(value))):
+            raise RuntimeError(f"Paper state field {field} must be finite; refusing to trade.")
+    if float(state["cash"]) < 0 or float(state["quantity"]) < 0 or float(state["starting_cash"]) <= 0:
+        raise RuntimeError("Paper state cash/quantity/starting equity is invalid; refusing to trade.")
+    if not math.isclose(float(state["starting_cash"]), STARTING_CASH, rel_tol=0.0, abs_tol=1e-9):
+        raise RuntimeError("Paper state starting equity does not match the 15 USDT project invariant.")
+    quantity = float(state["quantity"])
+    symbol = state.get("symbol")
+    entry = state.get("entry_price")
+    if quantity > 0:
+        if not isinstance(symbol, str) or not re.fullmatch(r"[A-Z0-9]{2,15}USDT", symbol):
+            raise RuntimeError("Open paper position has an invalid symbol; refusing to trade.")
+        if not finite_positive(entry):
+            raise RuntimeError("Open paper position has an invalid entry price; refusing to trade.")
+    elif symbol is not None or entry is not None:
+        raise RuntimeError("Flat paper state must not retain a position symbol or entry price.")
+    cursors = state.setdefault("last_processed_bars", {})
+    if not isinstance(cursors, dict):
+        raise RuntimeError("Paper state candle cursors must be an object; refusing to trade.")
+    for cursor_symbol, cursor in cursors.items():
+        if (not isinstance(cursor_symbol, str)
+                or not re.fullmatch(r"[A-Z0-9]{2,15}USDT", cursor_symbol)
+                or not isinstance(cursor, str)):
+            raise RuntimeError("Paper state contains an invalid candle cursor; refusing to trade.")
+        timestamp = pd.to_datetime(cursor, utc=True, errors="coerce")
+        if pd.isna(timestamp):
+            raise RuntimeError("Paper state contains a malformed candle timestamp; refusing to trade.")
+    completed = state.setdefault("completed_trades", 0)
+    if not isinstance(completed, int) or isinstance(completed, bool) or completed < 0:
+        raise RuntimeError("Paper state completed_trades must be a non-negative integer.")
+    if "risk_halt" in state and not isinstance(state["risk_halt"], bool):
+        raise RuntimeError("Paper state risk_halt must be boolean; refusing to trade.")
+    if state.get("risk_halt") and not isinstance(state.get("risk_halt_reason"), str):
+        raise RuntimeError("Latched paper risk halt is missing its reason; refusing to trade.")
+    for field in ("daily_start_equity", "peak_equity"):
+        if field in state and not finite_positive(state[field]):
+            raise RuntimeError(f"Paper state field {field} must be positive; refusing to trade.")
+    return state
 
 
 def _sync_ledger_status(status: dict[str, Any], state: dict[str, Any]) -> None:
@@ -241,14 +355,10 @@ def _set_unvalued_position_status(status: dict[str, Any], state: dict[str, Any],
         }
 
 
-def run_once() -> dict[str, Any]:
+def _run_once_impl() -> dict[str, Any]:
     STATE.mkdir(exist_ok=True)
     REPORTS.mkdir(exist_ok=True)
-    state = read_json(STATE_FILE, {
-        "cash": STARTING_CASH, "quantity": 0.0, "symbol": None,
-        "entry_price": None, "last_processed_bars": {}, "starting_cash": STARTING_CASH,
-        "completed_trades": 0, "realized_pnl": 0.0
-    })
+    state = load_paper_state()
     champion = read_json(CHAMPION_FILE, None)
     champion_error = champion_validation_error(champion)
     champion_accepted = champion_error is None
@@ -258,7 +368,9 @@ def run_once() -> dict[str, Any]:
         "equity_usdt": round(float(state["cash"]), 8), "unrealized_pnl_usdt": 0.0,
         "realized_pnl_usdt": round(float(state.get("realized_pnl", 0.0)), 8),
         "completed_trades": int(state.get("completed_trades", 0)),
-        "open_position": None, "champion_available": champion_accepted, "champion_rejection_reason": champion_error,
+        "open_position": None, "champion_available": champion_accepted,
+        "champion_version": champion.get("champion_version") if isinstance(champion, dict) else None,
+        "champion_rejection_reason": champion_error,
         "actions": [], "data_errors": [],
         "safety": {"real_orders": False, "exchange_credentials_used": False,
                    "leverage": False, "short_selling": False,
@@ -321,12 +433,7 @@ def run_once() -> dict[str, Any]:
         else:
             equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
             risk = update_risk_metrics(state, equity)
-            exposure_fraction = (qty * mark / equity) if qty > 0 and equity > 0 else 0.0
-            if exposure_fraction > MAX_POSITION_FRACTION:
-                state["risk_halt"] = True
-                state["risk_halt_reason"] = "position_exposure_limit"
-                risk["halted"] = True
-                risk["halt_reason"] = state["risk_halt_reason"]
+            # The 50% limit constrains new entries only; appreciation is not a loss-risk halt.
             if risk["halted"] and qty > 0:
                 entry = float(state.get("entry_price") or mark)
                 sale = sell_with_costs(qty, mark, entry, FEE_BPS, SLIPPAGE_BPS)
@@ -395,12 +502,7 @@ def run_once() -> dict[str, Any]:
         else:
             equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
             risk = update_risk_metrics(state, equity)
-            exposure_fraction = (qty * mark / equity) if qty > 0 and equity > 0 else 0.0
-            if exposure_fraction > MAX_POSITION_FRACTION:
-                state["risk_halt"] = True
-                state["risk_halt_reason"] = "position_exposure_limit"
-                risk["halted"] = True
-                risk["halt_reason"] = state["risk_halt_reason"]
+            # The 50% limit constrains new entries only; appreciation is not a loss-risk halt.
             if risk["halted"] and qty > 0:
                 entry = float(state.get("entry_price") or mark)
                 sale = sell_with_costs(qty, mark, entry, FEE_BPS, SLIPPAGE_BPS)
@@ -523,13 +625,7 @@ def run_once() -> dict[str, Any]:
 
     equity_before, held_mark = mark_to_market(cash, qty, position_symbol, mark_prices)
     risk = update_risk_metrics(state, equity_before)
-    exposure_fraction = (qty * held_mark / equity_before) if qty > 0 and equity_before > 0 else 0.0
-    if exposure_fraction > MAX_POSITION_FRACTION:
-        state["risk_halt"] = True
-        state["risk_halt_reason"] = "position_exposure_limit"
-        risk = update_risk_metrics(state, equity_before)
-        risk["halted"] = True
-        risk["halt_reason"] = state["risk_halt_reason"]
+    # MAX_POSITION_FRACTION is an entry cap, not a continuously marked circuit breaker.
     if risk["halted"]:
         if qty > 0 and position_symbol in mark_prices:
             entry = float(state.get("entry_price") or held_mark)
@@ -583,10 +679,14 @@ def run_once() -> dict[str, Any]:
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
-    if cursor != latest_time:
-        # One-position, long-only portfolio. All fills are simulated at the latest
-        # closed candle price with a conservative cost haircut.
-        if qty > 0 and (position_symbol != symbol or not target_long):
+    missed = missed_candle_count(bars, cursor)
+    signal_diagnostics["missed_candles_since_last_run"] = missed
+    execution_message = "Simulated portfolio only; fills are estimates, not exchange orders."
+    if cursor is not None and (missed is None or missed > 0):
+        # Never invent retroactive fills after the scheduler/data feed skipped
+        # candles. Close an existing position at the current fresh held-asset
+        # mark, advance the cursor, and wait for the next live decision candle.
+        if qty > 0 and position_symbol in mark_prices:
             held_mark = float(mark_prices[position_symbol])
             entry = float(state.get("entry_price") or held_mark)
             sale = sell_with_costs(qty, held_mark, entry, FEE_BPS, SLIPPAGE_BPS)
@@ -599,25 +699,57 @@ def run_once() -> dict[str, Any]:
                 "fee_usdt": round(sale.fee, 8), "slippage_usdt": round(sale.slippage, 8),
                 "net_proceeds_usdt": round(sale.net_proceeds, 8),
                 "realized_pnl_usdt": round(sale.realized_pnl, 8),
-                "reason": "validated champion exit or symbol change"
+                "reason": "safety exit after missed strategy candles",
             })
             qty, position_symbol = 0.0, None
             state["entry_price"] = None
-        if qty <= 0 and target_long:
-            # Cap each new long to 50% of current equity; leave the rest in simulated cash.
-            spend_cash = min(cash, max(0.0, equity_before * MAX_POSITION_FRACTION))
-            buy = buy_with_costs(spend_cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
-            qty = max(0.0, buy.quantity)
-            cash = max(0.0, cash - spend_cash + buy.cash_remaining)
-            position_symbol = symbol
-            state["entry_price"] = buy.entry_cost_per_unit
-            status["actions"].append({
-                "action": "PAPER_BUY", "symbol": symbol,
-                "price": round(buy.execution_price, 8), "quantity": qty,
-                "fee_usdt": round(buy.fee, 8), "slippage_usdt": round(buy.slippage, 8),
-                "reason": "validated champion entry"
-            })
         state.setdefault("last_processed_bars", {})[symbol] = latest_time
+        status["missed_candles"] = {
+            "symbol": symbol, "count": missed, "cursor_was_valid": missed is not None,
+            "last_processed_bar": cursor, "resumed_at_bar": latest_time,
+        }
+        execution_message = (
+            "Missed strategy candles detected; skipped entries and closed any open paper position for safety. "
+            "No retroactive simulated orders were created."
+        )
+    else:
+        if cursor != latest_time:
+            # One-position, long-only portfolio. All fills are simulated at the latest
+            # closed candle price with a conservative cost haircut.
+            if qty > 0 and (position_symbol != symbol or not target_long):
+                held_mark = float(mark_prices[position_symbol])
+                entry = float(state.get("entry_price") or held_mark)
+                sale = sell_with_costs(qty, held_mark, entry, FEE_BPS, SLIPPAGE_BPS)
+                cash += sale.net_proceeds
+                state["realized_pnl"] = float(state.get("realized_pnl", 0.0)) + sale.realized_pnl
+                state["completed_trades"] = int(state.get("completed_trades", 0)) + 1
+                status["actions"].append({
+                    "action": "PAPER_SELL", "symbol": position_symbol,
+                    "price": round(sale.execution_price, 8), "quantity": qty,
+                    "fee_usdt": round(sale.fee, 8), "slippage_usdt": round(sale.slippage, 8),
+                    "net_proceeds_usdt": round(sale.net_proceeds, 8),
+                    "realized_pnl_usdt": round(sale.realized_pnl, 8),
+                    "reason": "validated champion exit or symbol change"
+                })
+                qty, position_symbol = 0.0, None
+                state["entry_price"] = None
+            if qty <= 0 and target_long:
+                # Leave a small buffer so fees/slippage do not push post-fill marked
+                # exposure above the circuit-breaker threshold on the next run.
+                spend_cash = entry_budget(cash, equity_before)
+                buy = buy_with_costs(spend_cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
+                qty = max(0.0, buy.quantity)
+                cash = max(0.0, cash - spend_cash + buy.cash_remaining)
+                position_symbol = symbol
+                state["entry_price"] = buy.entry_cost_per_unit
+                status["actions"].append({
+                    "action": "PAPER_BUY", "symbol": symbol,
+                    "price": round(buy.execution_price, 8), "quantity": qty,
+                    "fee_usdt": round(buy.fee, 8), "slippage_usdt": round(buy.slippage, 8),
+                    "reason": "validated champion entry"
+                })
+            state.setdefault("last_processed_bars", {})[symbol] = latest_time
+
     state.update({"cash": cash, "quantity": qty, "symbol": position_symbol,
                   "last_checked_at": utc_now()})
     equity, position_mark = mark_to_market(cash, qty, position_symbol, mark_prices)
@@ -632,15 +764,142 @@ def run_once() -> dict[str, Any]:
                            "mark_price": round(position_mark, 8),
                            "entry_price": round(entry_price, 8)} if position_symbol and qty > 0 else None),
         "champion": {"symbol": symbol, "interval": interval,
-                     "strategy": champion["strategy"], "params": params},
+                     "strategy": champion["strategy"], "params": params,
+                     "champion_version": champion.get("champion_version")},
         "last_processed_bar": latest_time,
         "signal_diagnostics": signal_diagnostics,
         "risk": update_risk_metrics(state, equity),
-        "message": "Simulated portfolio only; fills are estimates, not exchange orders."
+        "message": execution_message
     })
     STATE_FILE.write_text(json.dumps(state, indent=2))
     _sync_ledger_status(status, state)
     STATUS_FILE.write_text(json.dumps(status, indent=2))
+    return status
+
+
+def _recent_event_ids(path: Path, max_bytes: int = 1_000_000) -> set[str]:
+    """Read a bounded tail of the append-only event file for crash-safe deduplication."""
+    if not path.exists():
+        return set()
+    with path.open("rb") as handle:
+        handle.seek(0, os.SEEK_END)
+        size = handle.tell()
+        handle.seek(max(0, size - max_bytes), os.SEEK_SET)
+        chunk = handle.read().decode("utf-8", errors="replace")
+    lines = chunk.splitlines()
+    if size > max_bytes and lines:
+        lines = lines[1:]  # first line may be a truncated JSON record
+    ids: set[str] = set()
+    for line in lines[-5000:]:
+        try:
+            event = json.loads(line)
+            event_id = event.get("event_id")
+            if isinstance(event_id, str):
+                ids.add(event_id)
+        except (json.JSONDecodeError, AttributeError):
+            continue
+    return ids
+
+
+def _append_paper_events(status: dict[str, Any], error: str | None = None) -> None:
+    """Append idempotent run/action records so state changes can be independently audited."""
+    REPORTS.mkdir(exist_ok=True)
+    path = REPORTS / "paper_events.jsonl"
+    state = read_json(STATE_FILE, {})
+    if not isinstance(state, dict):
+        state = {}
+    run_id = os.environ.get("GITHUB_RUN_ID", "local")
+    attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
+    event_time = str(status.get("updated_at") or utc_now())
+    champion = status.get("champion") if isinstance(status.get("champion"), dict) else {}
+    champion_version = status.get("champion_version") or champion.get("champion_version")
+    bar_time = status.get("last_processed_bar")
+    events: list[dict[str, Any]] = []
+
+    actions = status.get("actions") if isinstance(status.get("actions"), list) else []
+    for index, action in enumerate(actions):
+        if not isinstance(action, dict):
+            continue
+        action_payload = {
+            "event_type": "PAPER_ACTION",
+            "timestamp": event_time,
+            "champion_version": champion_version,
+            "bar_timestamp": bar_time or state.get("last_processed_bars", {}).get(action.get("symbol")),
+            "action": action,
+        }
+        canonical = json.dumps(action_payload, sort_keys=True, separators=(",", ":"), default=str)
+        action_payload["event_id"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        action_payload.update({
+            "workflow_run_id": run_id, "workflow_run_attempt": attempt,
+            "portfolio": {
+                "cash_usdt": status.get("cash_usdt"),
+                "equity_usdt": status.get("equity_usdt"),
+                "total_pnl_usdt": status.get("total_pnl_usdt"),
+                "unrealized_pnl_usdt": status.get("unrealized_pnl_usdt"),
+            },
+            "risk": status.get("risk"),
+            "state_snapshot": {
+                key: state.get(key) for key in (
+                    "cash", "quantity", "symbol", "entry_price", "realized_pnl",
+                    "completed_trades", "risk_halt", "risk_halt_reason",
+                    "daily_start_equity", "peak_equity",
+                )
+            },
+        })
+        events.append(action_payload)
+
+    run_payload = {
+        "event_type": "PAPER_ERROR" if error else "PAPER_RUN",
+        "timestamp": event_time,
+        "workflow_run_id": run_id,
+        "workflow_run_attempt": attempt,
+        "champion_version": champion_version,
+        "bar_timestamp": bar_time,
+        "message": error or status.get("message"),
+        "data_errors": status.get("data_errors", []),
+        "portfolio": {
+            "cash_usdt": status.get("cash_usdt"),
+            "equity_usdt": status.get("equity_usdt"),
+            "total_pnl_usdt": status.get("total_pnl_usdt"),
+            "realized_pnl_usdt": status.get("realized_pnl_usdt"),
+            "unrealized_pnl_usdt": status.get("unrealized_pnl_usdt"),
+            "completed_trades": status.get("completed_trades"),
+            "open_position": status.get("open_position"),
+        },
+        "risk": status.get("risk"),
+        "state_snapshot": {
+            key: state.get(key) for key in (
+                "cash", "quantity", "symbol", "entry_price", "realized_pnl",
+                "completed_trades", "risk_halt", "risk_halt_reason",
+                "daily_start_equity", "peak_equity",
+            )
+        },
+    }
+    run_canonical = json.dumps(run_payload, sort_keys=True, separators=(",", ":"), default=str)
+    run_payload["event_id"] = hashlib.sha256(
+        f"{run_id}|{attempt}|{run_canonical}".encode("utf-8")
+    ).hexdigest()
+    events.append(run_payload)
+
+    existing_ids = _recent_event_ids(path)
+    new_events = [event for event in events if event["event_id"] not in existing_ids]
+    if not new_events:
+        return
+    with path.open("a", encoding="utf-8") as handle:
+        for event in new_events:
+            handle.write(json.dumps(event, sort_keys=True, default=str) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def run_once() -> dict[str, Any]:
+    """Run the paper trader and persist an audit record for every outcome."""
+    try:
+        status = _run_once_impl()
+    except Exception as exc:
+        _append_paper_events({}, error=f"{type(exc).__name__}: {exc}")
+        raise
+    _append_paper_events(status)
     return status
 
 

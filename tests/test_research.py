@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from research_engine import backtest, desired_signal, performance, resample_ohlcv
+from research_engine import backtest, candidate_passes_gates, desired_signal, performance, resample_ohlcv
 
 
 def sample_frame(n=500):
@@ -55,6 +55,24 @@ class ResearchTests(unittest.TestCase):
         base = backtest(frame, "trend", self.params, 10, 5)
         stressed = backtest(frame, "trend", self.params, 20, 10)
         self.assertLessEqual(stressed["total_return_pct"], base["total_return_pct"] + 1e-8)
+
+    def test_candidate_gate_rejects_validation_spike_after_training_collapse(self):
+        train = {"total_return_pct": -69.7706, "max_drawdown_pct": 70.0337, "sharpe": -27.88, "trades": 649}
+        validation = {"total_return_pct": 164.6108, "max_drawdown_pct": 18.8077, "sharpe": 11.7, "trades": 212}
+        stress = {"total_return_pct": 92.5315, "max_drawdown_pct": 23.0624, "sharpe": 8.214, "trades": 212}
+        self.assertFalse(candidate_passes_gates(train, validation, stress))
+
+    def test_candidate_gate_rejects_training_drawdown_at_or_above_limit(self):
+        train = {"total_return_pct": 5.0, "max_drawdown_pct": 35.0, "sharpe": 0.5, "trades": 12}
+        validation = {"total_return_pct": 10.0, "max_drawdown_pct": 10.0, "sharpe": 1.0, "trades": 4}
+        stress = {"total_return_pct": 2.0, "max_drawdown_pct": 12.0, "sharpe": 0.5, "trades": 4}
+        self.assertFalse(candidate_passes_gates(train, validation, stress))
+
+    def test_candidate_gate_accepts_positive_train_and_validation_within_limits(self):
+        train = {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12}
+        validation = {"total_return_pct": 10.0, "max_drawdown_pct": 10.0, "sharpe": 1.0, "trades": 4}
+        stress = {"total_return_pct": 2.0, "max_drawdown_pct": 12.0, "sharpe": 0.5, "trades": 4}
+        self.assertTrue(candidate_passes_gates(train, validation, stress))
 
     def test_performance_empty_is_safe(self):
         result = performance(pd.Series(dtype=float))
