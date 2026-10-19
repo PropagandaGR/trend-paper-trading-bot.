@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+import os
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,24 @@ class SellResult:
     slippage: float
 
 
+def _cost_setting(name: str, default: float) -> float:
+    """Read a shared fee/slippage assumption and fail closed on invalid config."""
+    raw = os.environ.get(name)
+    try:
+        value = float(raw) if raw is not None else default
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a finite non-negative basis-point value") from exc
+    if not math.isfinite(value) or value < 0:
+        raise ValueError(f"{name} must be a finite non-negative basis-point value")
+    return value
+
+
+# Conservative defaults for an unknown Coinbase spot taker tier; override only
+# with verified account/order-type fees. Research and paper execution share these.
+DEFAULT_FEE_BPS = _cost_setting("PAPER_FEE_BPS", 60.0)
+DEFAULT_SLIPPAGE_BPS = _cost_setting("PAPER_SLIPPAGE_BPS", 10.0)
+STRESS_FEE_BPS = _cost_setting("PAPER_STRESS_FEE_BPS", 100.0)
+STRESS_SLIPPAGE_BPS = _cost_setting("PAPER_STRESS_SLIPPAGE_BPS", 20.0)
 MAX_POSITION_FRACTION = 0.50
 ENTRY_BUDGET_BUFFER = 0.995
 MAX_DAILY_LOSS_PCT = 5.0
