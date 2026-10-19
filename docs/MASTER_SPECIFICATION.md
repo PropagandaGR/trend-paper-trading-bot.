@@ -38,10 +38,10 @@ Every safety claim needs a regression test and evidence from the current code he
 ## Current verified state
 
 ### Integration branch / PR #16
-- Last code/test-verified head before this documentation update: `7d311407f048a55f959f200fc9119cacd51b82f0`.
-- [Tests run #39213330327](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213330327): **83 tests passed** (`Ran 83 tests`, `OK`).
-- [Coinbase public-data smoke test #39213330332](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213330332): success.
-- These results apply to that exact code head. This master-spec update will trigger a new CI run; the PR is still a **draft**, unmerged, and requires review. No live readiness is implied.
+- Last code/test-verified Core head before this documentation update: `5724b1894961f16d20f19742ad77b90bb49eba5c`.
+- [Tests run #39213776277](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213776277): **83 tests passed**.
+- [Coinbase public-data smoke test #39213776272](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213776272): success.
+- These results apply to that exact Core head. This master-spec update will trigger a new CI run; PR #16 remains a **draft**, unmerged, and requires review. No live readiness is implied.
 
 ### Latest saved research artifact observed during audit
 - Research completed at `2026-10-19T06:31:16Z`, 90-day window, 2,880 evaluations, 256 candidates passed the current research gates.
@@ -59,6 +59,7 @@ The last status artifact inspected showed approximately 15.0840 USDT equity, +0.
 - [PR #12 — Block paper deployment when held-out tests fail](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/12): draft proposal; do not merge as-is because repeatedly using the same final test as a deployment selector risks holdout contamination.
 - [PR #13 — Reject fragile strategy champions](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/13): training robustness gate and entry buffer.
 - [PR #15 — Fail closed on missed decision candles](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/15): avoids retroactive fills after missed candles.
+- [PR #17 — Resumable multi-year Coinbase candle importer](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/17): draft, stacked on the Core branch; **88 tests passed** on head `25d15125b5bc8267ccd0075683e423f833a21823` ([run #39213869836](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213869836)) and Coinbase smoke passed ([run #39213869706](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39213869706)). The importer has not been run over real multi-year data.
 - [PR #16 — Consolidation branch](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/16): carries forward PR #13/#15 changes and fixes exposure-halt semantics, strict same-candle FX conversion, shared entry sizing, backtest risk halts, conservative shared cost assumptions, a 95% source/converted candle-coverage gate, fail-closed state validation, an append-only idempotent paper event journal, strategy-effective candidate deduplication, and report-only cash/buy-and-hold benchmarks. Latest verified code head passed 83 tests and the Coinbase smoke test. Keep draft until fresh data-quality research, remaining audit gates, and independent review are complete.
 
 ## Known gaps and risk register
@@ -82,11 +83,13 @@ The last status artifact inspected showed approximately 15.0840 USDT equity, +0.
 ## Next approved work sequence
 
 1. Complete PR #16 review and CI verification; do not merge without review.
-2. Run the new research pipeline under the 60/10 bps defaults and 95% candle-coverage gate; inspect whether Coinbase data passes. Expect a fail-closed no-champion outcome if coverage is incomplete.
-3. Complete parity review for backtest/paper timing, UTC-day boundaries, missed candles, and risk-halt state.
-4. Verify append-only events are persisted by the scheduled workflow; independently reconcile state/status against a sample of events.
-5. Replace the shared generic grid with strategy-specific grids and signal-equivalence deduplication; add rolling walk-forward evaluation and incumbent/challenger stability.
-6. Build multi-year historical import/storage with UTC manifests, retries, and coverage reports; confirm the Coinbase product/order type and actual account fee tier, retaining conservative defaults until verified.
+2. Review PR #17 on top of PR #16; do not merge it independently to `main` before its base is approved.
+3. Run the multi-year importer for at least one symbol over more than one year, inspect monthly coverage manifests, and verify a resume/checksum path.
+4. Run the research pipeline under the 60/10 bps defaults and 95% candle-coverage gate; inspect whether Coinbase data passes. Expect a fail-closed no-champion outcome if coverage is incomplete.
+5. Complete parity review for backtest/paper timing, UTC-day boundaries, missed candles, and risk-halt state.
+6. Verify append-only events are persisted by the scheduled workflow; independently reconcile state/status against a sample of events.
+7. Replace the shared generic grid with explicit strategy-specific grids and signal-equivalence deduplication; add rolling walk-forward evaluation and incumbent/challenger stability.
+8. Confirm the Coinbase product/order type and actual account fee tier, retaining conservative defaults until verified.
 6. Replace generic strategy grids with strategy-specific grids, deduplication, benchmarks, rolling walk-forward and incumbent stability.
 7. Build multi-year historical import/storage and re-run research with reproducible manifests.
 8. Add scheduled-run heartbeat and alerting; verify actual run history instead of trusting cron configuration.
