@@ -140,6 +140,15 @@ class PaperTraderAdversarialSafetyTests(unittest.TestCase):
         self.assertTrue(risk["halted"])
         self.assertIn("drawdown_limit", risk["halt_reason"])
 
+    def test_risk_halt_stays_latched_after_equity_recovers(self):
+        now = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+        state = {"risk_day": "2026-01-01", "daily_start_equity": 15.0, "peak_equity": 15.0}
+        first = update_risk_metrics(state, 14.0, now)
+        self.assertTrue(first["halted"])
+        second = update_risk_metrics(state, 15.0, now)
+        self.assertTrue(second["halted"])
+        self.assertEqual(second["halt_reason"], "daily_loss_limit")
+
     def test_position_budget_is_configured_below_full_equity(self):
         self.assertLess(MAX_POSITION_FRACTION, 1.0)
         self.assertEqual(MAX_POSITION_FRACTION, 0.50)
