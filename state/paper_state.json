@@ -10,10 +10,14 @@
   "starting_cash": 15.0,
   "completed_trades": 1,
   "realized_pnl": 0.08402665981011737,
-  "last_checked_at": "2026-10-19T19:01:54.300987+00:00",
+  "last_checked_at": "2026-10-19T19:48:32.662533+00:00",
   "last_price": 2370.666266206137,
-  "last_prices": {},
-  "last_price_timestamps": {},
+  "last_prices": {
+    "ATOMUSDT": 1.7420033037993692
+  },
+  "last_price_timestamps": {
+    "ATOMUSDT": "2026-10-19T19:45:00+00:00"
+  },
   "risk_day": "2026-10-19",
   "daily_start_equity": 15.084026659810116,
   "peak_equity": 15.106679125158289,
