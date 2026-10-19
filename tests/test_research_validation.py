@@ -28,6 +28,60 @@ class ChronologicalSplitTests(unittest.TestCase):
 
 
 class TestSetIsolationTests(unittest.TestCase):
+    def test_oos_window_is_consumed_once_and_overlap_is_rejected(self):
+        index = pd.date_range("2026-01-01", periods=12, freq="5min", tz="UTC")
+        first = pd.DataFrame({"close": range(12)}, index=index)
+        overlap = pd.DataFrame({"close": range(12)}, index=index + pd.Timedelta(minutes=5))
+        later = pd.DataFrame({"close": range(12)}, index=index + pd.Timedelta(hours=1))
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(research_engine, "STATE", Path(tmp) / "state"):
+                ok, reason, window = research_engine.reserve_oos_test_window(first)
+                self.assertTrue(ok, reason)
+                self.assertEqual(window["start"], index[0].isoformat())
+                research_engine.record_oos_test_result(False)
+                ok, reason, _ = research_engine.reserve_oos_test_window(first)
+                self.assertFalse(ok)
+                self.assertIn("reuses", reason)
+                ok, reason, _ = research_engine.reserve_oos_test_window(overlap)
+                self.assertFalse(ok)
+                self.assertIn("overlaps", reason)
+                ok, reason, _ = research_engine.reserve_oos_test_window(later)
+                self.assertTrue(ok, reason)
+
+    def test_failed_quality_gates_never_reach_backtesting(self):
+        index = pd.date_range("2026-01-01", periods=1200, freq="5min", tz="UTC")
+        frame = pd.DataFrame({
+            "open": [100.0] * len(index), "high": [101.0] * len(index),
+            "low": [99.0] * len(index), "close": [100.0] * len(index),
+            "volume": [1.0] * len(index), "close_time": index + pd.Timedelta(minutes=5),
+        }, index=index)
+        params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
+        failed_reports = [
+            {"quality_gate_passed": False, "invalid_ohlc_rows": 1, "source_coverage_pct": 100.0,
+             "converted_coverage_pct": 100.0, "fx_missing_pct_of_source": 0.0, "conflicting_duplicate_groups": 0},
+            {"quality_gate_passed": False, "invalid_ohlc_rows": 0, "source_coverage_pct": 100.0,
+             "converted_coverage_pct": 98.0, "fx_missing_pct_of_source": 2.0, "conflicting_duplicate_groups": 0},
+            {"quality_gate_passed": False, "invalid_ohlc_rows": 0, "source_coverage_pct": 100.0,
+             "converted_coverage_pct": 100.0, "fx_missing_pct_of_source": 0.0, "conflicting_duplicate_groups": 1},
+            {"quality_gate_passed": False, "invalid_ohlc_rows": 0, "source_coverage_pct": 90.0,
+             "converted_coverage_pct": 90.0, "fx_missing_pct_of_source": 0.0, "conflicting_duplicate_groups": 0},
+        ]
+        for quality in failed_reports:
+            with self.subTest(quality=quality), tempfile.TemporaryDirectory() as tmp:
+                bad_frame = frame.copy()
+                bad_frame.attrs["data_quality"] = quality
+                with (
+                    patch.object(research_engine, "REPORTS", Path(tmp) / "reports"),
+                    patch.object(research_engine, "STATE", Path(tmp) / "state"),
+                    patch.object(research_engine, "get_research_batch", return_value=(["BTCUSDT"], {"status": "test"})),
+                    patch.object(research_engine, "fetch_klines", return_value=bad_frame),
+                    patch.object(research_engine, "candidate_params", return_value=[params]),
+                    patch.object(research_engine, "backtest") as backtest,
+                ):
+                    summary = research_engine.run_research(days=30)
+                    backtest.assert_not_called()
+                    self.assertEqual(summary["evaluations"], 0)
+
     def test_negative_final_test_does_not_change_validation_selected_champion(self):
         index = pd.date_range("2026-01-01", periods=1200, freq="5min", tz="UTC")
         frame = pd.DataFrame({
