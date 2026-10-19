@@ -38,9 +38,9 @@ Every safety claim needs a regression test and evidence from the current code he
 ## Current verified state
 
 ### Integration branch / PR #16
-- Last code/test-verified Core head before this documentation update: `4fcc4a374f50f92cd26bbec080a3cda0ea8d4859`.
-- [Tests run #39214793383](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214793383): **87 tests passed**.
-- [Coinbase public-data smoke test #39214793420](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214793420): success.
+- Last code/test-verified Core head before this documentation update: `eeca3db289274f7511fb84d6436b22e23cfcef67`.
+- [Tests run #39215085718](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39215085718): **87 tests passed**.
+- [Coinbase public-data smoke test #39215085709](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39215085709): success.
 - These results apply to that exact Core head. This master-spec update will trigger a new CI run; PR #16 remains a **draft**, unmerged, and requires review. No live readiness is implied.
 
 ### Latest saved research artifact observed during audit
@@ -59,7 +59,7 @@ The last status artifact inspected showed approximately 15.0840 USDT equity, +0.
 - [PR #12 — Block paper deployment when held-out tests fail](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/12): draft proposal; do not merge as-is because repeatedly using the same final test as a deployment selector risks holdout contamination.
 - [PR #13 — Reject fragile strategy champions](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/13): training robustness gate and entry buffer.
 - [PR #15 — Fail closed on missed decision candles](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/15): avoids retroactive fills after missed candles.
-- [PR #17](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/17) was closed as superseded. [PR #18 — Resumable multi-year Coinbase candle importer](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/18) is the current draft stacked on Core; **92 tests passed** on head `7c06132a9e050ef95f132efab8e31a2581dadaa6` ([run #39214658596](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214658596)) and Coinbase smoke passed ([run #39214658532](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214658532)). It includes a manual Actions workflow that uploads month CSVs/manifests as an artifact. The importer has not been run over real multi-year data.
+- [PR #17](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/17) was closed as superseded. [PR #18 — Resumable multi-year Coinbase candle importer](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/18) is the current draft stacked on Core; **92 tests passed** on the latest importer head `942b69d14f97c349812552077e44e23144dc002a` ([run #39215016170](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39215016170)) and Coinbase smoke passed ([run #39215016264](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39215016264)). It includes a manual Actions workflow that uploads month CSVs/manifests as an artifact. The importer has not been run over real multi-year data.
 - [PR #16 — Consolidation branch](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/16): carries forward PR #13/#15 changes and fixes exposure-halt semantics, strict same-candle FX conversion, shared entry sizing, backtest risk halts, conservative shared cost assumptions, a 95% source/converted candle-coverage gate, fail-closed state validation, an append-only idempotent paper event journal, strategy-effective candidate deduplication, and report-only cash/buy-and-hold benchmarks. Latest verified code head passed 83 tests and the Coinbase smoke test. Keep draft until fresh data-quality research, remaining audit gates, and independent review are complete.
 
 ## Known gaps and risk register
