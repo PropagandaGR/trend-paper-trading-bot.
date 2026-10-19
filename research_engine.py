@@ -960,7 +960,7 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
         metadata["validation_stress_metrics"], metadata["validation_benchmarks"],
         metadata["validation_stress_benchmarks"],
     ):
-        raise RuntimeError("Champion failed training/validation benchmark gates")
+        raise RuntimeError("Champion failed training robustness gate or training/validation benchmark gates")
     train_metrics = metadata["train_metrics"]
     if train_metrics.get("total_return_pct", float("-inf")) <= TRAIN_MIN_RETURN_PCT:
         raise RuntimeError("Champion failed training robustness gate: training return must be positive")
