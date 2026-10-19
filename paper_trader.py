@@ -356,12 +356,7 @@ def run_once() -> dict[str, Any]:
         else:
             equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
             risk = update_risk_metrics(state, equity)
-            exposure_fraction = (qty * mark / equity) if qty > 0 and equity > 0 else 0.0
-            if exposure_fraction > MAX_POSITION_FRACTION:
-                state["risk_halt"] = True
-                state["risk_halt_reason"] = "position_exposure_limit"
-                risk["halted"] = True
-                risk["halt_reason"] = state["risk_halt_reason"]
+            # The 50% limit constrains new entries only; appreciation is not a loss-risk halt.
             if risk["halted"] and qty > 0:
                 entry = float(state.get("entry_price") or mark)
                 sale = sell_with_costs(qty, mark, entry, FEE_BPS, SLIPPAGE_BPS)
@@ -430,12 +425,7 @@ def run_once() -> dict[str, Any]:
         else:
             equity, mark = mark_to_market(cash, qty, held_symbol, mark_prices)
             risk = update_risk_metrics(state, equity)
-            exposure_fraction = (qty * mark / equity) if qty > 0 and equity > 0 else 0.0
-            if exposure_fraction > MAX_POSITION_FRACTION:
-                state["risk_halt"] = True
-                state["risk_halt_reason"] = "position_exposure_limit"
-                risk["halted"] = True
-                risk["halt_reason"] = state["risk_halt_reason"]
+            # The 50% limit constrains new entries only; appreciation is not a loss-risk halt.
             if risk["halted"] and qty > 0:
                 entry = float(state.get("entry_price") or mark)
                 sale = sell_with_costs(qty, mark, entry, FEE_BPS, SLIPPAGE_BPS)
@@ -558,13 +548,7 @@ def run_once() -> dict[str, Any]:
 
     equity_before, held_mark = mark_to_market(cash, qty, position_symbol, mark_prices)
     risk = update_risk_metrics(state, equity_before)
-    exposure_fraction = (qty * held_mark / equity_before) if qty > 0 and equity_before > 0 else 0.0
-    if exposure_fraction > MAX_POSITION_FRACTION:
-        state["risk_halt"] = True
-        state["risk_halt_reason"] = "position_exposure_limit"
-        risk = update_risk_metrics(state, equity_before)
-        risk["halted"] = True
-        risk["halt_reason"] = state["risk_halt_reason"]
+    # MAX_POSITION_FRACTION is an entry cap, not a continuously marked circuit breaker.
     if risk["halted"]:
         if qty > 0 and position_symbol in mark_prices:
             entry = float(state.get("entry_price") or held_mark)
