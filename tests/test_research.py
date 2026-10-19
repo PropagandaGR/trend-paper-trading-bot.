@@ -52,8 +52,8 @@ class ResearchTests(unittest.TestCase):
 
     def test_cost_stress_cannot_improve_same_backtest(self):
         frame = sample_frame()
-        base = backtest(frame, "trend", self.params, 10, 5)
-        stressed = backtest(frame, "trend", self.params, 20, 10)
+        base = backtest(frame, "trend", self.params, 60, 10)
+        stressed = backtest(frame, "trend", self.params, 100, 20)
         self.assertLessEqual(stressed["total_return_pct"], base["total_return_pct"] + 1e-8)
 
     def test_candidate_gate_rejects_validation_spike_after_training_collapse(self):
