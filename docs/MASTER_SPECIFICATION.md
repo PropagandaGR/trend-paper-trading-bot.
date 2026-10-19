@@ -38,10 +38,10 @@ Every safety claim needs a regression test and evidence from the current code he
 ## Current verified state
 
 ### Integration branch / PR #16
-- Head commit: `5648d121bc1acb665acc0625ee9dd71c0186e99f`.
-- [Tests run #39211762123](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39211762123): **69 tests passed** (`Ran 69 tests`, `OK`).
-- [Coinbase public-data smoke test #39211762206](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39211762206): success.
-- These results apply to that exact PR head. The PR is still a **draft**, unmerged, and requires review. No live readiness is implied.
+- Last code/test-verified head before this documentation update: `461761979ccf978c25c80099108dbe1a19cd968b`.
+- [Tests run #39212577133](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39212577133): **74 tests passed** (`Ran 74 tests`, `OK`).
+- [Coinbase public-data smoke test #39212577214](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39212577214): success.
+- These results apply to that exact code head. This master-spec update will trigger a new CI run; the PR is still a **draft**, unmerged, and requires review. No live readiness is implied.
 
 ### Latest saved research artifact observed during audit
 - Research completed at `2026-10-19T06:31:16Z`, 90-day window, 2,880 evaluations, 256 candidates passed the current research gates.
@@ -49,27 +49,27 @@ Every safety claim needs a regression test and evidence from the current code he
 - Training: +2.8423%, 18.8739% max drawdown.
 - Validation: +25.965%, 7.371% max drawdown; stressed validation +22.0592%.
 - Untouched test: **−20.663%**, max drawdown 27.2751%; stressed test **−23.9261%**.
-- Test metrics are report-only and did not select the candidate. These returns are backtest report figures, not live results and not a candle-by-candle replay of the $15 paper ledger.
+- Test metrics are report-only and did not select the candidate. This artifact used the previous 10 bps fee / 5 bps slippage assumptions and predates the new 60/10 bps default-cost policy and 95% data-coverage gate. Treat it as historical evidence only; the paper trader will reject its cost metadata under the new policy until a fresh research run produces a compatible champion. These are backtest report figures, not live results or a replay of the $15 ledger.
 
 ### Paper portfolio / risk halt
-The last status artifact inspected showed approximately 15.0840 USDT equity, +0.0840 USDT realized P&L, one completed simulated trade, no open position, and a latched `position_exposure_limit` halt. PR #16 removes that trigger path from the code; it deliberately does **not** edit persisted portfolio state or clear the existing halt. Before resuming, review the saved state and its history, verify current mainline state, and perform a documented/manual reset only after approval.
+The last status artifact inspected showed approximately 15.0840 USDT equity, +0.0840 USDT realized P&L, one completed simulated trade, no open position, and a latched `position_exposure_limit` halt. PR #16 removes that trigger path from the code; it deliberately does **not** edit persisted portfolio state or clear the existing halt. It also changes the cost model, so the currently saved champion is expected to fail cost-metadata validation. Do not resume until a fresh quality-gated research run produces a compatible champion, the saved halt has been reviewed, and a documented/manual reset is explicitly approved.
 
 ## Recent implementation references
 
 - [PR #12 — Block paper deployment when held-out tests fail](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/12): draft proposal; do not merge as-is because repeatedly using the same final test as a deployment selector risks holdout contamination.
 - [PR #13 — Reject fragile strategy champions](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/13): training robustness gate and entry buffer.
 - [PR #15 — Fail closed on missed decision candles](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/15): avoids retroactive fills after missed candles.
-- [PR #16 — Consolidation branch](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/16): carries forward PR #13/#15 changes and fixes the exposure-halt semantics, strict same-candle FX conversion, and shared entry sizing. Keep draft until the remaining review gates are met.
+- [PR #16 — Consolidation branch](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/16): carries forward PR #13/#15 changes and fixes exposure-halt semantics, strict same-candle FX conversion, shared entry sizing, backtest risk halts, conservative shared cost assumptions, and a 95% source/converted candle-coverage gate. Latest verified code head passed 74 tests and the Coinbase smoke test. Keep draft until fresh data-quality research, remaining audit gates, and independent review are complete.
 
 ## Known gaps and risk register
 
 | Priority | Gap / risk | Required closure evidence |
 |---|---|---|
 | P0 | Existing halt state cannot be safely cleared from code change alone | Inspect current persisted state, explain historical trigger, verify corrected code on main, approve explicit reset procedure |
-| P0 | Historical backtest still lacks paper trader's latched daily-loss and peak-drawdown circuit breakers | Shared deterministic simulator; regression tests covering UTC day reset, loss breach, drawdown breach, liquidation, and no trades after halt |
-| P0 | Candle coverage and FX alignment are not yet reported as a complete integrity contract | Expected-vs-observed slots, missing/duplicate/out-of-order candles, OHLC sanity, explicit gaps policy, FX coverage and maximum-age checks |
+| P0 | Backtest risk semantics are now implemented but still need broader parity review against paper polling/cursor behavior | Shared deterministic simulator; tests cover loss breach, liquidation, and no re-entry; still verify UTC day boundaries, gap handling, and parity under long/flat and symbol changes |
+| P0 | Candle coverage report and 95% quality gate are implemented, but no fresh mainline research run has yet demonstrated the actual coverage outcome | Run research on the current code; inspect source/converted coverage and FX gaps; explain no-trade versus API gaps; retain a reproducible data manifest |
 | P0 | No append-only paper execution/risk event journal | Immutable per-run events with candle time, symbol, champion version, action, fill estimate, fee, slippage, quantity, cash/equity, P&L, risk state, workflow run ID |
-| P1 | Cost assumptions are likely too optimistic for Coinbase market/taker execution | Configurable account-tier fee model, conservative default when tier unknown, report the exact assumptions, baseline and stress tests |
+| P1 | Conservative shared fee/slippage settings now default to 60/10 bps per side and stress 100/20, but the user's exact account/order-tier fee remains unconfirmed | Confirm intended Coinbase product/order type and account tier; only then override the shared environment settings; maintain matching champion metadata |
 | P1 | Research uses generic parameter dictionaries; irrelevant parameters create duplicate effective candidates | Per-strategy grids, effective-signal/configuration deduplication, report unique configurations and true evaluation count |
 | P1 | No same-asset buy-and-hold/cash benchmark in latest report despite README claims | Add same-period benchmarks and test their calculation; otherwise correct docs |
 | P1 | One final 20% test split can become contaminated after repeated inspection | Preserve current historical report as evidence; add rolling walk-forward folds and a future forward-paper qualification period, without using the same holdout repeatedly for selection |
@@ -82,10 +82,10 @@ The last status artifact inspected showed approximately 15.0840 USDT equity, +0.
 ## Next approved work sequence
 
 1. Complete PR #16 review and CI verification; do not merge without review.
-2. Implement shared backtest risk semantics so backtest and paper trading use the same sizing, costs, timing, daily-loss and drawdown behavior.
-3. Add data-quality coverage/gap and FX-freshness reports; reject materially incomplete data.
+2. Run the new research pipeline under the 60/10 bps defaults and 95% candle-coverage gate; inspect whether Coinbase data passes. Expect a fail-closed no-champion outcome if coverage is incomplete.
+3. Complete parity review for backtest/paper timing, UTC-day boundaries, missed candles, and risk-halt state.
 4. Add append-only execution/risk events and state schema/reconciliation checks.
-5. Make fees/slippage configurable and conservative; use actual account/order assumptions only when confirmed.
+5. Confirm the Coinbase product/order type and actual account fee tier; retain conservative defaults until verified.
 6. Replace generic strategy grids with strategy-specific grids, deduplication, benchmarks, rolling walk-forward and incumbent stability.
 7. Build multi-year historical import/storage and re-run research with reproducible manifests.
 8. Add scheduled-run heartbeat and alerting; verify actual run history instead of trusting cron configuration.
