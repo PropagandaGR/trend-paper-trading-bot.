@@ -71,42 +71,42 @@ jobs:
             # its last consumed boundary so old test periods can never re-enter
             # optimization. An unreadable/ambiguous legacy ledger fails closed.
             python - <<'PY'
-            import hashlib, json
-            from pathlib import Path
-            from datetime import datetime, timezone
-            path = Path("state/oos_evaluation_ledger.json")
-            if path.exists():
-                data = json.loads(path.read_text())
-                if data.get("policy_version") == "chronological-oos-v2":
-                    pass
-                elif data.get("policy_version") == "chronological-oos-v1":
-                    end = data.get("last_test_end")
-                    if not end:
-                        raise SystemExit("FAIL: legacy OOS ledger has no last_test_end; manual audit required")
-                    start = data.get("last_test_start") or end
-                    identity = hashlib.sha256(f"legacy|{start}|{end}".encode()).hexdigest()[:20]
-                    status = data.get("last_result")
-                    if status not in {"passed", "failed"}:
-                        status = "reserved"
-                    data = {
-                        "policy_version": "chronological-oos-v2",
-                        "windows": [{
-                            "id": identity, "start": start, "end": end,
-                            "bars": int(data.get("last_window_bars", 1)),
-                            "status": status, "reserved_at": data.get("reserved_at", "legacy-migration"),
-                            "legacy_migrated": True,
-                        }],
-                        "last_test_start": start, "last_test_end": end, "last_result": status,
-                    }
-                    path.write_text(json.dumps(data, indent=2, sort_keys=True))
-                else:
-                    raise SystemExit("FAIL: unknown legacy OOS ledger format; refusing research")
-            else:
-                path.write_text(json.dumps({
-                    "policy_version": "chronological-oos-v2", "windows": [],
-                    "last_test_start": None, "last_test_end": None, "last_result": None,
-                }, indent=2, sort_keys=True))
-            PY
+          import hashlib, json
+          from pathlib import Path
+          from datetime import datetime, timezone
+          path = Path("state/oos_evaluation_ledger.json")
+          if path.exists():
+              data = json.loads(path.read_text())
+              if data.get("policy_version") == "chronological-oos-v2":
+                  pass
+              elif data.get("policy_version") == "chronological-oos-v1":
+                  end = data.get("last_test_end")
+                  if not end:
+                      raise SystemExit("FAIL: legacy OOS ledger has no last_test_end; manual audit required")
+                  start = data.get("last_test_start") or end
+                  identity = hashlib.sha256(f"legacy|{start}|{end}".encode()).hexdigest()[:20]
+                  status = data.get("last_result")
+                  if status not in {"passed", "failed"}:
+                      status = "reserved"
+                  data = {
+                      "policy_version": "chronological-oos-v2",
+                      "windows": [{
+                          "id": identity, "start": start, "end": end,
+                          "bars": int(data.get("last_window_bars", 1)),
+                          "status": status, "reserved_at": data.get("reserved_at", "legacy-migration"),
+                          "legacy_migrated": True,
+                      }],
+                      "last_test_start": start, "last_test_end": end, "last_result": status,
+                  }
+                  path.write_text(json.dumps(data, indent=2, sort_keys=True))
+              else:
+                  raise SystemExit("FAIL: unknown legacy OOS ledger format; refusing research")
+          else:
+              path.write_text(json.dumps({
+                  "policy_version": "chronological-oos-v2", "windows": [],
+                  "last_test_start": None, "last_test_end": None, "last_result": None,
+              }, indent=2, sort_keys=True))
+          PY
       - name: Search and validate strategies
         env:
           OOS_LEDGER_BRANCH: oos-ledger
