@@ -10,9 +10,14 @@ class ResearchWorkflowPersistencePolicyTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "autonomous-research.yml").read_text()
         self.assertNotIn("git push origin HEAD:main", workflow)
         self.assertNotIn("git push origin HEAD:refs/heads/main", workflow)
+        self.assertNotIn("git push", workflow)
         self.assertNotIn("git pull --rebase origin main", workflow)
         self.assertNotIn("Persist one-way OOS reservation even if research validation fails", workflow)
         self.assertIn("Restore authoritative OOS ledger from dedicated branch", workflow)
+        self.assertLess(
+            workflow.index("Restore authoritative OOS ledger from dedicated branch"),
+            workflow.index("Search and validate strategies"),
+        )
         self.assertIn("OOS_LEDGER_BRANCH: oos-ledger", workflow)
         self.assertIn("actions/upload-artifact@v4", workflow)
 
