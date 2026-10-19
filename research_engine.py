@@ -37,35 +37,61 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
-    """Fetch Coinbase Exchange public USD candles without account credentials."""
+def _fetch_coinbase_range(symbol: str, interval: str, start: pd.Timestamp,
+                          end: pd.Timestamp) -> pd.DataFrame:
+    """Fetch a UTC half-open candle range from Coinbase public data, with retries."""
     product = get_coinbase_product_id(symbol)
     if not product:
         raise ValueError(f"No Coinbase fallback mapping for {symbol}")
     granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
     if granularity is None:
         raise ValueError(f"Unsupported Coinbase candle interval: {interval}")
-    end = pd.Timestamp.now(tz="UTC").floor("min")
-    start = end - pd.Timedelta(days=days)
-    # Coinbase caps each response at 300 candles; page through the period.
+    start_ts = pd.Timestamp(start)
+    end_ts = pd.Timestamp(end)
+    if start_ts.tzinfo is None or end_ts.tzinfo is None:
+        raise ValueError("Historical Coinbase ranges must be timezone-aware")
+    start_ts = start_ts.tz_convert("UTC").floor(f"{granularity}s")
+    end_ts = end_ts.tz_convert("UTC").floor(f"{granularity}s")
+    now = pd.Timestamp.now(tz="UTC")
+    end_ts = min(end_ts, now.floor(f"{granularity}s"))
+    if end_ts <= start_ts:
+        raise ValueError("Coinbase candle range must have end after start and include closed candles")
+
+    # Coinbase caps each response at 300 candles; 280 leaves room for endpoint boundaries.
     rows: list[list[Any]] = []
     chunk = pd.Timedelta(seconds=granularity * 280)
-    cursor = start
-    while cursor < end:
-        stop = min(cursor + chunk, end)
-        response = SESSION.get(
-            f"https://api.exchange.coinbase.com/products/{product}/candles",
-            params={"granularity": granularity, "start": cursor.isoformat(),
-                    "end": stop.isoformat()},
-            timeout=20,
-        )
-        response.raise_for_status()
-        batch = response.json()
-        rows.extend(batch)
+    cursor = start_ts
+    while cursor < end_ts:
+        stop = min(cursor + chunk, end_ts)
+        params = {"granularity": granularity, "start": cursor.isoformat(), "end": stop.isoformat()}
+        batch = None
+        last_error: Exception | None = None
+        for attempt in range(5):
+            try:
+                response = SESSION.get(
+                    f"https://api.exchange.coinbase.com/products/{product}/candles",
+                    params=params,
+                    timeout=20,
+                )
+                response.raise_for_status()
+                batch = response.json()
+                if not isinstance(batch, list):
+                    raise ValueError("Coinbase candle response was not a list")
+                break
+            except (requests.RequestException, ValueError) as exc:
+                last_error = exc
+                if attempt == 4:
+                    raise RuntimeError(
+                        f"Coinbase candle request failed for {product} {interval} at {cursor}: {exc}"
+                    ) from exc
+                time.sleep(min(2 ** attempt, 8))
+        if batch:
+            rows.extend(batch)
         cursor = stop
         time.sleep(0.12)
     if not rows:
-        raise RuntimeError(f"No Coinbase candles returned for {product} {interval}")
+        raise RuntimeError(f"No Coinbase candles returned for {product} {interval} in requested range")
+
     frame = pd.DataFrame(rows, columns=["time", "low", "high", "open", "close", "volume"])
     duplicate_candles_dropped = int(frame["time"].duplicated().sum())
     response_was_sorted = bool(frame["time"].is_monotonic_increasing)
@@ -81,14 +107,24 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     for col in ("open", "high", "low", "close", "volume"):
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
     frame = frame.set_index("open_time")
-    closed = frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC"),
-                       ["open", "high", "low", "close", "volume", "close_time"]]
+    closed = frame.loc[
+        (frame["close_time"] < now) & (frame.index >= start_ts) & (frame.index < end_ts),
+        ["open", "high", "low", "close", "volume", "close_time"],
+    ]
     closed.attrs["duplicate_candles_dropped"] = duplicate_candles_dropped
     closed.attrs["conflicting_duplicate_groups"] = conflicting_duplicate_groups
     closed.attrs["response_was_sorted"] = response_was_sorted
     closed.attrs["source_was_sorted"] = bool(closed.index.is_monotonic_increasing)
     return closed
 
+
+def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
+    """Fetch recent closed Coinbase Exchange public candles without credentials."""
+    if days <= 0:
+        raise ValueError("days must be positive")
+    end = pd.Timestamp.now(tz="UTC").floor("min")
+    start = end - pd.Timedelta(days=days)
+    return _fetch_coinbase_range(symbol, interval, start, end)
 
 def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int = 90,
                           now: pd.Timestamp | None = None) -> dict[str, Any]:

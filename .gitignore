@@ -2,3 +2,6 @@ __pycache__/
 *.py[cod]
 .venv/
 .env
+
+# Local multi-year public candle datasets; manifests are generated alongside CSVs.
+data/historical/
