@@ -15,7 +15,9 @@ import numpy as np
 import pandas as pd
 import requests
 
-from portfolio_accounting import MAX_POSITION_FRACTION, buy_with_costs, entry_budget, sell_with_costs
+from portfolio_accounting import (MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
+                                  MAX_POSITION_FRACTION, buy_with_costs, entry_budget,
+                                  sell_with_costs)
 from universe import get_coinbase_product_id, get_research_batch
 
 ROOT = Path(__file__).resolve().parent
@@ -238,13 +240,42 @@ def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
     target = desired_signal(frame, strategy, params).reindex(frame.index).fillna(0.0)
     cash, quantity, entry_basis, changes = float(starting_cash), 0.0, 0.0, 0
     equity_values: list[float] = []
+    risk_day: str | None = None
+    daily_start_equity = float(starting_cash)
+    peak_equity = float(starting_cash)
+    halted = False
     for timestamp, market_price in prices.items():
         price = float(market_price)
+        stamp = pd.Timestamp(timestamp)
+        if stamp.tzinfo is None:
+            raise ValueError("backtest requires timezone-aware candle timestamps")
+        day = stamp.tz_convert("UTC").date().isoformat()
+        equity_before = cash + quantity * price
+        if day != risk_day:
+            risk_day = day
+            daily_start_equity = max(equity_before, 1e-12)
+        peak_equity = max(peak_equity, equity_before)
+        daily_loss_pct = max(0.0, (daily_start_equity - equity_before) / daily_start_equity * 100.0)
+        drawdown_pct = max(0.0, (peak_equity - equity_before) / peak_equity * 100.0)
+        if daily_loss_pct >= MAX_DAILY_LOSS_PCT or drawdown_pct >= MAX_DRAWDOWN_PCT:
+            halted = True
+
+        # Match the paper trader's latched circuit breakers: liquidate at a
+        # current mark once triggered and do not re-enter during this period.
+        if halted:
+            if quantity > 0:
+                sale = sell_with_costs(quantity, price, entry_basis, fee_bps, slippage_bps)
+                cash += sale.net_proceeds
+                quantity, entry_basis = 0.0, 0.0
+                changes += 1
+            equity_values.append(cash)
+            continue
+
         wants_long = bool(float(target.loc[timestamp]) > 0)
         if wants_long and quantity <= 0:
             # Match the paper trader's shared entry budget rather than investing
             # the entire simulated portfolio in every position.
-            spend_cash = entry_budget(cash, cash)
+            spend_cash = entry_budget(cash, equity_before)
             buy = buy_with_costs(spend_cash, price, fee_bps, slippage_bps)
             quantity = buy.quantity
             cash = max(0.0, cash - spend_cash + buy.cash_remaining)
@@ -255,7 +286,16 @@ def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
             cash += sale.net_proceeds
             quantity, entry_basis = 0.0, 0.0
             changes += 1
-        equity_values.append(cash + quantity * price)
+
+        equity_after = cash + quantity * price
+        peak_equity = max(peak_equity, equity_after)
+        after_daily_loss = max(0.0, (daily_start_equity - equity_after) / daily_start_equity * 100.0)
+        after_drawdown = max(0.0, (peak_equity - equity_after) / peak_equity * 100.0)
+        if after_daily_loss >= MAX_DAILY_LOSS_PCT or after_drawdown >= MAX_DRAWDOWN_PCT:
+            # The paper trader records the latch after the decision and liquidates
+            # on the next decision cycle; mirror that sequencing here.
+            halted = True
+        equity_values.append(equity_after)
 
     equity = pd.Series(equity_values, index=frame.index, dtype=float)
     period_returns = equity.pct_change()
