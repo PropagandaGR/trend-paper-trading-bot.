@@ -79,7 +79,7 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
         return "Champion has no explicit validation metadata."
     if metadata.get("test_used_for_selection") is not False:
         return "Champion metadata does not confirm final-test isolation."
-    for field in ("validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
+    for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
         metrics = metadata.get(field)
         if not isinstance(metrics, dict):
             return f"Champion validation metadata is missing {field}."
@@ -88,6 +88,12 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
                 return f"Champion {field}.{metric} must be a finite number."
         if float(metrics["max_drawdown_pct"]) < 0 or float(metrics["trades"]) < 0:
             return f"Champion {field} contains invalid drawdown/trade metrics."
+    # Reject strategies that only look good in validation after collapsing in training.
+    # The final test is deliberately not an acceptance criterion to preserve its isolation.
+    if float(metadata["train_metrics"]["total_return_pct"]) <= 0:
+        return "Champion failed training robustness gate: training return must be positive."
+    if float(metadata["train_metrics"]["max_drawdown_pct"]) >= 35:
+        return "Champion failed training robustness gate: training drawdown must be below 35%."
     validation_score = metadata.get("validation_score")
     if not finite_number(validation_score):
         return "Champion validation_score must be finite."
