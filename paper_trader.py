@@ -9,8 +9,10 @@ from typing import Any
 
 import pandas as pd
 
-from portfolio_accounting import (MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
-                                  MAX_POSITION_FRACTION, buy_with_costs, entry_budget,
+from portfolio_accounting import (DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS,
+                                  MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
+                                  MAX_POSITION_FRACTION, STRESS_FEE_BPS,
+                                  STRESS_SLIPPAGE_BPS, buy_with_costs, entry_budget,
                                   mark_to_market, sell_with_costs)
 
 from research_engine import (
@@ -18,8 +20,8 @@ from research_engine import (
 )
 
 STARTING_CASH = 15.0
-FEE_BPS = 10.0
-SLIPPAGE_BPS = 5.0
+FEE_BPS = DEFAULT_FEE_BPS
+SLIPPAGE_BPS = DEFAULT_SLIPPAGE_BPS
 STATE_FILE = STATE / "paper_state.json"
 CHAMPION_FILE = STATE / "champion.json"
 STATUS_FILE = REPORTS / "paper_status.json"
@@ -104,6 +106,15 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
                   "stress_fee_bps_per_side", "stress_slippage_bps_per_side"):
         if not finite_number(cost.get(field)) or float(cost[field]) < 0:
             return f"Champion cost convention field {field} is invalid."
+    expected_costs = {
+        "fee_bps_per_side": FEE_BPS,
+        "slippage_bps_per_side": SLIPPAGE_BPS,
+        "stress_fee_bps_per_side": STRESS_FEE_BPS,
+        "stress_slippage_bps_per_side": STRESS_SLIPPAGE_BPS,
+    }
+    for field, expected in expected_costs.items():
+        if not math.isclose(float(cost[field]), expected, rel_tol=0.0, abs_tol=1e-9):
+            return f"Champion cost convention {field} does not match current paper execution settings."
     periods = metadata.get("periods")
     if not isinstance(periods, dict) or not all(isinstance(periods.get(k), dict) for k in ("train", "validation", "test")):
         return "Champion chronological period metadata is incomplete."
