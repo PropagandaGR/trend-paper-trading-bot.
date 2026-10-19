@@ -20,7 +20,7 @@ from portfolio_accounting import (DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS,
                                   MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
                                   MAX_POSITION_FRACTION, STRESS_FEE_BPS,
                                   STRESS_SLIPPAGE_BPS, buy_with_costs, entry_budget,
-                                  sell_with_costs)
+                                  sell_with_costs, _validate_costs)
 from universe import get_coinbase_product_id, get_research_batch
 
 ROOT = Path(__file__).resolve().parent
@@ -392,23 +392,61 @@ def performance(returns: pd.Series, interval: str = "5m",
             "sharpe": round(sharpe, 3), "trades": int(trades)}
 
 
+def _benchmark_window_metadata(frame: pd.DataFrame, exposure_fraction: float,
+                               starting_cash: float, fee_bps: float,
+                               slippage_bps: float, interval: str) -> dict[str, Any]:
+    index = pd.DatetimeIndex(frame.index)
+    if not frame.empty and (index.tz is None or not index.is_monotonic_increasing or index.has_duplicates):
+        raise ValueError("benchmarks require unique, monotonic, timezone-aware timestamps")
+    missing_slots = 0
+    start = end = None
+    if not frame.empty:
+        seconds = int(pd.Timedelta(INTERVALS[interval]).total_seconds())
+        expected = pd.date_range(index[0], index[-1], freq=f"{seconds}s")
+        missing_slots = int(len(expected.difference(index)))
+        start, end = index[0].isoformat(), index[-1].isoformat()
+    return {
+        "period_start": start, "period_end": end, "bars": int(len(frame)),
+        "missing_candle_slots": missing_slots,
+        "missing_data_policy": "No interpolation; use exact supplied timestamps and report missing slots.",
+        "exposure_fraction": float(exposure_fraction), "starting_cash_usdt": float(starting_cash),
+        "fee_bps_per_side": float(fee_bps), "slippage_bps_per_side": float(slippage_bps),
+    }
+
+
+def _validate_benchmark_prices(frame: pd.DataFrame) -> pd.Series:
+    if frame.empty:
+        return pd.Series(dtype=float, index=frame.index)
+    if "close" not in frame:
+        raise ValueError("benchmark requires close prices")
+    prices = pd.to_numeric(frame["close"], errors="coerce")
+    if prices.isna().any() or (~np.isfinite(prices)).any() or (prices <= 0).any():
+        raise ValueError("benchmark requires finite, positive close prices; missing data is not imputed")
+    return prices
+
+
 def cash_benchmark(frame: pd.DataFrame, interval: str = "5m",
-                   starting_cash: float = 15.0) -> dict[str, float]:
-    """Report a zero-return cash benchmark over the same timestamps."""
-    returns = pd.Series(np.zeros(len(frame), dtype=float), index=frame.index)
-    return performance(returns, interval, trades=0)
+                   starting_cash: float = 15.0) -> dict[str, Any]:
+    """Report a zero-exposure cash benchmark over the exact supplied timestamps."""
+    _validate_benchmark_prices(frame)
+    result: dict[str, Any] = performance(pd.Series(np.zeros(len(frame), dtype=float), index=frame.index), interval, trades=0)
+    result.update(_benchmark_window_metadata(frame, 0.0, starting_cash, 0.0, 0.0, interval))
+    return result
 
 
 def buy_and_hold_benchmark(frame: pd.DataFrame, interval: str = "5m",
                            fee_bps: float = DEFAULT_FEE_BPS,
                            slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
-                           starting_cash: float = 15.0) -> dict[str, float]:
-    """Buy once with the shared entry budget and mark to market without final liquidation."""
+                           starting_cash: float = 15.0) -> dict[str, Any]:
+    """Buy once at the shared 50%-equity budget; do not interpolate or liquidate at end."""
+    _validate_costs(fee_bps, slippage_bps)
+    prices = _validate_benchmark_prices(frame)
+    if not math.isfinite(starting_cash) or starting_cash <= 0:
+        raise ValueError("starting_cash must be finite and positive")
     if frame.empty:
-        return performance(pd.Series(dtype=float), interval, trades=0)
-    prices = pd.to_numeric(frame["close"], errors="coerce")
-    if prices.isna().any() or (~np.isfinite(prices)).any() or (prices <= 0).any():
-        raise ValueError("buy-and-hold benchmark requires finite, positive close prices")
+        result: dict[str, Any] = performance(pd.Series(dtype=float), interval, trades=0)
+        result.update(_benchmark_window_metadata(frame, 0.0, starting_cash, fee_bps, slippage_bps, interval))
+        return result
     spend_cash = entry_budget(starting_cash, starting_cash)
     buy = buy_with_costs(spend_cash, float(prices.iloc[0]), fee_bps, slippage_bps)
     cash = max(0.0, starting_cash - spend_cash + buy.cash_remaining)
@@ -416,7 +454,9 @@ def buy_and_hold_benchmark(frame: pd.DataFrame, interval: str = "5m",
     returns = equity.pct_change()
     if not returns.empty:
         returns.iloc[0] = equity.iloc[0] / starting_cash - 1.0
-    return performance(returns, interval, trades=1 if buy.quantity > 0 else 0)
+    result: dict[str, Any] = performance(returns, interval, trades=1 if buy.quantity > 0 else 0)
+    result.update(_benchmark_window_metadata(frame, MAX_POSITION_FRACTION, starting_cash, fee_bps, slippage_bps, interval))
+    return result
 
 
 def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
@@ -424,14 +464,26 @@ def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
              slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
              interval: str = "5m", starting_cash: float = 15.0) -> dict[str, float]:
     """Simulate closed-candle fills using paper-trader per-side costs."""
+    _validate_costs(fee_bps, slippage_bps)
+    quality = frame.attrs.get("data_quality")
+    if isinstance(quality, dict) and quality.get("quality_gate_passed") is not True:
+        raise ValueError("backtest refused: input failed the candle/FX data-quality gate")
     minimum = max(int(params["slow"]) * 3, int(params["breakout"]) + 50)
     if len(frame) < minimum:
         return performance(pd.Series(dtype=float), interval, trades=0)
     if not math.isfinite(starting_cash) or starting_cash <= 0:
         raise ValueError("starting_cash must be finite and positive")
-    if (not math.isfinite(fee_bps) or not math.isfinite(slippage_bps)
-            or fee_bps < 0 or slippage_bps < 0):
-        raise ValueError("fee_bps and slippage_bps must be finite and non-negative")
+    required = ["open", "high", "low", "close", "volume"]
+    if not set(required).issubset(frame.columns):
+        raise ValueError("backtest requires complete OHLCV columns")
+    values = frame[required].apply(pd.to_numeric, errors="coerce")
+    if (not np.isfinite(values.to_numpy()).all()
+            or (values[["open", "high", "low", "close"]] <= 0).any().any()
+            or (values["high"] < values[["open", "close"]].max(axis=1)).any()
+            or (values["low"] > values[["open", "close"]].min(axis=1)).any()
+            or (values["high"] < values["low"]).any()
+            or (values["volume"] < 0).any()):
+        raise ValueError("backtest refused: invalid OHLCV rows")
     prices = pd.to_numeric(frame["close"], errors="coerce")
     if prices.isna().any() or (~np.isfinite(prices)).any() or (prices <= 0).any():
         raise ValueError("backtest requires finite, positive close prices")
