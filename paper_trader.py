@@ -9,7 +9,8 @@ from typing import Any
 
 import pandas as pd
 
-from portfolio_accounting import (MAX_POSITION_FRACTION, buy_with_costs, entry_budget,
+from portfolio_accounting import (MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
+                                  MAX_POSITION_FRACTION, buy_with_costs, entry_budget,
                                   mark_to_market, sell_with_costs)
 
 from research_engine import (
@@ -22,8 +23,6 @@ SLIPPAGE_BPS = 5.0
 STATE_FILE = STATE / "paper_state.json"
 CHAMPION_FILE = STATE / "champion.json"
 STATUS_FILE = REPORTS / "paper_status.json"
-MAX_DAILY_LOSS_PCT = 5.0
-MAX_DRAWDOWN_PCT = 10.0
 MAX_PRICE_AGE_SECONDS = 15 * 60
 
 
