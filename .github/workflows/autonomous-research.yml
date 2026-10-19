@@ -102,9 +102,14 @@ jobs:
               raise SystemExit("FAIL: active champion does not match fresh report champion")
           if metadata.get("test_used_for_selection") is not False:
               raise SystemExit("FAIL: final-test isolation not recorded")
-          for field in ("validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
+          for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
               if not isinstance(metadata.get(field), dict):
                   raise SystemExit(f"FAIL: champion metadata missing {field}")
+          train = metadata["train_metrics"]
+          if train.get("total_return_pct", float("-inf")) <= 0:
+              raise SystemExit("FAIL: champion failed training robustness gate: training return must be positive")
+          if train.get("max_drawdown_pct", float("inf")) >= 35:
+              raise SystemExit("FAIL: champion failed training robustness gate: training drawdown must be below 35%")
           cost = metadata.get("cost_convention")
           if not isinstance(cost, dict) or cost.get("fee_basis") != "executed notional":
               raise SystemExit("FAIL: champion cost convention missing or invalid")
