@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from research_engine import _convert_usd_candles_to_usdt, fetch_klines
+from research_engine import _convert_usd_candles_to_usdt, candle_quality_report, fetch_klines
 
 
 def candle_frame(index, close):
@@ -48,6 +48,15 @@ class CoinbaseDataSourceTests(unittest.TestCase):
         self.assertEqual(result.attrs["source"], "coinbase")
         self.assertEqual(result.attrs["quote_currency"], "USDT")
         self.assertAlmostEqual(result.iloc[0]["close"], 100.0)
+        self.assertFalse(result.attrs["data_quality"]["quality_gate_passed"])
+        self.assertEqual(result.attrs["data_quality"]["source_candle_count"], 1)
+
+    def test_quality_report_flags_invalid_ohlc(self):
+        asset = candle_frame(self.index, 100.0)
+        asset.loc[self.index[0], "high"] = 98.0
+        report = candle_quality_report(asset, "5m", days=1)
+        self.assertEqual(report["invalid_ohlc_rows"], 1)
+        self.assertLess(report["source_coverage_pct"], 1.0)
 
     def test_usdtusd_symbol_does_not_recursively_convert(self):
         fx = candle_frame(self.index, 0.995)
