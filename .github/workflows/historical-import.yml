@@ -1,0 +1,72 @@
+name: Import Historical Coinbase Candles
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: Coinbase USD market to convert to USDT
+        required: true
+        type: choice
+        options:
+          - BTCUSDT
+          - ETHUSDT
+          - SOLUSDT
+      interval:
+        description: Candle interval; 1h is recommended for multi-year runs
+        required: true
+        type: choice
+        default: 1h
+        options:
+          - 1h
+          - 15m
+          - 5m
+      start:
+        description: Inclusive UTC start date/time
+        required: true
+        type: string
+        default: "2023-01-01T00:00:00Z"
+      end:
+        description: Exclusive UTC end date/time
+        required: true
+        type: string
+        default: "2026-01-01T00:00:00Z"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: historical-import-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Import public candles and write monthly manifests
+        env:
+          SYMBOL: ${{ inputs.symbol }}
+          INTERVAL: ${{ inputs.interval }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: |
+          python historical_import.py \
+            --symbol "$SYMBOL" \
+            --interval "$INTERVAL" \
+            --start "$START" \
+            --end "$END" \
+            --output-dir data/historical
+      - name: Upload monthly CSV partitions and quality manifests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: historical-candles-${{ inputs.symbol }}-${{ inputs.interval }}
+          path: data/historical/
+          if-no-files-found: warn
+          retention-days: 30
