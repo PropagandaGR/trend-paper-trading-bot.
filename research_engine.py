@@ -459,6 +459,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     candidates = candidate_params()
     errors: list[dict[str, Any]] = []
+    data_quality: dict[str, Any] = {}
     evaluation_frames: dict[tuple[str, str], pd.DataFrame] = {}
     try:
         research_symbols, universe_metadata = get_research_batch()
@@ -469,6 +470,22 @@ def run_research(days: int = 90) -> dict[str, Any]:
     for symbol in research_symbols:
         try:
             raw = fetch_klines(symbol, "5m", days).sort_index()
+            quality = raw.attrs.get("data_quality")
+            if not isinstance(quality, dict):
+                data_quality[symbol] = {"status": "missing_quality_report"}
+                errors.append({
+                    "symbol": symbol,
+                    "error": "Candle source did not provide a data-quality report; refusing research on unverified coverage.",
+                })
+                continue
+            data_quality[symbol] = quality
+            if not quality.get("quality_gate_passed", False):
+                errors.append({
+                    "symbol": symbol,
+                    "error": "Candle quality gate failed: require at least 95% source and converted coverage, sorted unique candles, and valid OHLCV.",
+                    "data_quality": quality,
+                })
+                continue
             for interval, rule in INTERVALS.items():
                 bars = raw if interval == "5m" else resample_ohlcv(raw, rule)
                 if len(bars) < 1100:
@@ -569,6 +586,8 @@ def run_research(days: int = 90) -> dict[str, Any]:
             ),
         },
         "symbols": list(research_symbols), "universe": universe_metadata, "intervals": list(INTERVALS),
+        "minimum_candle_coverage_pct": MIN_CANDLE_COVERAGE_PCT,
+        "data_quality": data_quality,
         "candidate_count": len(candidates), "evaluations": len(results),
         "validated_count": len(eligible), "champion": champion,
         "selection_policy": "Require positive training return, training max drawdown under 35%, positive validation and validation-stress returns, validation drawdown under 25%, and at least two validation position changes; rank eligible candidates by validation score only. Final test metrics are report-only and never used for selection.",
