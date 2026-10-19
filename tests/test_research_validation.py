@@ -213,5 +213,146 @@ class TestSetIsolationTests(unittest.TestCase):
             self.assertTrue(any("quality gate failed" in item["error"] for item in summary["errors"]))
 
 
+class DurableOOSPolicyTests(unittest.TestCase):
+    @staticmethod
+    def _frame(index):
+        frame = pd.DataFrame({
+            "open": [100.0] * len(index), "high": [101.0] * len(index),
+            "low": [99.0] * len(index), "close": [100.0] * len(index),
+            "volume": [1.0] * len(index),
+            "close_time": index + pd.Timedelta(minutes=5),
+        }, index=index)
+        frame.attrs["data_quality"] = {
+            "quality_gate_passed": True, "source_coverage_pct": 100.0,
+            "converted_coverage_pct": 100.0, "fx_missing_pct_of_source": 0.0,
+            "invalid_ohlc_rows": 0, "converted_invalid_ohlc_rows": 0,
+            "conflicting_duplicate_groups": 0, "unique_timestamps": True,
+            "monotonic_timestamps": True, "timezone_aware_timestamps": True,
+            "unaligned_timestamps": 0, "converted_unaligned_timestamps": 0,
+            "irregular_timestamp_gaps": 0, "max_consecutive_missing_slots": 0,
+            "converted_max_consecutive_missing_slots": 0,
+            "converted_unique_timestamps": True, "converted_monotonic_timestamps": True,
+        }
+        return frame
+
+    @staticmethod
+    def _ledger(start, end, status="failed"):
+        return {
+            "policy_version": "chronological-oos-v2",
+            "windows": [{
+                "id": "previous-consumed-window", "start": start.isoformat(),
+                "end": end.isoformat(), "bars": int((end - start) / pd.Timedelta(minutes=5)) + 1,
+                "status": status, "reserved_at": "test-fixture",
+            }],
+            "last_test_start": start.isoformat(), "last_test_end": end.isoformat(),
+            "last_result": status,
+        }
+
+    def test_reservation_persistence_failure_fails_closed(self):
+        index = pd.date_range("2026-01-01", periods=12, freq="5min", tz="UTC")
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(research_engine, "STATE", Path(tmp) / "state"),
+                patch.object(research_engine, "_update_oos_ledger",
+                             side_effect=RuntimeError("ledger push rejected")),
+            ):
+                ok, reason, _ = research_engine.reserve_oos_test_window(
+                    pd.DataFrame({"close": range(12)}, index=index)
+                )
+                self.assertFalse(ok)
+                self.assertIn("failed closed", reason)
+                self.assertIn("push rejected", reason)
+                self.assertFalse((Path(tmp) / "state" / "oos_evaluation_ledger.json").exists())
+
+    def test_concurrent_non_fast_forward_conflict_blocks_reservation(self):
+        index = pd.date_range("2026-01-01", periods=12, freq="5min", tz="UTC")
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(research_engine, "STATE", Path(tmp) / "state"),
+                patch.object(research_engine, "_update_oos_ledger",
+                             side_effect=RuntimeError("non-fast-forward push rejected after concurrent update")),
+            ):
+                ok, reason, _ = research_engine.reserve_oos_test_window(
+                    pd.DataFrame({"close": range(12)}, index=index)
+                )
+                self.assertFalse(ok)
+                self.assertIn("non-fast-forward", reason)
+
+    def test_reservation_failure_prevents_held_out_backtest_and_promotion(self):
+        index = pd.date_range("2026-01-01", periods=1200, freq="5min", tz="UTC")
+        frame = self._frame(index)
+        params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
+
+        def fake_backtest(part, strategy, candidate, fee_bps=60, slippage_bps=10,
+                          interval="5m", starting_cash=15):
+            return {
+                "total_return_pct": 10.0 if fee_bps == 60 else 2.0,
+                "max_drawdown_pct": 5.0, "sharpe": 1.0, "trades": 4,
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            state, reports = Path(tmp) / "state", Path(tmp) / "reports"
+            with (
+                patch.object(research_engine, "STATE", state),
+                patch.object(research_engine, "REPORTS", reports),
+                patch.object(research_engine, "INTERVALS", {"5m": "5min"}),
+                patch.object(research_engine, "get_research_batch", return_value=(["BTCUSDT"], {"status": "test"})),
+                patch.object(research_engine, "fetch_klines", return_value=frame),
+                patch.object(research_engine, "resample_ohlcv", side_effect=lambda raw, rule: raw),
+                patch.object(research_engine, "candidate_params", return_value=[params]),
+                patch.object(research_engine, "backtest", side_effect=fake_backtest) as backtest,
+                patch.object(research_engine, "_update_oos_ledger",
+                             side_effect=RuntimeError("durable ledger unavailable")),
+            ):
+                summary = research_engine.run_research(days=30)
+            self.assertIsNone(summary["champion"])
+            self.assertFalse(summary["selected_candidate_test_gate"]["evaluated"])
+            self.assertIn("durable ledger unavailable", summary["selected_candidate_test_gate"]["failures"][0])
+            self.assertTrue(all(len(call.args[0]) < 1200 for call in backtest.call_args_list))
+            self.assertFalse((state / "champions").exists())
+
+    def test_prior_test_history_is_excluded_from_later_train_validation_and_test(self):
+        index = pd.date_range("2026-01-01", periods=2400, freq="5min", tz="UTC")
+        frame = self._frame(index)
+        params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
+        old_start, old_end = index[1000], index[1199]
+        observed_periods = []
+
+        def fake_backtest(part, strategy, candidate, fee_bps=60, slippage_bps=10,
+                          interval="5m", starting_cash=15):
+            observed_periods.append((part.index[0], part.index[-1], fee_bps, slippage_bps))
+            return {
+                "total_return_pct": 10.0 if fee_bps == 60 else 2.0,
+                "max_drawdown_pct": 5.0, "sharpe": 1.0, "trades": 4,
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            state, reports = Path(tmp) / "state", Path(tmp) / "reports"
+            state.mkdir()
+            (state / "oos_evaluation_ledger.json").write_text(json.dumps(self._ledger(old_start, old_end)))
+            with (
+                patch.object(research_engine, "STATE", state),
+                patch.object(research_engine, "REPORTS", reports),
+                patch.object(research_engine, "INTERVALS", {"5m": "5min"}),
+                patch.object(research_engine, "get_research_batch", return_value=(["BTCUSDT"], {"status": "test"})),
+                patch.object(research_engine, "fetch_klines", return_value=frame),
+                patch.object(research_engine, "resample_ohlcv", side_effect=lambda raw, rule: raw),
+                patch.object(research_engine, "candidate_params", return_value=[params]),
+                patch.object(research_engine, "backtest", side_effect=fake_backtest),
+            ):
+                summary = research_engine.run_research(days=30)
+            self.assertTrue(observed_periods)
+            self.assertTrue(all(start > old_end and end > old_end for start, end, _, _ in observed_periods))
+            self.assertEqual(
+                summary["out_of_sample_policy"]["previous_test_end_excluded_from_optimization"],
+                old_end.isoformat(),
+            )
+            self.assertTrue(summary["out_of_sample_policy"]["test_history_excluded_from_training_validation"])
+            ledger = json.loads((state / "oos_evaluation_ledger.json").read_text())
+            self.assertEqual(len(ledger["windows"]), 2)
+            self.assertGreater(pd.Timestamp(ledger["windows"][1]["start"]), old_end)
+            self.assertEqual(ledger["windows"][0]["status"], "failed")
+
+
 if __name__ == "__main__":
     unittest.main()
