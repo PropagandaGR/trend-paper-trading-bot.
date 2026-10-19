@@ -7,6 +7,9 @@ import json
 import math
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,7 +34,7 @@ INTERVALS = {"5m": "5min", "10m": "10min", "15m": "15min", "30m": "30min"}
 MIN_CANDLE_COVERAGE_PCT = 99.0
 MAX_CONSECUTIVE_MISSING_SLOTS = 3
 MAX_FX_MISSING_PCT = 1.0
-OOS_POLICY_VERSION = "chronological-oos-v1"
+OOS_POLICY_VERSION = "chronological-oos-v2"
 OOS_LEDGER_FILE = STATE / "oos_evaluation_ledger.json"
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "Autonomous-Paper-Trading-Lab/1.0"})
@@ -715,68 +718,219 @@ def _period_metadata(frame: pd.DataFrame) -> dict[str, Any]:
             "bars": int(len(frame))}
 
 
-def reserve_oos_test_window(test: pd.DataFrame) -> tuple[bool, str | None, dict[str, str]]:
-    """Reserve a single non-overlapping test window before evaluation.
+def _empty_oos_ledger() -> dict[str, Any]:
+    return {
+        "policy_version": OOS_POLICY_VERSION,
+        "windows": [],
+        "last_test_start": None,
+        "last_test_end": None,
+        "last_result": None,
+    }
 
-    The ledger stores only window boundaries and terminal status, never candidate
-    parameters or metrics. A rejected or interrupted window remains consumed.
+
+def _validate_oos_ledger(ledger: Any) -> dict[str, Any]:
+    if not isinstance(ledger, dict) or ledger.get("policy_version") != OOS_POLICY_VERSION:
+        raise RuntimeError("Out-of-sample ledger missing or incompatible with chronological-oos-v2; refusing research.")
+    windows = ledger.get("windows")
+    if not isinstance(windows, list):
+        raise RuntimeError("Out-of-sample ledger has no valid append-only windows list; refusing research.")
+    previous_end: pd.Timestamp | None = None
+    seen_ids: set[str] = set()
+    for item in windows:
+        if not isinstance(item, dict):
+            raise RuntimeError("Out-of-sample ledger contains a malformed window.")
+        try:
+            start = pd.Timestamp(item["start"])
+            end = pd.Timestamp(item["end"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError("Out-of-sample ledger contains invalid window boundaries.") from exc
+        if start.tzinfo is None or end.tzinfo is None or start > end:
+            raise RuntimeError("Out-of-sample ledger boundaries must be ordered and timezone-aware.")
+        if previous_end is not None and start <= previous_end:
+            raise RuntimeError("Out-of-sample ledger windows overlap or are not strictly chronological.")
+        window_id = item.get("id")
+        if not isinstance(window_id, str) or not window_id or window_id in seen_ids:
+            raise RuntimeError("Out-of-sample ledger contains a missing or duplicate window ID.")
+        if item.get("status") not in {"reserved", "passed", "failed"}:
+            raise RuntimeError("Out-of-sample ledger contains an unknown window status.")
+        seen_ids.add(window_id)
+        previous_end = end.tz_convert("UTC")
+    if windows:
+        last = windows[-1]
+        if ledger.get("last_test_end") != last.get("end") or ledger.get("last_test_start") != last.get("start"):
+            raise RuntimeError("Out-of-sample ledger summary disagrees with its append-only window history.")
+    return ledger
+
+
+def _load_local_oos_ledger() -> dict[str, Any]:
+    path = STATE / "oos_evaluation_ledger.json"
+    if not path.exists():
+        if os.environ.get("OOS_LEDGER_BRANCH"):
+            # The workflow restore step is responsible for fetching/migrating the
+            # authoritative branch. Missing local state in that mode is unsafe.
+            raise RuntimeError("Authoritative OOS ledger was not restored before research.")
+        return _empty_oos_ledger()
+    try:
+        ledger = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Out-of-sample ledger is unreadable; refusing research.") from exc
+    return _validate_oos_ledger(ledger)
+
+
+def _atomic_write_local_ledger(ledger: dict[str, Any]) -> None:
+    path = STATE / "oos_evaluation_ledger.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(ledger, indent=2, sort_keys=True))
+    temporary.replace(path)
+
+
+def _git_checked(args: list[str], cwd: Path) -> str:
+    result = subprocess.run(["git", *args], cwd=cwd, text=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    if result.returncode:
+        raise RuntimeError(f"Safe OOS ledger persistence failed ({' '.join(args)}): {result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def _update_oos_ledger(mutator) -> dict[str, Any]:
+    """Atomically update local state or persist by non-force push to a dedicated ledger branch.
+
+    A normal fast-forward push is the concurrency compare-and-swap: if another run
+    advances the branch after our fetch, the push fails and the caller must fail closed.
     """
+    branch = os.environ.get("OOS_LEDGER_BRANCH", "").strip()
+    if not branch:
+        ledger = _load_local_oos_ledger()
+        updated = mutator(ledger)
+        _validate_oos_ledger(updated)
+        _atomic_write_local_ledger(updated)
+        return updated
+    if branch == "main" or branch.startswith("main/") or not re.fullmatch(r"[A-Za-z0-9._/-]+", branch):
+        raise RuntimeError("OOS_LEDGER_BRANCH must name a dedicated non-main branch.")
+
+    with tempfile.TemporaryDirectory(prefix="oos-ledger-") as temporary_dir:
+        worktree = Path(temporary_dir) / "worktree"
+        remote_ref = f"refs/remotes/origin/{branch}"
+        remote_exists = bool(_git_checked(
+            ["ls-remote", "--heads", "origin", f"refs/heads/{branch}"], ROOT
+        ))
+        if remote_exists:
+            _git_checked(["fetch", "origin", f"refs/heads/{branch}:{remote_ref}"], ROOT)
+            _git_checked(["worktree", "add", "--detach", str(worktree), remote_ref], ROOT)
+            ledger_path = worktree / "state" / "oos_evaluation_ledger.json"
+            if not ledger_path.is_file():
+                raise RuntimeError("Dedicated OOS ledger branch exists but its ledger file is missing.")
+            try:
+                current = _validate_oos_ledger(json.loads(ledger_path.read_text()))
+            except (OSError, json.JSONDecodeError) as exc:
+                raise RuntimeError("Dedicated OOS ledger branch is unreadable; refusing update.") from exc
+        else:
+            _git_checked(["worktree", "add", "--detach", str(worktree), "HEAD"], ROOT)
+            ledger_path = worktree / "state" / "oos_evaluation_ledger.json"
+            local_path = STATE / "oos_evaluation_ledger.json"
+            if local_path.is_file():
+                try:
+                    current = _validate_oos_ledger(json.loads(local_path.read_text()))
+                except (OSError, json.JSONDecodeError) as exc:
+                    raise RuntimeError("Cannot bootstrap dedicated branch from unreadable local ledger.") from exc
+            else:
+                current = _empty_oos_ledger()
+        updated = mutator(current)
+        _validate_oos_ledger(updated)
+        ledger_path.parent.mkdir(parents=True, exist_ok=True)
+        ledger_path.write_text(json.dumps(updated, indent=2, sort_keys=True))
+        _git_checked(["config", "user.name", "github-actions[bot]"], worktree)
+        _git_checked(["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], worktree)
+        _git_checked(["add", "--", "state/oos_evaluation_ledger.json"], worktree)
+        _git_checked(["commit", "-m", "Reserve/update one-way out-of-sample ledger"], worktree)
+        # Never force-push and never target main. A race or non-fast-forward
+        # rejection leaves the previous reservation intact and prevents evaluation.
+        _git_checked(["push", "origin", f"HEAD:refs/heads/{branch}"], worktree)
+        _atomic_write_local_ledger(updated)
+        try:
+            _git_checked(["worktree", "remove", "--force", str(worktree)], ROOT)
+        except RuntimeError:
+            pass
+        return updated
+
+
+def _ledger_last_test_end(ledger: dict[str, Any]) -> pd.Timestamp | None:
+    raw = ledger.get("last_test_end")
+    if not raw:
+        return None
+    stamp = pd.Timestamp(raw)
+    if stamp.tzinfo is None:
+        raise RuntimeError("OOS ledger last_test_end is timezone-naive; refusing optimization.")
+    return stamp.tz_convert("UTC")
+
+
+def reserve_oos_test_window(test: pd.DataFrame) -> tuple[bool, str | None, dict[str, str]]:
+    """Persist a unique, chronological reservation before evaluating the held-out test."""
     if test.empty or not isinstance(test.index, pd.DatetimeIndex):
         return False, "Held-out test window is empty or has invalid timestamps.", {}
     index = test.index
     if index.tz is None or not index.is_monotonic_increasing or index.has_duplicates:
         return False, "Held-out test timestamps must be unique, monotonic, and timezone-aware.", {}
     start, end = index[0].tz_convert("UTC"), index[-1].tz_convert("UTC")
-    window = {"start": start.isoformat(), "end": end.isoformat(), "bars": str(len(test))}
-    ledger_path = STATE / "oos_evaluation_ledger.json"
-    ledger: dict[str, Any] = {"policy_version": OOS_POLICY_VERSION, "last_test_end": None}
-    if ledger_path.exists():
-        try:
-            loaded = json.loads(ledger_path.read_text())
-        except (OSError, json.JSONDecodeError):
-            return False, "Out-of-sample ledger is unreadable; refusing to reuse a test window.", window
-        if not isinstance(loaded, dict) or loaded.get("policy_version") != OOS_POLICY_VERSION:
-            return False, "Out-of-sample ledger policy version mismatch; manual audit required.", window
-        ledger = loaded
-    last_end_raw = ledger.get("last_test_end")
-    if last_end_raw:
-        try:
-            last_end = pd.Timestamp(last_end_raw)
-            if last_end.tzinfo is None:
-                return False, "Out-of-sample ledger has a timezone-naive boundary.", window
-            if start <= last_end.tz_convert("UTC"):
-                return False, (
-                    f"Test window overlaps or reuses an already evaluated out-of-sample period "
-                    f"(policy {OOS_POLICY_VERSION}); no re-optimization on this window."
-                ), window
-        except (TypeError, ValueError):
-            return False, "Out-of-sample ledger has an invalid last_test_end.", window
-    ledger.update({
-        "policy_version": OOS_POLICY_VERSION, "last_test_start": start.isoformat(),
-        "last_test_end": end.isoformat(), "last_window_bars": int(len(test)),
-        "last_result": "reserved", "reserved_at": utc_now(),
-    })
-    ledger_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = ledger_path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(ledger, indent=2))
-    temporary.replace(ledger_path)
+    identity = hashlib.sha256(
+        f"{OOS_POLICY_VERSION}|{start.isoformat()}|{end.isoformat()}|{len(test)}".encode()
+    ).hexdigest()[:20]
+    window = {"id": identity, "start": start.isoformat(), "end": end.isoformat(), "bars": str(len(test))}
+
+    def reserve(ledger: dict[str, Any]) -> dict[str, Any]:
+        _validate_oos_ledger(ledger)
+        last_end = _ledger_last_test_end(ledger)
+        if last_end is not None and start <= last_end:
+            raise ValueError(
+                f"Test window overlaps or reuses historical OOS data (policy {OOS_POLICY_VERSION}); "
+                "all bars through the previous test end are excluded from later optimization."
+            )
+        for previous in ledger["windows"]:
+            prev_start, prev_end = pd.Timestamp(previous["start"]), pd.Timestamp(previous["end"])
+            if start <= prev_end and end >= prev_start:
+                raise ValueError("Concurrent or overlapping OOS evaluation rejected.")
+        updated = dict(ledger)
+        windows = list(ledger["windows"])
+        windows.append({
+            **window, "bars": int(len(test)), "status": "reserved", "reserved_at": utc_now()
+        })
+        updated.update({
+            "policy_version": OOS_POLICY_VERSION, "windows": windows,
+            "last_test_start": start.isoformat(), "last_test_end": end.isoformat(),
+            "last_result": "reserved",
+        })
+        return updated
+
+    try:
+        _update_oos_ledger(reserve)
+    except (ValueError, RuntimeError, OSError) as exc:
+        return False, f"Out-of-sample reservation failed closed: {exc}", window
     return True, None, window
 
 
-def record_oos_test_result(passed: bool) -> None:
-    """Record only pass/fail; never persist candidate metrics for optimization."""
-    ledger_path = STATE / "oos_evaluation_ledger.json"
+def record_oos_test_result(passed: bool, window_id: str | None = None) -> None:
+    """Persist only terminal status. A failed status write leaves a consumed reservation."""
+    def record(ledger: dict[str, Any]) -> dict[str, Any]:
+        _validate_oos_ledger(ledger)
+        windows = [dict(item) for item in ledger["windows"]]
+        candidates = [item for item in windows if item.get("status") == "reserved"
+                      and (window_id is None or item.get("id") == window_id)]
+        if not candidates:
+            raise RuntimeError("No matching persisted OOS reservation is available to finalize.")
+        target = candidates[-1]
+        target["status"] = "passed" if passed else "failed"
+        target["evaluated_at"] = utc_now()
+        updated = dict(ledger)
+        updated["windows"] = windows
+        if target.get("id") == windows[-1].get("id"):
+            updated["last_result"] = target["status"]
+        return updated
+
     try:
-        ledger = json.loads(ledger_path.read_text())
-    except (OSError, json.JSONDecodeError) as exc:
-        raise RuntimeError("Out-of-sample reservation disappeared during evaluation") from exc
-    if ledger.get("policy_version") != OOS_POLICY_VERSION or ledger.get("last_result") != "reserved":
-        raise RuntimeError("Out-of-sample reservation is not active under the current policy")
-    ledger["last_result"] = "passed" if passed else "failed"
-    ledger["evaluated_at"] = utc_now()
-    temporary = ledger_path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(ledger, indent=2))
-    temporary.replace(ledger_path)
+        _update_oos_ledger(record)
+    except (ValueError, RuntimeError, OSError) as exc:
+        raise RuntimeError(f"Could not safely persist OOS evaluation status; refusing promotion: {exc}") from exc
 
 
 def run_research(days: int = 90) -> dict[str, Any]:
