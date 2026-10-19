@@ -24,6 +24,8 @@ class ResearchWorkflowPersistencePolicyTests(unittest.TestCase):
         self.assertIn("OOS ledger is empty/incomplete", workflow)
         self.assertNotIn('data.get("last_test_start") or end', workflow)
         self.assertNotIn('data.get("last_window_bars", 1)', workflow)
+        self.assertNotIn('status = "reserved"', workflow)
+        self.assertIn("legacy/unknown OOS ledger cannot reconstruct complete historical windows", workflow)
         self.assertNotIn('path.write_text(json.dumps({', workflow)
 
     def test_workflow_does_not_cancel_runs_after_reservation(self):
