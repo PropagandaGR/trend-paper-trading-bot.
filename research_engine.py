@@ -524,6 +524,12 @@ def run_research(days: int = 90) -> dict[str, Any]:
     started = utc_now()
     results: list[dict[str, Any]] = []
     candidates = candidate_params()
+    strategies = ("trend", "breakout", "mean_reversion")
+    strategy_candidates = {
+        strategy: unique_candidates_for_strategy(strategy, candidates)
+        for strategy in strategies
+    }
+    effective_candidate_counts = {strategy: len(items) for strategy, items in strategy_candidates.items()}
     errors: list[dict[str, Any]] = []
     data_quality: dict[str, Any] = {}
     evaluation_frames: dict[tuple[str, str], pd.DataFrame] = {}
@@ -560,15 +566,17 @@ def run_research(days: int = 90) -> dict[str, Any]:
                     continue
                 evaluation_frames[(symbol, interval)] = bars.copy()
                 train, validation, test = chronological_split(bars)
-                for strategy in ("trend", "breakout", "mean_reversion"):
-                    for params in candidates:
+                for strategy in strategies:
+                    for params in strategy_candidates[strategy]:
                         train_m = backtest(train, strategy, params, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
                         validation_m = backtest(validation, strategy, params, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
                         validation_stress = backtest(validation, strategy, params, STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
                         passed = candidate_passes_gates(train_m, validation_m, validation_stress)
                         results.append({
                             "symbol": symbol, "interval": interval, "strategy": strategy,
-                            "params": params, "train": train_m, "validation": validation_m,
+                            "params": params,
+                            "effective_params": effective_strategy_params(strategy, params),
+                            "train": train_m, "validation": validation_m,
                             "validation_stress": validation_stress,
                             "validation_score": score(validation_m),
                             "passed_validation": bool(passed),
@@ -590,7 +598,14 @@ def run_research(days: int = 90) -> dict[str, Any]:
         train, validation, test = chronological_split(bars)
         test_metrics = backtest(test, selected["strategy"], selected["params"],
                                 DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
-        test_stress = backtest(test, selected["strategy"], selected["params"], STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
+        test_stress = backtest(test, selected["strategy"], selected["params"],
+                               STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
+        test_benchmarks = {
+            "cash": cash_benchmark(test, interval),
+            "buy_and_hold": buy_and_hold_benchmark(
+                test, interval, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS
+            ),
+        }
         version_material = json.dumps({
             "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
             "params": selected["params"], "train": _period_metadata(train),
@@ -601,7 +616,9 @@ def run_research(days: int = 90) -> dict[str, Any]:
         version_hash = hashlib.sha256(version_material.encode()).hexdigest()[:12]
         champion = {
             "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
-            "params": selected["params"], "champion_version": f"champion-{version_hash}",
+            "params": selected["params"],
+            "effective_params": effective_strategy_params(selected["strategy"], selected["params"]),
+            "champion_version": f"champion-{version_hash}",
             "validation_metadata": {
                 "created_at": started, "status": "validated",
                 "selection_metric": "validation_score",
@@ -622,6 +639,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 "validation_metrics": selected["validation"],
                 "validation_stress_metrics": selected["validation_stress"],
                 "test_metrics": test_metrics, "test_stress_metrics": test_stress,
+                "test_benchmarks": test_benchmarks,
                 "test_used_for_selection": False,
                 "cost_convention": {
                     "fee_bps_per_side": DEFAULT_FEE_BPS,
@@ -654,7 +672,10 @@ def run_research(days: int = 90) -> dict[str, Any]:
         "symbols": list(research_symbols), "universe": universe_metadata, "intervals": list(INTERVALS),
         "minimum_candle_coverage_pct": MIN_CANDLE_COVERAGE_PCT,
         "data_quality": data_quality,
-        "candidate_count": len(candidates), "evaluations": len(results),
+        "candidate_count": len(candidates),
+        "effective_candidate_counts": effective_candidate_counts,
+        "total_unique_strategy_configs": sum(effective_candidate_counts.values()),
+        "evaluations": len(results),
         "validated_count": len(eligible), "champion": champion,
         "selection_policy": "Require positive training return, training max drawdown under 35%, positive validation and validation-stress returns, validation drawdown under 25%, and at least two validation position changes; rank eligible candidates by validation score only. Final test metrics are report-only and never used for selection.",
         "results": sorted(results, key=lambda r: r["validation_score"], reverse=True)[:30],
