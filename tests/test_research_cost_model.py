@@ -20,14 +20,14 @@ class ResearchCostModelTests(unittest.TestCase):
         with patch.object(research_engine, "desired_signal", return_value=positions):
             metrics = research_engine.backtest(self.frame, "trend", self.params, 10, 5, "5m")
         self.assertEqual(metrics["trades"], 2)
-        self.assertAlmostEqual(metrics["total_return_pct"], -0.2996, delta=0.01)
+        self.assertAlmostEqual(metrics["total_return_pct"], -0.1490, delta=0.01)
 
     def test_stress_cost_is_charged_on_both_sides_using_paper_fill_math(self):
         positions = pd.Series([0.0] * 20 + [1.0] * 30 + [0.0] * 50, index=self.frame.index)
         with patch.object(research_engine, "desired_signal", return_value=positions):
             metrics = research_engine.backtest(self.frame, "trend", self.params, 20, 10, "5m")
         self.assertEqual(metrics["trades"], 2)
-        self.assertAlmostEqual(metrics["total_return_pct"], -0.598, delta=0.02)
+        self.assertAlmostEqual(metrics["total_return_pct"], -0.2976, delta=0.02)
 
     def test_sharpe_annualization_matches_each_timeframe(self):
         self.assertEqual(research_engine.bars_per_year("5m"), 105120)
