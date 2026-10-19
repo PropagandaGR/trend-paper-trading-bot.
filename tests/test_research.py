@@ -100,7 +100,10 @@ class ResearchTests(unittest.TestCase):
             "low": [99.0] * len(index), "close": [100.0] * len(index),
             "volume": [1.0] * len(index),
         }, index=index)
-        quality = candle_quality_report(frame, "5m", days=1)
+        quality = candle_quality_report(
+            frame, "5m", days=1,
+            window_start=index[0], window_end=index[-1] + pd.Timedelta(minutes=5)
+        )
         self.assertEqual(quality["max_consecutive_missing_slots"], 4)
         self.assertFalse(quality["unique_timestamps"] is False)
         self.assertTrue(quality["monotonic_timestamps"])
