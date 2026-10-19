@@ -62,6 +62,28 @@ class ResearchCostModelTests(unittest.TestCase):
         self.assertEqual(metrics["trades"], 2)
         self.assertLess(metrics["total_return_pct"], -5.0)
 
+    def test_strategy_grid_deduplicates_irrelevant_parameters(self):
+        first = {
+            "fast": 8, "slow": 30, "momentum": 6, "breakout": 12,
+            "entry_momentum": 0.0, "exit_momentum": -0.005,
+            "rsi_entry": 20, "rsi_exit": 45, "stop_pct": 0.04,
+        }
+        second = {
+            **first, "breakout": 24, "rsi_entry": 25,
+            "rsi_exit": 50, "stop_pct": 0.06,
+        }
+        self.assertEqual(len(research_engine.unique_candidates_for_strategy("trend", [first, second])), 1)
+        self.assertEqual(len(research_engine.unique_candidates_for_strategy("breakout", [first, second])), 2)
+        self.assertEqual(len(research_engine.unique_candidates_for_strategy("mean_reversion", [first, second])), 2)
+
+    def test_cash_and_buy_and_hold_benchmarks_are_report_only_metrics(self):
+        cash = research_engine.cash_benchmark(self.frame, "5m")
+        buy_hold = research_engine.buy_and_hold_benchmark(self.frame, "5m")
+        self.assertEqual(cash["total_return_pct"], 0.0)
+        self.assertEqual(cash["trades"], 0)
+        self.assertLess(buy_hold["total_return_pct"], 0.0)
+        self.assertEqual(buy_hold["trades"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
