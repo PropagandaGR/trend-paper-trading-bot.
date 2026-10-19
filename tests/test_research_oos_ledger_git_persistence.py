@@ -34,9 +34,14 @@ class OOSLedgerGitPersistenceTests(unittest.TestCase):
         git(self.seed, "config", "user.email", "oos-test@example.invalid")
         ledger_path = self.seed / "state" / "oos_evaluation_ledger.json"
         ledger_path.parent.mkdir(parents=True)
+        boundary = "2025-12-31T23:55:00+00:00"
         ledger_path.write_text(json.dumps({
-            "policy_version": "chronological-oos-v2", "windows": [],
-            "last_test_start": None, "last_test_end": None, "last_result": None,
+            "policy_version": "chronological-oos-v2",
+            "windows": [{
+                "id": "test-fixture-prior-window", "start": boundary, "end": boundary,
+                "bars": 1, "status": "failed", "reserved_at": "test-fixture",
+            }],
+            "last_test_start": boundary, "last_test_end": boundary, "last_result": "failed",
         }))
         git(self.seed, "add", "state/oos_evaluation_ledger.json")
         git(self.seed, "commit", "-m", "Seed empty OOS ledger")
@@ -66,8 +71,10 @@ class OOSLedgerGitPersistenceTests(unittest.TestCase):
             self.root, "--git-dir", str(self.bare), "show",
             "refs/heads/oos-ledger:state/oos_evaluation_ledger.json"
         ))
-        self.assertEqual(persisted["windows"][0]["id"], window["id"])
-        self.assertEqual(persisted["windows"][0]["status"], "reserved")
+        self.assertEqual(len(persisted["windows"]), 2)
+        self.assertEqual(persisted["windows"][0]["id"], "test-fixture-prior-window")
+        self.assertEqual(persisted["windows"][1]["id"], window["id"])
+        self.assertEqual(persisted["windows"][1]["status"], "reserved")
 
         # This checkout predates the reservation. The updater must fetch the
         # authoritative branch and reject the overlapping period before evaluation.
@@ -91,9 +98,26 @@ class OOSLedgerGitPersistenceTests(unittest.TestCase):
             self.root, "--git-dir", str(self.bare), "show",
             "refs/heads/oos-ledger:state/oos_evaluation_ledger.json"
         ))
-        self.assertEqual(len(persisted["windows"]), 1)
-        self.assertEqual(persisted["windows"][0]["status"], "failed")
+        self.assertEqual(len(persisted["windows"]), 2)
+        self.assertEqual(persisted["windows"][0]["id"], "test-fixture-prior-window")
+        self.assertEqual(persisted["windows"][1]["status"], "failed")
         self.assertEqual(persisted["last_result"], "failed")
+
+    def test_missing_local_ledger_does_not_bootstrap_empty_remote_branch(self):
+        # The fixture's main branch has history, but this checkout deliberately
+        # lacks its local ledger. The updater must not manufacture an empty ledger.
+        (self.first / "state" / "oos_evaluation_ledger.json").unlink()
+        index = pd.date_range("2026-01-01", periods=12, freq="5min", tz="UTC")
+        frame = pd.DataFrame({"close": range(12)}, index=index)
+        with (
+            patch.dict(os.environ, {"OOS_LEDGER_BRANCH": "oos-ledger"}),
+            patch.object(research_engine, "ROOT", self.first),
+            patch.object(research_engine, "STATE", self.first / "state"),
+        ):
+            ok, reason, _ = research_engine.reserve_oos_test_window(frame)
+        self.assertFalse(ok)
+        self.assertIn("refusing to initialize empty history", reason)
+        self.assertEqual(git(self.root, "--git-dir", str(self.bare), "branch", "--list", "oos-ledger"), "")
 
 
 if __name__ == "__main__":
