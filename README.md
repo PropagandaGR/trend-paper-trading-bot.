@@ -19,7 +19,7 @@ A **new, isolated research project** for continuous live-market paper trading an
 - **Research engine**: hourly, downloads recent history, deduplicates configurations by strategy-effective parameters, tests candidates across 5/10/15/30-minute bars, evaluates baseline/stressed costs and out-of-sample performance, reports same-period cash and buy-and-hold benchmarks (report-only), and records experiments.
 - **Weekly research**: broadens the history window for a more robust evaluation.
 
-GitHub Actions schedules are best-effort, not a guaranteed always-on server. Scheduled workflows can be delayed or disabled by GitHub; the repository's Actions settings and usage limits apply. A separate heartbeat watchdog checks the latest paper status and state timestamps every 15 minutes and opens one GitHub issue if either artifact is missing or older than 20 minutes; this alert is also subject to GitHub Actions scheduling and repository issue permissions.
+GitHub Actions schedules are best-effort, not a guaranteed always-on server. Scheduled workflows can be delayed or disabled by GitHub; the repository's Actions settings and usage limits apply. A separate heartbeat watchdog checks the latest paper status and state timestamps every 15 minutes and opens one GitHub issue if either artifact is missing or older than 20 minutes; this alert is also subject to GitHub Actions scheduling and repository issue permissions. For hosted multi-year imports, use **Actions → Import Historical Coinbase Candles → Run workflow**; monthly CSVs and quality manifests are uploaded as a 30-day artifact and are not committed to Git. Start with 1h candles and inspect every manifest; any month below the coverage threshold is marked rejected and causes the import run to fail.
 
 ## Run locally
 Python 3.11+ recommended.
@@ -29,6 +29,9 @@ python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python research_engine.py --days 90 --require-fresh-report
 python paper_trader.py --once
+
+# Import a multi-year public Coinbase candle history (end date is exclusive)
+python historical_import.py --symbol BTCUSDT --interval 1h --start 2023-01-01 --end 2026-01-01
 ```
 
 ## Reports and state
