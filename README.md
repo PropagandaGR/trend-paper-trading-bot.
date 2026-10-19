@@ -47,7 +47,7 @@ Pull requests run `python -m unittest discover -s tests -v` through the GitHub A
 
 - Research uses chronological **60% training / 20% validation / 20% final test** periods per symbol and timeframe.
 - Candidate eligibility and ranking use validation metrics only, including a validation-only stressed-cost run. The final test is evaluated only after a champion is selected and is report-only; it is never used to rank candidates or decide validation eligibility.
-- Backtests execute at the closed candle close after the strategy's one-candle signal shift, matching the paper trader's timing. Both use per-side slippage-adjusted execution prices and fees on executed notional.
+- Backtests execute at the closed candle close after the strategy's one-candle signal shift. Research and paper execution now share the same entry-budget function and per-side fee/slippage accounting primitives. The historical backtest still does **not** model the paper trader's latched daily-loss and peak-drawdown circuit breakers, so results are not yet full execution-parity evidence.
 - Sharpe annualization uses the timeframe's bars per calendar year (365 days), recorded with the champion metadata.
 - `state/champion.json` includes a unique `champion_version` and `validation_metadata`: data-period boundaries, train/validation/test metrics, validation criteria, cost convention, test-isolation flag and Sharpe annualization details.
 - If no candidate meets validation gates, the active champion pointer is cleared rather than retaining a stale strategy. Immutable champion snapshots remain in version history.
