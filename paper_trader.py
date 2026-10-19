@@ -96,6 +96,8 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
     # Recompute validation benchmark gates independently instead of trusting a status flag.
     validation_benchmarks = metadata.get("validation_benchmarks")
     validation_stress_benchmarks = metadata.get("validation_stress_benchmarks")
+    if not isinstance(validation_benchmarks, dict) or not isinstance(validation_stress_benchmarks, dict):
+        return "Champion is missing validation cash/buy-and-hold benchmark comparisons."
     if not candidate_passes_gates(
         metadata["train_metrics"], metadata["validation_metrics"],
         metadata["validation_stress_metrics"], validation_benchmarks,
