@@ -185,7 +185,7 @@ class TestSetIsolationTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             reports, state = Path(tmp) / "reports", Path(tmp) / "state"
-            state.mkdir()
+            seed_prior_oos_history(state)
             (state / "champion.json").write_text(json.dumps({"symbol": "BTCUSDT", "stale": True}))
 
             def failed_candidate(*args, **kwargs):
