@@ -64,9 +64,13 @@ def entry_budget(cash: float, equity: float,
 
 
 def _validate_costs(fee_bps: float, slippage_bps: float) -> tuple[float, float]:
+    """Enforce approved per-side minimums for every research and paper fill."""
     if (not math.isfinite(fee_bps) or not math.isfinite(slippage_bps)
-            or fee_bps < 0 or slippage_bps < 0):
-        raise ValueError("fee_bps and slippage_bps must be finite and non-negative")
+            or fee_bps < DEFAULT_FEE_BPS or slippage_bps < DEFAULT_SLIPPAGE_BPS):
+        raise ValueError(
+            f"fee_bps must be >= {DEFAULT_FEE_BPS:g} and slippage_bps >= "
+            f"{DEFAULT_SLIPPAGE_BPS:g} per side"
+        )
     return fee_bps / 10_000.0, slippage_bps / 10_000.0
 
 
