@@ -249,6 +249,73 @@ def read_json(path: Path, default: Any) -> Any:
         return default
 
 
+def default_paper_state() -> dict[str, Any]:
+    return {
+        "cash": STARTING_CASH, "quantity": 0.0, "symbol": None,
+        "entry_price": None, "last_processed_bars": {},
+        "starting_cash": STARTING_CASH, "completed_trades": 0, "realized_pnl": 0.0,
+    }
+
+
+def load_paper_state() -> dict[str, Any]:
+    """Load portfolio state without silently resetting a corrupt existing ledger."""
+    if not STATE_FILE.exists():
+        return default_paper_state()
+    try:
+        state = json.loads(STATE_FILE.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Paper state is unreadable; refusing to trade: {STATE_FILE}") from exc
+    if not isinstance(state, dict):
+        raise RuntimeError("Paper state must be a JSON object; refusing to trade.")
+    required = {"cash", "quantity", "symbol", "entry_price", "starting_cash"}
+    if not required.issubset(state):
+        missing = sorted(required - set(state))
+        raise RuntimeError(f"Paper state is missing required fields {missing}; refusing to trade.")
+    for field in ("cash", "quantity", "starting_cash", "realized_pnl"):
+        if field == "realized_pnl" and field not in state:
+            state[field] = 0.0
+        value = state.get(field)
+        if (not isinstance(value, (int, float)) or isinstance(value, bool)
+                or not math.isfinite(float(value))):
+            raise RuntimeError(f"Paper state field {field} must be finite; refusing to trade.")
+    if float(state["cash"]) < 0 or float(state["quantity"]) < 0 or float(state["starting_cash"]) <= 0:
+        raise RuntimeError("Paper state cash/quantity/starting equity is invalid; refusing to trade.")
+    if not math.isclose(float(state["starting_cash"]), STARTING_CASH, rel_tol=0.0, abs_tol=1e-9):
+        raise RuntimeError("Paper state starting equity does not match the 15 USDT project invariant.")
+    quantity = float(state["quantity"])
+    symbol = state.get("symbol")
+    entry = state.get("entry_price")
+    if quantity > 0:
+        if not isinstance(symbol, str) or not re.fullmatch(r"[A-Z0-9]{2,15}USDT", symbol):
+            raise RuntimeError("Open paper position has an invalid symbol; refusing to trade.")
+        if not finite_positive(entry):
+            raise RuntimeError("Open paper position has an invalid entry price; refusing to trade.")
+    elif symbol is not None or entry is not None:
+        raise RuntimeError("Flat paper state must not retain a position symbol or entry price.")
+    cursors = state.setdefault("last_processed_bars", {})
+    if not isinstance(cursors, dict):
+        raise RuntimeError("Paper state candle cursors must be an object; refusing to trade.")
+    for cursor_symbol, cursor in cursors.items():
+        if (not isinstance(cursor_symbol, str)
+                or not re.fullmatch(r"[A-Z0-9]{2,15}USDT", cursor_symbol)
+                or not isinstance(cursor, str)):
+            raise RuntimeError("Paper state contains an invalid candle cursor; refusing to trade.")
+        timestamp = pd.to_datetime(cursor, utc=True, errors="coerce")
+        if pd.isna(timestamp):
+            raise RuntimeError("Paper state contains a malformed candle timestamp; refusing to trade.")
+    completed = state.setdefault("completed_trades", 0)
+    if not isinstance(completed, int) or isinstance(completed, bool) or completed < 0:
+        raise RuntimeError("Paper state completed_trades must be a non-negative integer.")
+    if "risk_halt" in state and not isinstance(state["risk_halt"], bool):
+        raise RuntimeError("Paper state risk_halt must be boolean; refusing to trade.")
+    if state.get("risk_halt") and not isinstance(state.get("risk_halt_reason"), str):
+        raise RuntimeError("Latched paper risk halt is missing its reason; refusing to trade.")
+    for field in ("daily_start_equity", "peak_equity"):
+        if field in state and not finite_positive(state[field]):
+            raise RuntimeError(f"Paper state field {field} must be positive; refusing to trade.")
+    return state
+
+
 def _sync_ledger_status(status: dict[str, Any], state: dict[str, Any]) -> None:
     """Keep the published status ledger fields aligned with persisted state."""
     status["realized_pnl_usdt"] = round(float(state.get("realized_pnl", 0.0)), 8)
@@ -288,11 +355,7 @@ def _set_unvalued_position_status(status: dict[str, Any], state: dict[str, Any],
 def run_once() -> dict[str, Any]:
     STATE.mkdir(exist_ok=True)
     REPORTS.mkdir(exist_ok=True)
-    state = read_json(STATE_FILE, {
-        "cash": STARTING_CASH, "quantity": 0.0, "symbol": None,
-        "entry_price": None, "last_processed_bars": {}, "starting_cash": STARTING_CASH,
-        "completed_trades": 0, "realized_pnl": 0.0
-    })
+    state = load_paper_state()
     champion = read_json(CHAMPION_FILE, None)
     champion_error = champion_validation_error(champion)
     champion_accepted = champion_error is None
