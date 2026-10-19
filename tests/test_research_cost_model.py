@@ -67,7 +67,7 @@ class ResearchCostModelTests(unittest.TestCase):
         frame.loc[frame.index[40]:, "close"] = 80.0
         positions = pd.Series([0.0] * 20 + [1.0] * 80, index=frame.index)
         with patch.object(research_engine, "desired_signal", return_value=positions):
-            metrics = research_engine.backtest(frame, "trend", self.params, 10, 5, "5m")
+            metrics = research_engine.backtest(frame, "trend", self.params, 60, 10, "5m")
 
         # One buy and one risk liquidation; the continuing long signal cannot re-enter.
         self.assertEqual(metrics["trades"], 2)
