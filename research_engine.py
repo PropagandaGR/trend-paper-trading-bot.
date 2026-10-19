@@ -15,8 +15,10 @@ import numpy as np
 import pandas as pd
 import requests
 
-from portfolio_accounting import (MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
-                                  MAX_POSITION_FRACTION, buy_with_costs, entry_budget,
+from portfolio_accounting import (DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS,
+                                  MAX_DAILY_LOSS_PCT, MAX_DRAWDOWN_PCT,
+                                  MAX_POSITION_FRACTION, STRESS_FEE_BPS,
+                                  STRESS_SLIPPAGE_BPS, buy_with_costs, entry_budget,
                                   sell_with_costs)
 from universe import get_coinbase_product_id, get_research_batch
 
@@ -25,8 +27,6 @@ REPORTS = ROOT / "reports"
 STATE = ROOT / "state"
 SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT")
 INTERVALS = {"5m": "5min", "10m": "10min", "15m": "15min", "30m": "30min"}
-DEFAULT_FEE_BPS = 10.0
-DEFAULT_SLIPPAGE_BPS = 5.0
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "Autonomous-Paper-Trading-Lab/1.0"})
 _USDT_USD_CANDLE_CACHE: dict[tuple[str, int], pd.DataFrame] = {}
@@ -409,9 +409,9 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 train, validation, test = chronological_split(bars)
                 for strategy in ("trend", "breakout", "mean_reversion"):
                     for params in candidates:
-                        train_m = backtest(train, strategy, params, 10, 5, interval)
-                        validation_m = backtest(validation, strategy, params, 10, 5, interval)
-                        validation_stress = backtest(validation, strategy, params, 20, 10, interval)
+                        train_m = backtest(train, strategy, params, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
+                        validation_m = backtest(validation, strategy, params, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
+                        validation_stress = backtest(validation, strategy, params, STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
                         passed = candidate_passes_gates(train_m, validation_m, validation_stress)
                         results.append({
                             "symbol": symbol, "interval": interval, "strategy": strategy,
@@ -437,7 +437,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
         train, validation, test = chronological_split(bars)
         test_metrics = backtest(test, selected["strategy"], selected["params"],
                                 DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
-        test_stress = backtest(test, selected["strategy"], selected["params"], 20, 10, interval)
+        test_stress = backtest(test, selected["strategy"], selected["params"], STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
         version_material = json.dumps({
             "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
             "params": selected["params"], "train": _period_metadata(train),
@@ -473,7 +473,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 "cost_convention": {
                     "fee_bps_per_side": DEFAULT_FEE_BPS,
                     "slippage_bps_per_side": DEFAULT_SLIPPAGE_BPS,
-                    "stress_fee_bps_per_side": 20, "stress_slippage_bps_per_side": 10,
+                    "stress_fee_bps_per_side": STRESS_FEE_BPS, "stress_slippage_bps_per_side": STRESS_SLIPPAGE_BPS,
                     "fill_timing": "closed candle close after one-candle signal shift",
                     "fee_basis": "executed notional",
                     "slippage": "execution price adjusted per side",
