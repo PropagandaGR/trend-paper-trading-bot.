@@ -46,6 +46,12 @@ class PaperTraderChampionGateTests(unittest.TestCase):
     def test_accepts_fresh_versioned_validated_champion(self):
         self.assertIsNone(champion_validation_error(valid_champion()))
 
+    def test_rejects_champion_evaluated_under_different_cost_assumptions(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["cost_convention"]["fee_bps_per_side"] = 10.0
+        self.assertIn("does not match current paper execution settings",
+                      champion_validation_error(champion))
+
     def test_rejects_legacy_champion_without_metadata(self):
         self.assertIsNotNone(champion_validation_error({
             "symbol": "BTCUSDT", "interval": "5m", "strategy": "trend",
