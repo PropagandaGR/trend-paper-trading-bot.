@@ -122,6 +122,39 @@ class TestSetIsolationTests(unittest.TestCase):
             self.assertIsNone(summary["champion"])
             self.assertIsNone(json.loads((state / "champion.json").read_text()))
 
+    def test_incomplete_candle_coverage_fails_closed_before_evaluation(self):
+        index = pd.date_range("2026-01-01", periods=1200, freq="5min", tz="UTC")
+        frame = pd.DataFrame({
+            "open": [100.0] * len(index), "high": [101.0] * len(index),
+            "low": [99.0] * len(index), "close": [100.0] * len(index),
+            "volume": [1.0] * len(index),
+            "close_time": index + pd.Timedelta(minutes=5),
+        }, index=index)
+        frame.attrs["data_quality"] = {
+            "quality_gate_passed": False, "source_coverage_pct": 84.5,
+            "converted_coverage_pct": 84.0, "invalid_ohlc_rows": 0,
+            "duplicate_candles_dropped": 0, "conflicting_duplicate_groups": 0,
+            "source_was_sorted": True,
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            reports, state = Path(tmp) / "reports", Path(tmp) / "state"
+            with (
+                patch.object(research_engine, "REPORTS", reports),
+                patch.object(research_engine, "STATE", state),
+                patch.object(research_engine, "get_research_batch",
+                             return_value=(["BTCUSDT"], {"status": "test"})),
+                patch.object(research_engine, "fetch_klines", return_value=frame),
+                patch.object(research_engine, "backtest") as backtest,
+            ):
+                summary = research_engine.run_research(days=30)
+
+            backtest.assert_not_called()
+            self.assertEqual(summary["evaluations"], 0)
+            self.assertIsNone(summary["champion"])
+            self.assertFalse(summary["data_quality"]["BTCUSDT"]["quality_gate_passed"])
+            self.assertTrue(any("quality gate failed" in item["error"] for item in summary["errors"]))
+
 
 if __name__ == "__main__":
     unittest.main()
