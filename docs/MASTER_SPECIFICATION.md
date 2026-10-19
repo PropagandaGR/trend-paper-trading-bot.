@@ -38,9 +38,9 @@ Every safety claim needs a regression test and evidence from the current code he
 ## Current verified state
 
 ### Integration branch / PR #16
-- Last code/test-verified head before this documentation update: `461761979ccf978c25c80099108dbe1a19cd968b`.
-- [Tests run #39212577133](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39212577133): **74 tests passed** (`Ran 74 tests`, `OK`).
-- [Coinbase public-data smoke test #39212577214](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39212577214): success.
+- Last code/test-verified head before this documentation update: `1c4a5e0d6b4150f6b7690b171ad6148a961eaa23`.
+- [Tests run #39212899294](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39212899294): **81 tests passed** (`Ran 81 tests`, `OK`).
+- [Coinbase public-data smoke test #39212899285](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39212899285): success.
 - These results apply to that exact code head. This master-spec update will trigger a new CI run; the PR is still a **draft**, unmerged, and requires review. No live readiness is implied.
 
 ### Latest saved research artifact observed during audit
@@ -52,14 +52,14 @@ Every safety claim needs a regression test and evidence from the current code he
 - Test metrics are report-only and did not select the candidate. This artifact used the previous 10 bps fee / 5 bps slippage assumptions and predates the new 60/10 bps default-cost policy and 95% data-coverage gate. Treat it as historical evidence only; the paper trader will reject its cost metadata under the new policy until a fresh research run produces a compatible champion. These are backtest report figures, not live results or a replay of the $15 ledger.
 
 ### Paper portfolio / risk halt
-The last status artifact inspected showed approximately 15.0840 USDT equity, +0.0840 USDT realized P&L, one completed simulated trade, no open position, and a latched `position_exposure_limit` halt. PR #16 removes that trigger path from the code; it deliberately does **not** edit persisted portfolio state or clear the existing halt. It also changes the cost model, so the currently saved champion is expected to fail cost-metadata validation. Do not resume until a fresh quality-gated research run produces a compatible champion, the saved halt has been reviewed, and a documented/manual reset is explicitly approved.
+The last status artifact inspected showed approximately 15.0840 USDT equity, +0.0840 USDT realized P&L, one completed simulated trade, no open position, and a latched `position_exposure_limit` halt. PR #16 removes that trigger path from the code; it deliberately does **not** edit persisted portfolio state or clear the existing halt. Existing corrupt/inconsistent state now fails closed instead of silently resetting. An append-only, idempotent paper event journal records subsequent runs/actions/errors; it cannot reconstruct events from before its rollout. The cost model changed, so the currently saved champion is expected to fail cost-metadata validation. Do not resume until a fresh quality-gated research run produces a compatible champion, the saved halt has been reviewed, and a documented/manual reset is explicitly approved.
 
 ## Recent implementation references
 
 - [PR #12 — Block paper deployment when held-out tests fail](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/12): draft proposal; do not merge as-is because repeatedly using the same final test as a deployment selector risks holdout contamination.
 - [PR #13 — Reject fragile strategy champions](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/13): training robustness gate and entry buffer.
 - [PR #15 — Fail closed on missed decision candles](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/15): avoids retroactive fills after missed candles.
-- [PR #16 — Consolidation branch](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/16): carries forward PR #13/#15 changes and fixes exposure-halt semantics, strict same-candle FX conversion, shared entry sizing, backtest risk halts, conservative shared cost assumptions, and a 95% source/converted candle-coverage gate. Latest verified code head passed 74 tests and the Coinbase smoke test. Keep draft until fresh data-quality research, remaining audit gates, and independent review are complete.
+- [PR #16 — Consolidation branch](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/16): carries forward PR #13/#15 changes and fixes exposure-halt semantics, strict same-candle FX conversion, shared entry sizing, backtest risk halts, conservative shared cost assumptions, a 95% source/converted candle-coverage gate, fail-closed state validation, and an append-only idempotent paper event journal. Latest verified code head passed 81 tests and the Coinbase smoke test. Keep draft until fresh data-quality research, remaining audit gates, and independent review are complete.
 
 ## Known gaps and risk register
 
@@ -68,7 +68,7 @@ The last status artifact inspected showed approximately 15.0840 USDT equity, +0.
 | P0 | Existing halt state cannot be safely cleared from code change alone | Inspect current persisted state, explain historical trigger, verify corrected code on main, approve explicit reset procedure |
 | P0 | Backtest risk semantics are now implemented but still need broader parity review against paper polling/cursor behavior | Shared deterministic simulator; tests cover loss breach, liquidation, and no re-entry; still verify UTC day boundaries, gap handling, and parity under long/flat and symbol changes |
 | P0 | Candle coverage report and 95% quality gate are implemented, but no fresh mainline research run has yet demonstrated the actual coverage outcome | Run research on the current code; inspect source/converted coverage and FX gaps; explain no-trade versus API gaps; retain a reproducible data manifest |
-| P0 | No append-only paper execution/risk event journal | Immutable per-run events with candle time, symbol, champion version, action, fill estimate, fee, slippage, quantity, cash/equity, P&L, risk state, workflow run ID |
+| P0 | Append-only paper event journal is implemented and unit-tested, but only future runs can be reconstructed; no historical events exist for the prior halt | Verify the journal is committed by the scheduled workflow; reconcile a sample of paper status/state to action events; retain manual evidence for the pre-journal halt |
 | P1 | Conservative shared fee/slippage settings now default to 60/10 bps per side and stress 100/20, but the user's exact account/order-tier fee remains unconfirmed | Confirm intended Coinbase product/order type and account tier; only then override the shared environment settings; maintain matching champion metadata |
 | P1 | Research uses generic parameter dictionaries; irrelevant parameters create duplicate effective candidates | Per-strategy grids, effective-signal/configuration deduplication, report unique configurations and true evaluation count |
 | P1 | No same-asset buy-and-hold/cash benchmark in latest report despite README claims | Add same-period benchmarks and test their calculation; otherwise correct docs |
@@ -84,7 +84,7 @@ The last status artifact inspected showed approximately 15.0840 USDT equity, +0.
 1. Complete PR #16 review and CI verification; do not merge without review.
 2. Run the new research pipeline under the 60/10 bps defaults and 95% candle-coverage gate; inspect whether Coinbase data passes. Expect a fail-closed no-champion outcome if coverage is incomplete.
 3. Complete parity review for backtest/paper timing, UTC-day boundaries, missed candles, and risk-halt state.
-4. Add append-only execution/risk events and state schema/reconciliation checks.
+4. Verify append-only events are persisted by the scheduled workflow; independently reconcile state/status against a sample of events.
 5. Confirm the Coinbase product/order type and actual account fee tier; retain conservative defaults until verified.
 6. Replace generic strategy grids with strategy-specific grids, deduplication, benchmarks, rolling walk-forward and incumbent stability.
 7. Build multi-year historical import/storage and re-run research with reproducible manifests.
