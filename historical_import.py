@@ -127,9 +127,14 @@ def import_range(symbol: str, interval: str, start: pd.Timestamp, end: pd.Timest
         if not force and csv_path.exists() and manifest_path.exists():
             try:
                 old = json.loads(manifest_path.read_text())
-                if all(old.get(key) == value for key, value in expected_manifest.items()) and old.get("status") == "complete":
+                existing_checksum = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+                if (
+                    all(old.get(key) == value for key, value in expected_manifest.items())
+                    and old.get("status") == "complete"
+                    and old.get("checksum_sha256") == existing_checksum
+                ):
                     month_results.append({"month": window_start.strftime("%Y-%m"), "status": "skipped_verified",
-                                          "checksum_sha256": old.get("checksum_sha256")})
+                                          "checksum_sha256": existing_checksum})
                     continue
             except (OSError, json.JSONDecodeError):
                 pass
