@@ -25,7 +25,7 @@ class HistoricalImportTests(unittest.TestCase):
         start = pd.Timestamp("2025-12-15T00:00:00Z")
         end = pd.Timestamp("2026-02-01T00:00:00Z")
         windows = list(historical_import.month_windows(start, end))
-        self.assertEqual(len(windows), 3)
+        self.assertEqual(len(windows), 2)
         self.assertEqual(windows[0][0], start)
         self.assertEqual(windows[-1][1], end)
         for previous, current in zip(windows, windows[1:]):
