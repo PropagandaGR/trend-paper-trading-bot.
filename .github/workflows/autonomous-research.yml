@@ -118,6 +118,22 @@ jobs:
               raise SystemExit("FAIL: fresh report has no champion object")
           if report["champion"].get("symbol") not in quality_passed_symbols:
               raise SystemExit("FAIL: champion did not come from a symbol that passed data-quality gates")
+          champion_quality = quality[report["champion"]["symbol"]]
+          if (
+              champion_quality.get("source_coverage_pct", 0) < 99.0
+              or champion_quality.get("converted_coverage_pct", 0) < 99.0
+              or champion_quality.get("fx_missing_pct_of_source", 100) > 1.0
+              or champion_quality.get("invalid_ohlc_rows", 1) != 0
+              or champion_quality.get("conflicting_duplicate_groups", 1) != 0
+              or champion_quality.get("unique_timestamps") is not True
+              or champion_quality.get("monotonic_timestamps") is not True
+              or champion_quality.get("irregular_timestamp_gaps", 1) != 0
+              or champion_quality.get("max_consecutive_missing_slots", 999) > 3
+              or champion_quality.get("converted_max_consecutive_missing_slots", 999) > 3
+              or champion_quality.get("converted_unique_timestamps") is not True
+              or champion_quality.get("converted_monotonic_timestamps") is not True
+          ):
+              raise SystemExit("FAIL: champion symbol's data-quality metrics contradict the quality-gate flag")
           metadata = active.get("validation_metadata", {})
           if not isinstance(active.get("champion_version"), str) or not active["champion_version"].startswith("champion-") or metadata.get("status") != "validated":
               raise SystemExit("FAIL: champion version/validated metadata missing")
