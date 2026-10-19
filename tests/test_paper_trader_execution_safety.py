@@ -127,6 +127,7 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         state = {
             "cash": 0.0, "quantity": 0.1, "symbol": "ETHUSDT", "entry_price": 100.0,
             "last_processed_bars": {}, "starting_cash": 15.0,
+            "risk_day": now.date().isoformat(), "daily_start_equity": 15.0, "peak_equity": 15.0,
             "realized_pnl": 0.0, "completed_trades": 0,
         }
         status, final_state = self._run_in_temp_repo(
