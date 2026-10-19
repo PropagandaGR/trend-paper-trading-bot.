@@ -311,6 +311,46 @@ class DurableOOSPolicyTests(unittest.TestCase):
             self.assertTrue(all(len(call.args[0]) < 1200 for call in backtest.call_args_list))
             self.assertFalse((state / "champions").exists())
 
+    def test_terminal_ledger_persistence_failure_prevents_champion_promotion(self):
+        index = pd.date_range("2026-01-01", periods=1200, freq="5min", tz="UTC")
+        frame = self._frame(index)
+        params = {"fast": 2, "slow": 10, "momentum": 2, "breakout": 5}
+        real_update = research_engine._update_oos_ledger
+        calls = {"count": 0}
+
+        def fail_terminal_write(mutator):
+            calls["count"] += 1
+            if calls["count"] == 2:
+                raise RuntimeError("terminal status push conflict")
+            return real_update(mutator)
+
+        def fake_backtest(part, strategy, candidate, fee_bps=60, slippage_bps=10,
+                          interval="5m", starting_cash=15):
+            return {
+                "total_return_pct": 10.0 if fee_bps == 60 else 2.0,
+                "max_drawdown_pct": 5.0, "sharpe": 1.0, "trades": 4,
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            state, reports = Path(tmp) / "state", Path(tmp) / "reports"
+            with (
+                patch.object(research_engine, "STATE", state),
+                patch.object(research_engine, "REPORTS", reports),
+                patch.object(research_engine, "INTERVALS", {"5m": "5min"}),
+                patch.object(research_engine, "get_research_batch", return_value=(["BTCUSDT"], {"status": "test"})),
+                patch.object(research_engine, "fetch_klines", return_value=frame),
+                patch.object(research_engine, "resample_ohlcv", side_effect=lambda raw, rule: raw),
+                patch.object(research_engine, "candidate_params", return_value=[params]),
+                patch.object(research_engine, "backtest", side_effect=fake_backtest),
+                patch.object(research_engine, "_update_oos_ledger", side_effect=fail_terminal_write),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "refusing promotion"):
+                    research_engine.run_research(days=30)
+            ledger = json.loads((state / "oos_evaluation_ledger.json").read_text())
+            self.assertEqual(ledger["windows"][-1]["status"], "reserved")
+            self.assertFalse((state / "champion.json").exists())
+            self.assertFalse((state / "champions").exists())
+
     def test_prior_test_history_is_excluded_from_later_train_validation_and_test(self):
         index = pd.date_range("2026-01-01", periods=2400, freq="5min", tz="UTC")
         frame = self._frame(index)
