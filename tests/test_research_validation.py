@@ -67,6 +67,11 @@ class TestSetIsolationTests(unittest.TestCase):
             self.assertIsNotNone(summary["champion"])
             self.assertEqual(summary["champion"]["validation_metadata"]["test_metrics"]["total_return_pct"], -50.0)
             self.assertFalse(summary["champion"]["validation_metadata"]["test_used_for_selection"])
+            self.assertIn("test_benchmarks", summary["champion"]["validation_metadata"])
+            self.assertIn("buy_and_hold", summary["champion"]["validation_metadata"]["test_benchmarks"])
+            self.assertEqual(summary["effective_candidate_counts"],
+                             {"trend": 1, "breakout": 1, "mean_reversion": 1})
+            self.assertEqual(summary["total_unique_strategy_configs"], 3)
             self.assertEqual(summary["champion"]["validation_metadata"]["selection_metric"], "validation_score")
             self.assertTrue(summary["champion"]["champion_version"].startswith("champion-"))
             self.assertEqual(summary["champion"]["validation_metadata"]["periods"]["train"]["bars"], 720)
