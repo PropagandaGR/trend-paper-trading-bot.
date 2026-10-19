@@ -30,6 +30,11 @@ def valid_champion(created_at=None):
             "validation_stress_metrics": {"total_return_pct": 0.5, "max_drawdown_pct": 3.0, "sharpe": 0.2, "trades": 3},
             "test_metrics": {"total_return_pct": 0.2, "max_drawdown_pct": 4.0, "sharpe": 0.1, "trades": 2},
             "test_stress_metrics": {"total_return_pct": 0.1, "max_drawdown_pct": 5.0, "sharpe": 0.05, "trades": 2},
+            "validation_benchmarks": {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -0.5}},
+            "validation_stress_benchmarks": {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -1.0}},
+            "test_benchmarks": {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -0.5}},
+            "test_stress_benchmarks": {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -1.0}},
+            "test_deployment_gate": {"passed": True, "failures": []},
             "cost_convention": {
                 "fee_basis": "executed notional",
                 "fill_timing": "closed candle close after one-candle signal shift",
@@ -77,11 +82,16 @@ class PaperTraderChampionGateTests(unittest.TestCase):
         champion["validation_metadata"]["train_metrics"]["max_drawdown_pct"] = 70.0337
         self.assertIn("training drawdown must be below 35%", champion_validation_error(champion))
 
-    def test_final_test_loss_is_report_only_not_an_acceptance_gate(self):
+    def test_final_test_loss_rejects_champion_despite_positive_validation(self):
         champion = valid_champion()
         champion["validation_metadata"]["test_metrics"]["total_return_pct"] = -31.84
         champion["validation_metadata"]["test_stress_metrics"]["total_return_pct"] = -48.82
-        self.assertIsNone(champion_validation_error(champion))
+        self.assertIn("held-out deployment gate", champion_validation_error(champion))
+
+    def test_rejects_validation_winner_that_does_not_beat_buy_and_hold(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["validation_benchmarks"]["buy_and_hold"]["total_return_pct"] = 2.0
+        self.assertIn("training/validation benchmark gates", champion_validation_error(champion))
 
     def test_rejects_incomplete_validation_metrics(self):
         champion = valid_champion()
