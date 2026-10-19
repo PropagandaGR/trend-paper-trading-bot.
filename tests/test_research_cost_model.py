@@ -65,6 +65,7 @@ class ResearchCostModelTests(unittest.TestCase):
     def test_backtest_latches_daily_loss_halt_and_does_not_reenter(self):
         frame = self.frame.copy()
         frame.loc[frame.index[40]:, "close"] = 80.0
+        frame.loc[frame.index[40]:, "low"] = 79.9
         positions = pd.Series([0.0] * 20 + [1.0] * 80, index=frame.index)
         with patch.object(research_engine, "desired_signal", return_value=positions):
             metrics = research_engine.backtest(frame, "trend", self.params, 60, 10, "5m")
