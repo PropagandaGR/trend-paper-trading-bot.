@@ -66,14 +66,61 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     if not rows:
         raise RuntimeError(f"No Coinbase candles returned for {product} {interval}")
     frame = pd.DataFrame(rows, columns=["time", "low", "high", "open", "close", "volume"])
+    duplicate_candles_dropped = int(frame["time"].duplicated().sum())
+    source_was_sorted = bool(frame["time"].is_monotonic_increasing)
     frame = frame.drop_duplicates("time").sort_values("time")
     frame["open_time"] = pd.to_datetime(frame["time"], unit="s", utc=True)
     frame["close_time"] = frame["open_time"] + pd.to_timedelta(granularity, unit="s")
     for col in ("open", "high", "low", "close", "volume"):
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
     frame = frame.set_index("open_time")
-    return frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC"),
-                     ["open", "high", "low", "close", "volume", "close_time"]]
+    closed = frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC"),
+                       ["open", "high", "low", "close", "volume", "close_time"]]
+    closed.attrs["duplicate_candles_dropped"] = duplicate_candles_dropped
+    closed.attrs["source_was_sorted"] = source_was_sorted
+    return closed
+
+
+def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int = 90,
+                          now: pd.Timestamp | None = None) -> dict[str, Any]:
+    """Summarize expected-window coverage and OHLC integrity without filling gaps."""
+    granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
+    if granularity is None:
+        raise ValueError(f"Unsupported candle-quality interval: {interval}")
+    if days <= 0:
+        raise ValueError("days must be positive")
+    expected_slots = int(days * 86400 // granularity)
+    observed_slots = int(len(frame))
+    coverage_pct = min(100.0, observed_slots / expected_slots * 100.0) if expected_slots else 0.0
+    if frame.empty:
+        invalid_ohlc_rows = 0
+    else:
+        values = frame[["open", "high", "low", "close", "volume"]].apply(
+            pd.to_numeric, errors="coerce"
+        )
+        valid_finite = np.isfinite(values.to_numpy()).all(axis=1)
+        positive_prices = (values[["open", "high", "low", "close"]] > 0).all(axis=1).to_numpy()
+        valid_high = values["high"].to_numpy() >= values[["open", "close"]].max(axis=1).to_numpy()
+        valid_low = values["low"].to_numpy() <= values[["open", "close"]].min(axis=1).to_numpy()
+        valid_range = values["high"].to_numpy() >= values["low"].to_numpy()
+        nonnegative_volume = (values["volume"] >= 0).to_numpy()
+        valid_rows = (valid_finite & positive_prices & valid_high & valid_low
+                      & valid_range & nonnegative_volume)
+        invalid_ohlc_rows = int((~valid_rows).sum())
+    duplicate_count = int(frame.attrs.get("duplicate_candles_dropped", 0))
+    source_was_sorted = bool(frame.attrs.get("source_was_sorted", frame.index.is_monotonic_increasing))
+    return {
+        "interval": interval,
+        "requested_days": int(days),
+        "expected_window_slots": expected_slots,
+        "observed_source_candles": observed_slots,
+        "missing_expected_slots": max(0, expected_slots - observed_slots),
+        "source_coverage_pct": round(coverage_pct, 4),
+        "duplicate_candles_dropped": duplicate_count,
+        "source_was_sorted": source_was_sorted,
+        "invalid_ohlc_rows": invalid_ohlc_rows,
+        "coverage_note": "Missing slots can be no-trade intervals or unavailable candles; they are not interpolated.",
+    }
 
 
 def _convert_usd_candles_to_usdt(frame: pd.DataFrame, fx_frame: pd.DataFrame) -> pd.DataFrame:
