@@ -10,13 +10,13 @@
   "starting_cash": 15.0,
   "completed_trades": 1,
   "realized_pnl": 0.08402665981011737,
-  "last_checked_at": "2026-10-19T01:38:39.077439+00:00",
+  "last_checked_at": "2026-10-19T06:22:40.660796+00:00",
   "last_price": 2370.666266206137,
   "last_prices": {
-    "SOLUSDT": 104.83160466140723
+    "QNTUSDT": 198.01781960156174
   },
   "last_price_timestamps": {
-    "SOLUSDT": "2026-10-19T01:35:00+00:00"
+    "QNTUSDT": "2026-10-19T06:20:00+00:00"
   },
   "risk_day": "2026-10-19",
   "daily_start_equity": 15.084026659810116,
