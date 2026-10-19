@@ -12,6 +12,7 @@ A **new, isolated research project** for continuous live-market paper trading an
 - Candidate strategies must show positive training return with training max drawdown below 35%, then pass positive validation and stressed-validation returns, validation drawdown below 25%, and minimum-trade gates before being selected. Final-test metrics remain report-only and are never used to rank or accept candidates. These gates reduce obvious regime overfit but do not prove profitability.
 - The live paper trader uses the currently validated champion only. Research experiments never directly modify portfolio cash or positions.
 - Results are simulated estimates, not proof of future profitability.
+- GitHub Actions schedules are best-effort and may be delayed or skipped. The paper trader therefore detects missed/ambiguous decision candles, refuses retroactive fills, and closes any existing simulated position at a fresh held-asset mark before resuming on a later candle.
 
 ## What runs
 - **Paper trader**: every 5 minutes, fetches closed candles, updates a persistent $15 simulated portfolio and writes one status report per run.
