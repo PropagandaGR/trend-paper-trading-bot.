@@ -27,6 +27,7 @@ class ResearchCliTests(unittest.TestCase):
                 "validation_metadata": {
                     "created_at": now, "status": "validated",
                     "test_used_for_selection": False,
+                    "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
                     "validation_metrics": {"total_return_pct": 2.0},
                     "validation_stress_metrics": {"total_return_pct": 1.0},
                     "test_metrics": {"total_return_pct": -1.0},
