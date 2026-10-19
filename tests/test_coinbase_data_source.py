@@ -57,6 +57,25 @@ class CoinbaseDataSourceTests(unittest.TestCase):
         fetch.assert_called_once_with("USDTUSD", "5m", 1)
         self.assertAlmostEqual(result.iloc[0]["close"], 0.995)
 
+    def test_missing_same_candle_fx_is_dropped_instead_of_forward_filled(self):
+        index = pd.DatetimeIndex([
+            pd.Timestamp("2026-01-01T00:00:00Z"),
+            pd.Timestamp("2026-01-01T00:05:00Z"),
+        ], name="open_time")
+        asset = pd.DataFrame({
+            "open": [99.0, 100.0], "high": [102.0, 103.0],
+            "low": [98.0, 99.0], "close": [100.0, 101.0],
+            "volume": [3.0, 4.0],
+            "close_time": index + pd.Timedelta(minutes=5),
+        }, index=index)
+        fx = candle_frame(index[:1], 1.0)
+
+        converted = _convert_usd_candles_to_usdt(asset, fx)
+
+        self.assertEqual(list(converted.index), [index[0]])
+        self.assertEqual(converted.attrs["fx_missing_candles"], 1)
+        self.assertIn("same-candle only", converted.attrs["fx_conversion"])
+
 
 if __name__ == "__main__":
     unittest.main()
