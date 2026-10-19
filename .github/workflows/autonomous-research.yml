@@ -73,6 +73,24 @@ jobs:
           report = json.loads(report_path.read_text())
           if report.get("run_status") != "completed" or report.get("evaluations", 0) <= 0:
               raise SystemExit("FAIL: research did not complete substantive evaluations")
+          if report.get("minimum_candle_coverage_pct") != 99.0 or report.get("maximum_consecutive_missing_slots") != 3 or report.get("maximum_fx_missing_pct") != 1.0:
+              raise SystemExit("FAIL: report does not declare the strict candle/FX data-quality gates")
+          quality = report.get("data_quality")
+          if not isinstance(quality, dict) or not quality:
+              raise SystemExit("FAIL: missing per-symbol data-quality evidence")
+          for symbol, metrics in quality.items():
+              if not isinstance(metrics, dict) or metrics.get("quality_gate_passed") is not True:
+                  raise SystemExit(f"FAIL: data-quality gate did not pass for {symbol}")
+          if report.get("cost_assumptions") != {
+              "fee_bps_per_side": 60.0,
+              "slippage_bps_per_side": 10.0,
+              "stress_fee_bps_per_side": 100.0,
+              "stress_slippage_bps_per_side": 20.0,
+          }:
+              raise SystemExit("FAIL: research cost assumptions differ from the approved conservative baseline/stress values")
+          strategy_summary = report.get("strategy_benchmark_summary")
+          if not isinstance(strategy_summary, dict) or not {"trend", "breakout", "mean_reversion"}.issubset(strategy_summary):
+              raise SystemExit("FAIL: report is missing benchmark comparisons for one or more strategies")
           started = datetime.fromisoformat(report["started_at"].replace("Z", "+00:00"))
           completed = datetime.fromisoformat(report["completed_at"].replace("Z", "+00:00"))
           workflow_started = datetime.fromisoformat(__import__("os").environ["RESEARCH_STARTED_AT"].replace("Z", "+00:00"))
@@ -110,6 +128,36 @@ jobs:
               raise SystemExit("FAIL: champion failed training robustness gate: training return must be positive")
           if train.get("max_drawdown_pct", float("inf")) >= 35:
               raise SystemExit("FAIL: champion failed training robustness gate: training drawdown must be below 35%")
+          def beats_benchmarks(metrics, benchmarks):
+              if not isinstance(metrics, dict) or not isinstance(benchmarks, dict):
+                  return False
+              if not {"cash", "buy_and_hold"}.issubset(benchmarks):
+                  return False
+              try:
+                  candidate = float(metrics["total_return_pct"])
+                  returns = [float(benchmarks[name]["total_return_pct"]) for name in ("cash", "buy_and_hold")]
+              except (KeyError, TypeError, ValueError):
+                  return False
+              import math
+              return all(math.isfinite(value) for value in [candidate, *returns]) and all(candidate > value for value in returns)
+          for metrics_key, benchmarks_key in (
+              ("validation_metrics", "validation_benchmarks"),
+              ("validation_stress_metrics", "validation_stress_benchmarks"),
+          ):
+              if not beats_benchmarks(metadata.get(metrics_key), metadata.get(benchmarks_key)):
+                  raise SystemExit(f"FAIL: champion {metrics_key} does not beat cash and buy-and-hold")
+          for metrics_key, benchmarks_key in (
+              ("test_metrics", "test_benchmarks"),
+              ("test_stress_metrics", "test_stress_benchmarks"),
+          ):
+              metrics = metadata.get(metrics_key)
+              if not beats_benchmarks(metrics, metadata.get(benchmarks_key)):
+                  raise SystemExit(f"FAIL: champion {metrics_key} does not beat cash and buy-and-hold")
+              if metrics.get("max_drawdown_pct", float("inf")) >= 25 or metrics.get("trades", 0) < 2:
+                  raise SystemExit(f"FAIL: champion {metrics_key} fails held-out drawdown/trade-count gate")
+          test_gate = metadata.get("test_deployment_gate")
+          if not isinstance(test_gate, dict) or test_gate.get("passed") is not True or test_gate.get("failures") != []:
+              raise SystemExit("FAIL: champion has not passed the held-out deployment veto")
           cost = metadata.get("cost_convention")
           if not isinstance(cost, dict) or cost.get("fee_basis") != "executed notional":
               raise SystemExit("FAIL: champion cost convention missing or invalid")
