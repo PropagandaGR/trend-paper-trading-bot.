@@ -301,6 +301,33 @@ def performance(returns: pd.Series, interval: str = "5m",
             "sharpe": round(sharpe, 3), "trades": int(trades)}
 
 
+def cash_benchmark(frame: pd.DataFrame, interval: str = "5m",
+                   starting_cash: float = 15.0) -> dict[str, float]:
+    """Report a zero-return cash benchmark over the same timestamps."""
+    returns = pd.Series(np.zeros(len(frame), dtype=float), index=frame.index)
+    return performance(returns, interval, trades=0)
+
+
+def buy_and_hold_benchmark(frame: pd.DataFrame, interval: str = "5m",
+                           fee_bps: float = DEFAULT_FEE_BPS,
+                           slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
+                           starting_cash: float = 15.0) -> dict[str, float]:
+    """Buy once with the shared entry budget and mark to market without final liquidation."""
+    if frame.empty:
+        return performance(pd.Series(dtype=float), interval, trades=0)
+    prices = pd.to_numeric(frame["close"], errors="coerce")
+    if prices.isna().any() or (~np.isfinite(prices)).any() or (prices <= 0).any():
+        raise ValueError("buy-and-hold benchmark requires finite, positive close prices")
+    spend_cash = entry_budget(starting_cash, starting_cash)
+    buy = buy_with_costs(spend_cash, float(prices.iloc[0]), fee_bps, slippage_bps)
+    cash = max(0.0, starting_cash - spend_cash + buy.cash_remaining)
+    equity = pd.Series(cash + buy.quantity * prices, index=frame.index, dtype=float)
+    returns = equity.pct_change()
+    if not returns.empty:
+        returns.iloc[0] = equity.iloc[0] / starting_cash - 1.0
+    return performance(returns, interval, trades=1 if buy.quantity > 0 else 0)
+
+
 def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
              fee_bps: float = DEFAULT_FEE_BPS,
              slippage_bps: float = DEFAULT_SLIPPAGE_BPS,
@@ -407,6 +434,34 @@ def candidate_params() -> list[dict[str, Any]]:
                                "rsi_exit": rsi_exit, "stop_pct": stop_pct})
     # Limit run time while retaining deterministic coverage.
     return candidates[::max(1, len(candidates) // 48)][:48]
+
+
+def effective_strategy_params(strategy: str, params: dict[str, Any]) -> dict[str, Any]:
+    """Return only parameters that can change a strategy's rules."""
+    keys = {
+        "trend": ("fast", "slow", "momentum", "entry_momentum", "exit_momentum"),
+        "breakout": ("fast", "momentum", "breakout", "exit_momentum"),
+        "mean_reversion": ("slow", "rsi_entry", "rsi_exit", "stop_pct"),
+    }
+    if strategy not in keys:
+        raise ValueError(f"Unknown strategy: {strategy}")
+    defaults = {"entry_momentum": 0.0, "exit_momentum": -0.005,
+                "rsi_entry": 30, "rsi_exit": 50, "stop_pct": 0.06}
+    return {key: params.get(key, defaults.get(key)) for key in keys[strategy]}
+
+
+def unique_candidates_for_strategy(strategy: str,
+                                   candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Deduplicate grid entries whose strategy-effective parameter sets are identical."""
+    unique: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        effective = effective_strategy_params(strategy, candidate)
+        key = json.dumps(effective, sort_keys=True, separators=(",", ":"), default=str)
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+    return unique
 
 
 TRAIN_MIN_RETURN_PCT = 0.0
