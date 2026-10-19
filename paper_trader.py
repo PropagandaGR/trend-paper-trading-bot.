@@ -224,9 +224,9 @@ def missed_candle_count(bars: pd.DataFrame, cursor: str | None) -> int | None:
     if later_count <= 0:
         return 0
     if cursor_time < times[0]:
-        # The cursor fell outside the fetched window. The exact gap is unknown,
-        # but there is at least one missed decision candle; do not backfill trades.
-        return max(1, later_count - 1)
+        # The cursor fell outside the fetched window. The exact gap is unknown;
+        # do not report an invented count or backfill trades.
+        return None
     if not bool((times == cursor_time).any()):
         return None
     return max(0, later_count - 1)
@@ -644,7 +644,7 @@ def run_once() -> dict[str, Any]:
             state["entry_price"] = None
         state.setdefault("last_processed_bars", {})[symbol] = latest_time
         status["missed_candles"] = {
-            "symbol": symbol, "count": missed, "cursor_was_valid": missed is not None,
+            "symbol": symbol, "count": missed, "gap_count_known": missed is not None,
             "last_processed_bar": cursor, "resumed_at_bar": latest_time,
         }
         execution_message = (
