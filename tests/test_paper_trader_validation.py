@@ -20,6 +20,7 @@ def valid_champion(created_at=None):
             "status": "validated",
             "test_used_for_selection": False,
             "validation_score": 1.25,
+            "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
             "periods": {
                 "train": {"start": "2026-01-01T00:00:00+00:00", "end": "2026-01-02T00:00:00+00:00"},
                 "validation": {"start": "2026-01-03T00:00:00+00:00", "end": "2026-01-04T00:00:00+00:00"},
@@ -59,6 +60,22 @@ class PaperTraderChampionGateTests(unittest.TestCase):
         champion = valid_champion()
         champion["validation_metadata"]["test_used_for_selection"] = True
         self.assertIn("final-test isolation", champion_validation_error(champion))
+
+    def test_rejects_champion_with_negative_training_return(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["train_metrics"]["total_return_pct"] = -69.7706
+        self.assertIn("training return must be positive", champion_validation_error(champion))
+
+    def test_rejects_champion_with_excessive_training_drawdown(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["train_metrics"]["max_drawdown_pct"] = 70.0337
+        self.assertIn("training drawdown must be below 35%", champion_validation_error(champion))
+
+    def test_final_test_loss_is_report_only_not_an_acceptance_gate(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["test_metrics"]["total_return_pct"] = -31.84
+        champion["validation_metadata"]["test_stress_metrics"]["total_return_pct"] = -48.82
+        self.assertIsNone(champion_validation_error(champion))
 
     def test_rejects_incomplete_validation_metrics(self):
         champion = valid_champion()
