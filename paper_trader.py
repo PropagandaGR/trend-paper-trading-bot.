@@ -93,6 +93,11 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
                 return f"Champion {field}.{metric} must be a finite number."
         if float(metrics["max_drawdown_pct"]) < 0 or float(metrics["trades"]) < 0:
             return f"Champion {field} contains invalid drawdown/trade metrics."
+    # Reject obvious training collapse before checking benchmark metadata.
+    if float(metadata["train_metrics"]["total_return_pct"]) <= 0:
+        return "Champion failed training robustness gate: training return must be positive."
+    if float(metadata["train_metrics"]["max_drawdown_pct"]) >= 35:
+        return "Champion failed training robustness gate: training drawdown must be below 35%."
     # Recompute validation benchmark gates independently instead of trusting a status flag.
     validation_benchmarks = metadata.get("validation_benchmarks")
     validation_stress_benchmarks = metadata.get("validation_stress_benchmarks")
