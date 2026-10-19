@@ -715,6 +715,68 @@ def _period_metadata(frame: pd.DataFrame) -> dict[str, Any]:
             "bars": int(len(frame))}
 
 
+def reserve_oos_test_window(test: pd.DataFrame) -> tuple[bool, str | None, dict[str, str]]:
+    """Reserve a single non-overlapping test window before evaluation.
+
+    The ledger stores only window boundaries and terminal status, never candidate
+    parameters or metrics. A rejected or interrupted window remains consumed.
+    """
+    if test.empty or not isinstance(test.index, pd.DatetimeIndex):
+        return False, "Held-out test window is empty or has invalid timestamps.", {}
+    index = test.index
+    if index.tz is None or not index.is_monotonic_increasing or index.has_duplicates:
+        return False, "Held-out test timestamps must be unique, monotonic, and timezone-aware.", {}
+    start, end = index[0].tz_convert("UTC"), index[-1].tz_convert("UTC")
+    window = {"start": start.isoformat(), "end": end.isoformat(), "bars": str(len(test))}
+    ledger: dict[str, Any] = {"policy_version": OOS_POLICY_VERSION, "last_test_end": None}
+    if OOS_LEDGER_FILE.exists():
+        try:
+            loaded = json.loads(OOS_LEDGER_FILE.read_text())
+        except (OSError, json.JSONDecodeError):
+            return False, "Out-of-sample ledger is unreadable; refusing to reuse a test window.", window
+        if not isinstance(loaded, dict) or loaded.get("policy_version") != OOS_POLICY_VERSION:
+            return False, "Out-of-sample ledger policy version mismatch; manual audit required.", window
+        ledger = loaded
+    last_end_raw = ledger.get("last_test_end")
+    if last_end_raw:
+        try:
+            last_end = pd.Timestamp(last_end_raw)
+            if last_end.tzinfo is None:
+                return False, "Out-of-sample ledger has a timezone-naive boundary.", window
+            if start <= last_end.tz_convert("UTC"):
+                return False, (
+                    f"Test window overlaps or reuses an already evaluated out-of-sample period "
+                    f"(policy {OOS_POLICY_VERSION}); no re-optimization on this window."
+                ), window
+        except (TypeError, ValueError):
+            return False, "Out-of-sample ledger has an invalid last_test_end.", window
+    ledger.update({
+        "policy_version": OOS_POLICY_VERSION, "last_test_start": start.isoformat(),
+        "last_test_end": end.isoformat(), "last_window_bars": int(len(test)),
+        "last_result": "reserved", "reserved_at": utc_now(),
+    })
+    OOS_LEDGER_FILE.parent.mkdir(parents=True, exist_ok=True)
+    temporary = OOS_LEDGER_FILE.with_suffix(".tmp")
+    temporary.write_text(json.dumps(ledger, indent=2))
+    temporary.replace(OOS_LEDGER_FILE)
+    return True, None, window
+
+
+def record_oos_test_result(passed: bool) -> None:
+    """Record only pass/fail; never persist candidate metrics for optimization."""
+    try:
+        ledger = json.loads(OOS_LEDGER_FILE.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Out-of-sample reservation disappeared during evaluation") from exc
+    if ledger.get("policy_version") != OOS_POLICY_VERSION or ledger.get("last_result") != "reserved":
+        raise RuntimeError("Out-of-sample reservation is not active under the current policy")
+    ledger["last_result"] = "passed" if passed else "failed"
+    ledger["evaluated_at"] = utc_now()
+    temporary = OOS_LEDGER_FILE.with_suffix(".tmp")
+    temporary.write_text(json.dumps(ledger, indent=2))
+    temporary.replace(OOS_LEDGER_FILE)
+
+
 def run_research(days: int = 90) -> dict[str, Any]:
     REPORTS.mkdir(exist_ok=True)
     STATE.mkdir(exist_ok=True)
@@ -825,45 +887,56 @@ def run_research(days: int = 90) -> dict[str, Any]:
     champion = None
     selected_test_gate: dict[str, Any] | None = None
     if selected is not None:
-        # Freeze selection on training/validation only. The final test is a one-way
-        # deployment veto; failure never triggers fallback to the next candidate.
+        # Ranking is frozen on training/validation. A test window is reserved
+        # before evaluation and cannot be reused after either pass or failure.
         symbol, interval = selected["symbol"], selected["interval"]
         bars = evaluation_frames[(symbol, interval)]
         train, validation, test = chronological_split(bars)
-        test_metrics = backtest(test, selected["strategy"], selected["params"],
-                                DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
-        test_stress = backtest(test, selected["strategy"], selected["params"],
-                               STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
-        test_benchmarks = {
-            "cash": cash_benchmark(test, interval),
-            "buy_and_hold": buy_and_hold_benchmark(
-                test, interval, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS
-            ),
-        }
-        test_stress_benchmarks = {
-            "cash": cash_benchmark(test, interval),
-            "buy_and_hold": buy_and_hold_benchmark(
-                test, interval, STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS
-            ),
-        }
-        test_gate_failures = deployment_gate_failures(
-            test_metrics, test_stress, test_benchmarks, test_stress_benchmarks
-        )
-        selected_test_gate = {
-            "candidate": {"symbol": symbol, "interval": interval,
-                          "strategy": selected["strategy"], "params": selected["params"]},
-            "passed": not test_gate_failures,
-            "failures": test_gate_failures,
-            "test_metrics": test_metrics,
-            "test_stress_metrics": test_stress,
-            "test_benchmarks": test_benchmarks,
-            "test_stress_benchmarks": test_stress_benchmarks,
-            "selection_note": "Candidate was fixed by validation score before test evaluation; test failure does not trigger selection of another candidate.",
-        }
+        can_evaluate, reservation_error, test_window = reserve_oos_test_window(test)
+        test_gate_failures: list[str] = []
+        if not can_evaluate:
+            test_gate_failures = [reservation_error or "Out-of-sample test window unavailable."]
+            selected_test_gate = {
+                "candidate": {"symbol": symbol, "interval": interval,
+                              "strategy": selected["strategy"], "params": selected["params"]},
+                "policy_version": OOS_POLICY_VERSION, "test_window": test_window,
+                "evaluated": False, "passed": False, "failures": test_gate_failures,
+                "selection_note": "Ranking used training/validation only; the versioned OOS policy forbids reusing this test window. No fallback was selected.",
+            }
+        else:
+            test_metrics = backtest(test, selected["strategy"], selected["params"],
+                                    DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS, interval)
+            test_stress = backtest(test, selected["strategy"], selected["params"],
+                                   STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS, interval)
+            test_benchmarks = {
+                "cash": cash_benchmark(test, interval),
+                "buy_and_hold": buy_and_hold_benchmark(
+                    test, interval, DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS
+                ),
+            }
+            test_stress_benchmarks = {
+                "cash": cash_benchmark(test, interval),
+                "buy_and_hold": buy_and_hold_benchmark(
+                    test, interval, STRESS_FEE_BPS, STRESS_SLIPPAGE_BPS
+                ),
+            }
+            test_gate_failures = deployment_gate_failures(
+                test_metrics, test_stress, test_benchmarks, test_stress_benchmarks
+            )
+            selected_test_gate = {
+                "candidate": {"symbol": symbol, "interval": interval,
+                              "strategy": selected["strategy"], "params": selected["params"]},
+                "policy_version": OOS_POLICY_VERSION, "test_window": test_window,
+                "evaluated": True, "passed": not test_gate_failures, "failures": test_gate_failures,
+                "test_metrics": test_metrics, "test_stress_metrics": test_stress,
+                "test_benchmarks": test_benchmarks, "test_stress_benchmarks": test_stress_benchmarks,
+                "selection_note": "Candidate was fixed by validation score before test evaluation; test failure does not trigger selection of another candidate.",
+            }
+            record_oos_test_result(not test_gate_failures)
         selected["test_deployment_gate"] = {
             "passed": not test_gate_failures, "failures": test_gate_failures
         }
-        if not test_gate_failures:
+        if not test_gate_failures and can_evaluate:
             version_material = json.dumps({
                 "symbol": symbol, "interval": interval, "strategy": selected["strategy"],
                 "params": selected["params"], "train": _period_metadata(train),
@@ -905,6 +978,8 @@ def run_research(days: int = 90) -> dict[str, Any]:
                     "test_stress_benchmarks": test_stress_benchmarks,
                     "test_deployment_gate": {"passed": True, "failures": []},
                     "test_used_for_selection": False,
+                    "oos_evaluation_policy_version": OOS_POLICY_VERSION,
+                    "oos_test_window": selected_test_gate.get("test_window") if selected_test_gate else None,
                     "cost_convention": {
                         "fee_bps_per_side": DEFAULT_FEE_BPS,
                         "slippage_bps_per_side": DEFAULT_SLIPPAGE_BPS,
@@ -978,6 +1053,14 @@ def run_research(days: int = 90) -> dict[str, Any]:
         "strategy_benchmark_summary": strategy_benchmark_summary,
         "selected_candidate_test_gate": selected_test_gate,
         "selection_policy": "Require positive training return, training drawdown below 35%, positive baseline/stress validation returns, validation drawdown below 25%, at least two position changes, and validation outperformance versus cash and buy-and-hold under baseline and stress costs. Rank using validation-only excess-return score. Freeze the top candidate before evaluating the untouched test; the test can veto promotion but never rank candidates or trigger fallback.",
+        "out_of_sample_policy": {
+            "version": OOS_POLICY_VERSION, "chronological": True,
+            "one_evaluation_per_non_overlapping_window": True,
+            "rejected_windows_are_consumed": True,
+            "candidate_ranking_uses": ["train", "validation"],
+            "test_failure_feedback_to_optimizer": False,
+            "ledger": str(OOS_LEDGER_FILE.relative_to(ROOT)),
+        },
         "results": sorted(results, key=lambda r: r["validation_score"], reverse=True)[:30],
         "errors": errors,
         "warning": "The untouched test is used only as a one-way deployment veto after validation selection is frozen. Repeatedly inspecting the same test period and then changing rules can contaminate it; a new later holdout is required for further tuning.",
@@ -1032,6 +1115,12 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
         raise RuntimeError("Research report completed_at precedes started_at")
     if report.get("run_status") != "completed":
         raise RuntimeError(f"Research run did not complete successfully: {report.get('run_status')}")
+    policy = report.get("out_of_sample_policy")
+    if (not isinstance(policy, dict) or policy.get("version") != OOS_POLICY_VERSION
+            or policy.get("one_evaluation_per_non_overlapping_window") is not True
+            or policy.get("rejected_windows_are_consumed") is not True
+            or policy.get("test_failure_feedback_to_optimizer") is not False):
+        raise RuntimeError("Research report does not declare the approved versioned OOS isolation policy")
     if not isinstance(report.get("evaluations"), int) or report["evaluations"] <= 0:
         raise RuntimeError("Research produced no candidate evaluations")
     validation = report.get("validation_result")
@@ -1054,6 +1143,8 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
         raise RuntimeError("Champion is missing explicit validated metadata")
     if metadata.get("test_used_for_selection") is not False:
         raise RuntimeError("Champion metadata does not prove final-test isolation")
+    if metadata.get("oos_evaluation_policy_version") != OOS_POLICY_VERSION:
+        raise RuntimeError("Champion is missing the current versioned out-of-sample policy")
     for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
         if not isinstance(metadata.get(field), dict):
             raise RuntimeError(f"Champion validation metadata is missing {field}")
