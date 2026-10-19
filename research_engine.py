@@ -27,6 +27,7 @@ REPORTS = ROOT / "reports"
 STATE = ROOT / "state"
 SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT")
 INTERVALS = {"5m": "5min", "10m": "10min", "15m": "15min", "30m": "30min"}
+MIN_CANDLE_COVERAGE_PCT = 95.0
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "Autonomous-Paper-Trading-Lab/1.0"})
 _USDT_USD_CANDLE_CACHE: dict[tuple[str, int], pd.DataFrame] = {}
@@ -158,16 +159,38 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
     frame = _fetch_coinbase(symbol, interval, days)
     if frame.empty:
         raise RuntimeError(f"Coinbase returned no closed candles for {symbol} {interval}")
+    source_quality = candle_quality_report(frame, interval, days)
+    source_candle_count = len(frame)
+    fx_missing_candles = 0
     if symbol != "USDTUSD":
         cache_key = (interval, days)
         if cache_key not in _USDT_USD_CANDLE_CACHE:
             _USDT_USD_CANDLE_CACHE[cache_key] = _fetch_coinbase("USDTUSD", interval, days)
         fx_frame = _USDT_USD_CANDLE_CACHE[cache_key]
         frame = _convert_usd_candles_to_usdt(frame, fx_frame)
+        fx_missing_candles = int(frame.attrs.get("fx_missing_candles", 0))
         if frame.empty:
             raise RuntimeError(
                 f"No same-candle USDT-USD FX closes available to convert {symbol} {interval}"
             )
+    expected_slots = int(days * 86400 // {"1m": 60, "3m": 180, "5m": 300,
+                                          "15m": 900, "30m": 1800, "1h": 3600}[interval])
+    quality = dict(source_quality)
+    quality.update({
+        "source_candle_count": source_candle_count,
+        "converted_candle_count": int(len(frame)),
+        "converted_coverage_pct": round(min(100.0, len(frame) / expected_slots * 100.0), 4),
+        "fx_missing_candles": fx_missing_candles,
+        "fx_missing_pct_of_source": round(fx_missing_candles / max(source_candle_count, 1) * 100.0, 4),
+    })
+    quality["quality_gate_passed"] = bool(
+        quality["source_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
+        and quality["converted_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
+        and quality["invalid_ohlc_rows"] == 0
+        and quality["duplicate_candles_dropped"] == 0
+        and quality["source_was_sorted"]
+    )
+    frame.attrs["data_quality"] = quality
     frame.attrs["source"] = "coinbase"
     frame.attrs["quote_currency"] = "USDT"
     return frame.sort_index()
