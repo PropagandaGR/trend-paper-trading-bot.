@@ -74,7 +74,7 @@ class CoinbaseDataSourceTests(unittest.TestCase):
 
         self.assertEqual(list(converted.index), [index[0]])
         self.assertEqual(converted.attrs["fx_missing_candles"], 1)
-        self.assertIn("same-candle only", converted.attrs["fx_conversion"])
+        self.assertIn("same-candle USDT-USD close only", converted.attrs["fx_conversion"])
 
 
 if __name__ == "__main__":
