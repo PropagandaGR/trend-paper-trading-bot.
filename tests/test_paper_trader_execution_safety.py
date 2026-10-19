@@ -1,7 +1,7 @@
 import json
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -148,6 +148,20 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         self.assertEqual(status["cash_usdt"], round(final_state["cash"], 8))
         self.assertEqual(final_state["quantity"], 0.0)
         self.assertIsNone(final_state["symbol"])
+
+    def test_stale_champion_cannot_trigger_simulated_buy(self):
+        champion = make_champion()
+        champion["validation_metadata"]["created_at"] = (
+            datetime.now(timezone.utc) - timedelta(hours=25)
+        ).isoformat()
+        status, state = self._run_in_temp_repo(
+            {"cash": 15.0, "quantity": 0.0, "symbol": None, "entry_price": None,
+             "last_processed_bars": {}, "starting_cash": 15.0},
+            champion, {"BTCUSDT": make_frame(100.0)}, signal_value=1.0,
+        )
+        self.assertEqual(status["actions"], [])
+        self.assertEqual(state["cash"], 15.0)
+        self.assertEqual(state["quantity"], 0.0)
 
     def test_test_rejected_champion_cannot_trigger_simulated_buy(self):
         champion = make_champion()
