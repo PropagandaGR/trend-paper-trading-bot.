@@ -953,6 +953,14 @@ def validate_research_artifacts(invocation_started: datetime, report_path: Path 
     )
     if test_gate or not isinstance(metadata.get("test_deployment_gate"), dict) or metadata["test_deployment_gate"].get("passed") is not True:
         raise RuntimeError("Champion failed held-out deployment gate: " + "; ".join(test_gate or ["gate metadata missing"]))
+    if not isinstance(metadata.get("validation_benchmarks"), dict) or not isinstance(metadata.get("validation_stress_benchmarks"), dict):
+        raise RuntimeError("Champion is missing validation cash/buy-and-hold benchmark comparisons")
+    if not candidate_passes_gates(
+        metadata["train_metrics"], metadata["validation_metrics"],
+        metadata["validation_stress_metrics"], metadata["validation_benchmarks"],
+        metadata["validation_stress_benchmarks"],
+    ):
+        raise RuntimeError("Champion failed training/validation benchmark gates")
     train_metrics = metadata["train_metrics"]
     if train_metrics.get("total_return_pct", float("-inf")) <= TRAIN_MIN_RETURN_PCT:
         raise RuntimeError("Champion failed training robustness gate: training return must be positive")
