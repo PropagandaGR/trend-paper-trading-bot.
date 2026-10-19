@@ -1006,8 +1006,18 @@ def run_research(days: int = 90) -> dict[str, Any]:
                         "converted_missing_expected_slots": post_quality["missing_expected_slots"],
                         "missing_at_start_slots": post_quality["missing_at_start_slots"],
                         "missing_at_end_slots": post_quality["missing_at_end_slots"],
-                        "invalid_ohlc_rows": post_quality["invalid_ohlc_rows"],
-                        "converted_invalid_ohlc_rows": post_quality["invalid_ohlc_rows"],
+                        # The pre-slice quality report may contain defects whose exact
+                        # candle positions are unavailable. Never erase those warnings when
+                        # recomputing quality for the later-only optimization slice.
+                        "invalid_ohlc_rows": max(
+                            int(quality.get("invalid_ohlc_rows", 0)),
+                            int(post_quality["invalid_ohlc_rows"]),
+                        ),
+                        "converted_invalid_ohlc_rows": max(
+                            int(quality.get("converted_invalid_ohlc_rows",
+                                            quality.get("invalid_ohlc_rows", 0))),
+                            int(post_quality["invalid_ohlc_rows"]),
+                        ),
                         "unique_timestamps": post_quality["unique_timestamps"],
                         "monotonic_timestamps": post_quality["monotonic_timestamps"],
                         "timezone_aware_timestamps": post_quality["timezone_aware_timestamps"],
