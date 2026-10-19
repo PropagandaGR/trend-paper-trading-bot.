@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from portfolio_accounting import buy_with_costs, sell_with_costs
+from portfolio_accounting import MAX_POSITION_FRACTION, buy_with_costs, entry_budget, sell_with_costs
 from universe import get_coinbase_product_id, get_research_batch
 
 ROOT = Path(__file__).resolve().parent
@@ -242,8 +242,13 @@ def backtest(frame: pd.DataFrame, strategy: str, params: dict[str, Any],
         price = float(market_price)
         wants_long = bool(float(target.loc[timestamp]) > 0)
         if wants_long and quantity <= 0:
-            buy = buy_with_costs(cash, price, fee_bps, slippage_bps)
-            quantity, cash, entry_basis = buy.quantity, buy.cash_remaining, buy.entry_cost_per_unit
+            # Match the paper trader's shared entry budget rather than investing
+            # the entire simulated portfolio in every position.
+            spend_cash = entry_budget(cash, cash)
+            buy = buy_with_costs(spend_cash, price, fee_bps, slippage_bps)
+            quantity = buy.quantity
+            cash = max(0.0, cash - spend_cash + buy.cash_remaining)
+            entry_basis = buy.entry_cost_per_unit
             changes += 1
         elif not wants_long and quantity > 0:
             sale = sell_with_costs(quantity, price, entry_basis, fee_bps, slippage_bps)
