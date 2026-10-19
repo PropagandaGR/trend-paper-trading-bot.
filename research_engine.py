@@ -811,48 +811,54 @@ def _update_oos_ledger(mutator) -> dict[str, Any]:
 
     with tempfile.TemporaryDirectory(prefix="oos-ledger-") as temporary_dir:
         worktree = Path(temporary_dir) / "worktree"
-        remote_ref = f"refs/remotes/origin/{branch}"
-        remote_exists = bool(_git_checked(
-            ["ls-remote", "--heads", "origin", f"refs/heads/{branch}"], ROOT
-        ))
-        if remote_exists:
-            _git_checked(["fetch", "origin", f"refs/heads/{branch}:{remote_ref}"], ROOT)
-            _git_checked(["worktree", "add", "--detach", str(worktree), remote_ref], ROOT)
-            ledger_path = worktree / "state" / "oos_evaluation_ledger.json"
-            if not ledger_path.is_file():
-                raise RuntimeError("Dedicated OOS ledger branch exists but its ledger file is missing.")
-            try:
-                current = _validate_oos_ledger(json.loads(ledger_path.read_text()))
-            except (OSError, json.JSONDecodeError) as exc:
-                raise RuntimeError("Dedicated OOS ledger branch is unreadable; refusing update.") from exc
-        else:
-            _git_checked(["worktree", "add", "--detach", str(worktree), "HEAD"], ROOT)
-            ledger_path = worktree / "state" / "oos_evaluation_ledger.json"
-            local_path = STATE / "oos_evaluation_ledger.json"
-            if local_path.is_file():
-                try:
-                    current = _validate_oos_ledger(json.loads(local_path.read_text()))
-                except (OSError, json.JSONDecodeError) as exc:
-                    raise RuntimeError("Cannot bootstrap dedicated branch from unreadable local ledger.") from exc
-            else:
-                current = _empty_oos_ledger()
-        updated = mutator(current)
-        _validate_oos_ledger(updated)
-        ledger_path.parent.mkdir(parents=True, exist_ok=True)
-        ledger_path.write_text(json.dumps(updated, indent=2, sort_keys=True))
-        _git_checked(["config", "user.name", "github-actions[bot]"], worktree)
-        _git_checked(["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], worktree)
-        _git_checked(["add", "--", "state/oos_evaluation_ledger.json"], worktree)
-        _git_checked(["commit", "-m", "Reserve/update one-way out-of-sample ledger"], worktree)
-        # Never force-push and never target main. A race or non-fast-forward
-        # rejection leaves the previous reservation intact and prevents evaluation.
-        _git_checked(["push", "origin", f"HEAD:refs/heads/{branch}"], worktree)
-        _atomic_write_local_ledger(updated)
+        worktree_added = False
         try:
-            _git_checked(["worktree", "remove", "--force", str(worktree)], ROOT)
-        except RuntimeError:
-            pass
-        return updated
+            remote_ref = f"refs/remotes/origin/{branch}"
+            remote_exists = bool(_git_checked(
+                ["ls-remote", "--heads", "origin", f"refs/heads/{branch}"], ROOT
+            ))
+            if remote_exists:
+                _git_checked(["fetch", "origin", f"refs/heads/{branch}:{remote_ref}"], ROOT)
+                _git_checked(["worktree", "add", "--detach", str(worktree), remote_ref], ROOT)
+                worktree_added = True
+                ledger_path = worktree / "state" / "oos_evaluation_ledger.json"
+                if not ledger_path.is_file():
+                    raise RuntimeError("Dedicated OOS ledger branch exists but its ledger file is missing.")
+                try:
+                    current = _validate_oos_ledger(json.loads(ledger_path.read_text()))
+                except (OSError, json.JSONDecodeError) as exc:
+                    raise RuntimeError("Dedicated OOS ledger branch is unreadable; refusing update.") from exc
+            else:
+                _git_checked(["worktree", "add", "--detach", str(worktree), "HEAD"], ROOT)
+                worktree_added = True
+                ledger_path = worktree / "state" / "oos_evaluation_ledger.json"
+                local_path = STATE / "oos_evaluation_ledger.json"
+                if local_path.is_file():
+                    try:
+                        current = _validate_oos_ledger(json.loads(local_path.read_text()))
+                    except (OSError, json.JSONDecodeError) as exc:
+                        raise RuntimeError("Cannot bootstrap dedicated branch from unreadable local ledger.") from exc
+                else:
+                    current = _empty_oos_ledger()
+            updated = mutator(current)
+            _validate_oos_ledger(updated)
+            ledger_path.parent.mkdir(parents=True, exist_ok=True)
+            ledger_path.write_text(json.dumps(updated, indent=2, sort_keys=True))
+            _git_checked(["config", "user.name", "github-actions[bot]"], worktree)
+            _git_checked(["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], worktree)
+            _git_checked(["add", "--", "state/oos_evaluation_ledger.json"], worktree)
+            _git_checked(["commit", "-m", "Reserve/update one-way out-of-sample ledger"], worktree)
+            # Never force-push and never target main. A race or non-fast-forward
+            # rejection leaves the previous reservation intact and prevents evaluation.
+            _git_checked(["push", "origin", f"HEAD:refs/heads/{branch}"], worktree)
+            _atomic_write_local_ledger(updated)
+            return updated
+        finally:
+            if worktree_added:
+                subprocess.run(
+                    ["git", "worktree", "remove", "--force", str(worktree)],
+                    cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+                )
 
 
 def _ledger_last_test_end(ledger: dict[str, Any]) -> pd.Timestamp | None:
