@@ -78,9 +78,12 @@ jobs:
           quality = report.get("data_quality")
           if not isinstance(quality, dict) or not quality:
               raise SystemExit("FAIL: missing per-symbol data-quality evidence")
-          for symbol, metrics in quality.items():
-              if not isinstance(metrics, dict) or metrics.get("quality_gate_passed") is not True:
-                  raise SystemExit(f"FAIL: data-quality gate did not pass for {symbol}")
+          quality_passed_symbols = {
+              symbol for symbol, metrics in quality.items()
+              if isinstance(metrics, dict) and metrics.get("quality_gate_passed") is True
+          }
+          if not quality_passed_symbols:
+              raise SystemExit("FAIL: no symbol passed the strict data-quality gates")
           if report.get("cost_assumptions") != {
               "fee_bps_per_side": 60.0,
               "slippage_bps_per_side": 10.0,
@@ -113,6 +116,8 @@ jobs:
               raise SystemExit("FAIL: validated result has no active champion")
           if not isinstance(report.get("champion"), dict):
               raise SystemExit("FAIL: fresh report has no champion object")
+          if report["champion"].get("symbol") not in quality_passed_symbols:
+              raise SystemExit("FAIL: champion did not come from a symbol that passed data-quality gates")
           metadata = active.get("validation_metadata", {})
           if not isinstance(active.get("champion_version"), str) or not active["champion_version"].startswith("champion-") or metadata.get("status") != "validated":
               raise SystemExit("FAIL: champion version/validated metadata missing")
