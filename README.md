@@ -29,6 +29,9 @@ python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python research_engine.py --days 90 --require-fresh-report
 python paper_trader.py --once
+
+# Import a multi-year public Coinbase candle history (end date is exclusive)
+python historical_import.py --symbol BTCUSDT --interval 1h --start 2023-01-01 --end 2026-01-01
 ```
 
 ## Reports and state
