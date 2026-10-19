@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-19T19:48:29.525405+00:00",
+  "updated_at": "2026-10-19T19:58:08.741992+00:00",
   "mode": "PAPER_ONLY",
   "starting_cash_usdt": 15.0,
   "cash_usdt": 15.08402666,
@@ -8,8 +8,9 @@
   "realized_pnl_usdt": 0.08402666,
   "completed_trades": 1,
   "open_position": null,
-  "champion_available": true,
-  "champion_rejection_reason": null,
+  "champion_available": false,
+  "champion_version": "champion-17d0d18cce13",
+  "champion_rejection_reason": "Champion cost convention fee_bps_per_side does not match current paper execution settings.",
   "actions": [],
   "data_errors": [],
   "safety": {
@@ -32,5 +33,5 @@
     "halted": true,
     "halt_reason": "position_exposure_limit"
   },
-  "message": "Risk circuit breaker is latched; no new simulated buys are allowed. Manual review/reset required."
+  "message": "Risk circuit breaker is latched; no new simulated buys are allowed."
 }
