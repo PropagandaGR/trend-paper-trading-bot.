@@ -38,9 +38,9 @@ Every safety claim needs a regression test and evidence from the current code he
 ## Current verified state
 
 ### Integration branch / PR #16
-- Last code/test-verified Core head before this documentation update: `634c245f7f1efb944ab5c8a726ccd81267d3d266`.
-- [Tests run #39214099625](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214099625): **83 tests passed**.
-- [Coinbase public-data smoke test #39214099637](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214099637): success.
+- Last code/test-verified Core head before this documentation update: `814b793a46c000206a0591447bb22a3e39274408`.
+- [Tests run #39214407278](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214407278): **87 tests passed**.
+- [Coinbase public-data smoke test #39214407079](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214407079): success.
 - These results apply to that exact Core head. This master-spec update will trigger a new CI run; PR #16 remains a **draft**, unmerged, and requires review. No live readiness is implied.
 
 ### Latest saved research artifact observed during audit
@@ -59,7 +59,7 @@ The last status artifact inspected showed approximately 15.0840 USDT equity, +0.
 - [PR #12 — Block paper deployment when held-out tests fail](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/12): draft proposal; do not merge as-is because repeatedly using the same final test as a deployment selector risks holdout contamination.
 - [PR #13 — Reject fragile strategy champions](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/13): training robustness gate and entry buffer.
 - [PR #15 — Fail closed on missed decision candles](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/15): avoids retroactive fills after missed candles.
-- [PR #17 — Resumable multi-year Coinbase candle importer](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/17): draft, stacked on the Core branch; **88 tests passed** on head `619874ca152e5d0636973e96dd0837ff007e7e41` ([run #39214169765](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214169765)) and Coinbase smoke passed ([run #39214169706](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214169706)). It includes a manual Actions workflow that uploads month CSVs/manifests as an artifact. The importer has not been run over real multi-year data.
+- [PR #17 — Resumable multi-year Coinbase candle importer](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/17): draft, stacked on the Core branch; **88 tests passed** on head `619874ca152e5d0636973e96dd0837ff007e7e41` ([run #39214169765](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214169765)) and Coinbase smoke passed ([run #39214169706](https://github.com/PropagandaGR/trend-paper-trading-bot./actions/runs/39214169706)). It includes a manual Actions workflow that uploads month CSVs/manifests as an artifact. The importer has not been run over real multi-year data; its current 88-test evidence predates the latest watchdog additions to the Core base, so PR #17 needs a fresh CI run against the updated base.
 - [PR #16 — Consolidation branch](https://github.com/PropagandaGR/trend-paper-trading-bot./pull/16): carries forward PR #13/#15 changes and fixes exposure-halt semantics, strict same-candle FX conversion, shared entry sizing, backtest risk halts, conservative shared cost assumptions, a 95% source/converted candle-coverage gate, fail-closed state validation, an append-only idempotent paper event journal, strategy-effective candidate deduplication, and report-only cash/buy-and-hold benchmarks. Latest verified code head passed 83 tests and the Coinbase smoke test. Keep draft until fresh data-quality research, remaining audit gates, and independent review are complete.
 
 ## Known gaps and risk register
@@ -76,7 +76,7 @@ The last status artifact inspected showed approximately 15.0840 USDT equity, +0.
 | P1 | One final 20% test split can become contaminated after repeated inspection | Preserve current historical report as evidence; add rolling walk-forward folds and a future forward-paper qualification period, without using the same holdout repeatedly for selection |
 | P1 | Champion may change symbol/strategy on each rotating research batch | Compare against incumbent, require stable multi-fold qualification and hysteresis, and forward paper qualification before switching |
 | P1 | Research data window is limited to 30–365 days; no durable multi-year store | Paginated historical importer, UTC manifests, retry/rate limits, coverage/gap checks, persistent CSV/Parquet storage outside Git blobs |
-| P1 | GitHub scheduled workflows are best-effort and have shown observed gaps | Heartbeat/last-success artifact, stale-run alert, workflow-enabled checks, concurrency review, and a watchdog; never represent GitHub Actions as guaranteed always-on |
+| P1 | A 15-minute heartbeat watchdog now checks paper status/state timestamps and opens one issue if either is missing or older than 20 minutes | After merge, verify issue permissions and run a controlled stale-heartbeat test; GitHub schedules remain best-effort and are not guaranteed always-on |
 | P2 | Independent review and rollback evidence remain incomplete | Independent reviewer checks data, accounting, selection, and halt semantics; record commit, test evidence, risks, and rollback |
 | P2 | No ML or X/social sentiment integration | Defer until data quality, execution parity, walk-forward evaluation, and audit trail are complete |
 
