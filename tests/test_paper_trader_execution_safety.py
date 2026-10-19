@@ -124,6 +124,7 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
 
     def test_risk_liquidation_keeps_status_and_saved_ledger_in_sync(self):
         champion = make_champion()
+        now = datetime.now(timezone.utc)
         state = {
             "cash": 0.0, "quantity": 0.1, "symbol": "ETHUSDT", "entry_price": 100.0,
             "last_processed_bars": {}, "starting_cash": 15.0,
