@@ -110,6 +110,20 @@ class ResearchCliTests(unittest.TestCase):
                 ):
                     self.assertEqual(research_engine.main(["--days", "30", "--require-fresh-report"]), 1)
 
+    def test_artifact_gate_rejects_champion_with_training_collapse(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            reports = Path(tmp) / "reports"
+            state_dir = Path(tmp) / "state"
+            report = self._write_report(reports, status="validated")
+            report["champion"]["validation_metadata"]["train_metrics"]["total_return_pct"] = -69.7706
+            report["champion"]["validation_metadata"]["train_metrics"]["max_drawdown_pct"] = 70.0337
+            (reports / "research_latest.json").write_text(json.dumps(report))
+            with patch.object(research_engine, "STATE", state_dir):
+                with self.assertRaisesRegex(RuntimeError, "training robustness gate"):
+                    research_engine.validate_research_artifacts(
+                        datetime.now(timezone.utc), reports / "research_latest.json"
+                    )
+
     def test_artifact_gate_rejects_stale_report(self):
         with tempfile.TemporaryDirectory() as tmp:
             report_path = Path(tmp) / "research_latest.json"
