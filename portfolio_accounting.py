@@ -27,6 +27,8 @@ class SellResult:
 
 MAX_POSITION_FRACTION = 0.50
 ENTRY_BUDGET_BUFFER = 0.995
+MAX_DAILY_LOSS_PCT = 5.0
+MAX_DRAWDOWN_PCT = 10.0
 
 
 def entry_budget(cash: float, equity: float,
