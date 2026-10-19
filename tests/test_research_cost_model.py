@@ -29,6 +29,12 @@ class ResearchCostModelTests(unittest.TestCase):
         self.assertEqual(metrics["trades"], 2)
         self.assertAlmostEqual(metrics["total_return_pct"], -0.2976, delta=0.02)
 
+    def test_default_costs_are_conservative_and_stress_costs_are_higher(self):
+        self.assertEqual(research_engine.DEFAULT_FEE_BPS, 60.0)
+        self.assertEqual(research_engine.DEFAULT_SLIPPAGE_BPS, 10.0)
+        self.assertGreater(research_engine.STRESS_FEE_BPS, research_engine.DEFAULT_FEE_BPS)
+        self.assertGreater(research_engine.STRESS_SLIPPAGE_BPS, research_engine.DEFAULT_SLIPPAGE_BPS)
+
     def test_sharpe_annualization_matches_each_timeframe(self):
         self.assertEqual(research_engine.bars_per_year("5m"), 105120)
         self.assertEqual(research_engine.bars_per_year("10m"), 52560)
