@@ -45,8 +45,8 @@ class PaperTraderWrongSymbolIntegrationTests(unittest.TestCase):
                     "cost_convention": {
                         "fee_basis": "executed notional",
                         "fill_timing": "closed candle close after one-candle signal shift",
-                        "fee_bps_per_side": 10, "slippage_bps_per_side": 5,
-                        "stress_fee_bps_per_side": 20, "stress_slippage_bps_per_side": 10
+                        "fee_bps_per_side": 60.0, "slippage_bps_per_side": 10.0,
+                        "stress_fee_bps_per_side": 100.0, "stress_slippage_bps_per_side": 20.0
                     }
                 }
             }))
