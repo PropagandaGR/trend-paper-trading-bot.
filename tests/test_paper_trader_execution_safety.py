@@ -207,6 +207,27 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         self.assertEqual(state["cash"], 15.0)
         self.assertEqual(state["quantity"], 0.0)
 
+    def test_price_appreciation_above_entry_cap_does_not_latch_risk_halt(self):
+        champion = make_champion()
+        frame = make_frame(110.0)
+        cursor = frame.index[-1].isoformat()
+        state = {
+            "cash": 7.5, "quantity": 0.075, "symbol": "BTCUSDT",
+            "entry_price": 100.0,
+            "last_processed_bars": {"BTCUSDT": cursor},
+            "starting_cash": 15.0, "realized_pnl": 0.0, "completed_trades": 0,
+        }
+
+        status, final_state = self._run_in_temp_repo(
+            state, champion, {"BTCUSDT": frame}, signal_value=1.0,
+        )
+
+        self.assertEqual(status["actions"], [])
+        self.assertFalse(status["risk"]["halted"])
+        self.assertIsNone(final_state.get("risk_halt_reason"))
+        self.assertEqual(final_state["quantity"], 0.075)
+        self.assertAlmostEqual(status["equity_usdt"], 15.75, places=6)
+
 
 if __name__ == "__main__":
     unittest.main()
