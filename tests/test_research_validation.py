@@ -8,6 +8,27 @@ import pandas as pd
 
 import research_engine
 
+def seed_prior_oos_history(state: Path) -> None:
+    """Seed explicit synthetic history for isolated unit tests only."""
+    state.mkdir(parents=True, exist_ok=True)
+    boundary = "2025-12-31T23:55:00+00:00"
+    ledger = {
+        "policy_version": "chronological-oos-v2",
+        "windows": [{
+            "id": "test-fixture-prior-window",
+            "start": boundary,
+            "end": boundary,
+            "bars": 1,
+            "status": "failed",
+            "reserved_at": "test-fixture",
+        }],
+        "last_test_start": boundary,
+        "last_test_end": boundary,
+        "last_result": "failed",
+    }
+    (state / "oos_evaluation_ledger.json").write_text(json.dumps(ledger))
+
+
 
 class ChronologicalSplitTests(unittest.TestCase):
     def test_splits_are_ordered_disjoint_and_60_20_20(self):
@@ -34,7 +55,9 @@ class TestSetIsolationTests(unittest.TestCase):
         overlap = pd.DataFrame({"close": range(12)}, index=index + pd.Timedelta(minutes=5))
         later = pd.DataFrame({"close": range(12)}, index=index + pd.Timedelta(hours=1))
         with tempfile.TemporaryDirectory() as tmp:
-            with patch.object(research_engine, "STATE", Path(tmp) / "state"):
+            state = Path(tmp) / "state"
+            seed_prior_oos_history(state)
+            with patch.object(research_engine, "STATE", state):
                 ok, reason, window = research_engine.reserve_oos_test_window(first)
                 self.assertTrue(ok, reason)
                 self.assertEqual(window["start"], index[0].isoformat())
@@ -70,9 +93,11 @@ class TestSetIsolationTests(unittest.TestCase):
             with self.subTest(quality=quality), tempfile.TemporaryDirectory() as tmp:
                 bad_frame = frame.copy()
                 bad_frame.attrs["data_quality"] = quality
+                state = Path(tmp) / "state"
+                seed_prior_oos_history(state)
                 with (
                     patch.object(research_engine, "REPORTS", Path(tmp) / "reports"),
-                    patch.object(research_engine, "STATE", Path(tmp) / "state"),
+                    patch.object(research_engine, "STATE", state),
                     patch.object(research_engine, "get_research_batch", return_value=(["BTCUSDT"], {"status": "test"})),
                     patch.object(research_engine, "fetch_klines", return_value=bad_frame),
                     patch.object(research_engine, "candidate_params", return_value=[params]),
@@ -108,6 +133,7 @@ class TestSetIsolationTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             reports, state = Path(tmp) / "reports", Path(tmp) / "state"
+            seed_prior_oos_history(state)
             with (
                 patch.object(research_engine, "REPORTS", reports),
                 patch.object(research_engine, "STATE", state),
@@ -196,6 +222,7 @@ class TestSetIsolationTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             reports, state = Path(tmp) / "reports", Path(tmp) / "state"
+            seed_prior_oos_history(state)
             with (
                 patch.object(research_engine, "REPORTS", reports),
                 patch.object(research_engine, "STATE", state),
@@ -214,6 +241,42 @@ class TestSetIsolationTests(unittest.TestCase):
 
 
 class DurableOOSPolicyTests(unittest.TestCase):
+    def test_missing_or_empty_local_ledger_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp) / "state"
+            with patch.object(research_engine, "STATE", state):
+                with self.assertRaisesRegex(RuntimeError, "consumed test history is unknown"):
+                    research_engine._load_local_oos_ledger()
+                ok, reason, _ = research_engine.reserve_oos_test_window(
+                    pd.DataFrame(
+                        {"close": range(12)},
+                        index=pd.date_range("2026-01-01", periods=12, freq="5min", tz="UTC"),
+                    )
+                )
+                self.assertFalse(ok)
+                self.assertIn("history is unknown", reason)
+                state.mkdir(parents=True, exist_ok=True)
+                (state / "oos_evaluation_ledger.json").write_text(
+                    json.dumps(research_engine._empty_oos_ledger())
+                )
+                with self.assertRaisesRegex(RuntimeError, "history is empty or uncertain"):
+                    research_engine._load_local_oos_ledger()
+
+    def test_missing_history_prevents_backtesting_and_champion_promotion(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state, reports = Path(tmp) / "state", Path(tmp) / "reports"
+            with (
+                patch.object(research_engine, "STATE", state),
+                patch.object(research_engine, "REPORTS", reports),
+                patch.object(research_engine, "fetch_klines") as fetch,
+                patch.object(research_engine, "backtest") as backtest,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "consumed test history is unknown"):
+                    research_engine.run_research(days=30)
+            fetch.assert_not_called()
+            backtest.assert_not_called()
+            self.assertFalse((state / "champion.json").exists())
+
     @staticmethod
     def _frame(index):
         frame = pd.DataFrame({
@@ -292,6 +355,7 @@ class DurableOOSPolicyTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             state, reports = Path(tmp) / "state", Path(tmp) / "reports"
+            seed_prior_oos_history(state)
             with (
                 patch.object(research_engine, "STATE", state),
                 patch.object(research_engine, "REPORTS", reports),
@@ -333,6 +397,7 @@ class DurableOOSPolicyTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             state, reports = Path(tmp) / "state", Path(tmp) / "reports"
+            seed_prior_oos_history(state)
             with (
                 patch.object(research_engine, "STATE", state),
                 patch.object(research_engine, "REPORTS", reports),
