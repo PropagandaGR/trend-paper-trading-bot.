@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 import json
 import math
@@ -30,6 +31,8 @@ INTERVALS = {"5m": "5min", "10m": "10min", "15m": "15min", "30m": "30min"}
 MIN_CANDLE_COVERAGE_PCT = 99.0
 MAX_CONSECUTIVE_MISSING_SLOTS = 3
 MAX_FX_MISSING_PCT = 1.0
+OOS_POLICY_VERSION = "chronological-oos-v1"
+OOS_LEDGER_FILE = STATE / "oos_evaluation_ledger.json"
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": "Autonomous-Paper-Trading-Lab/1.0"})
 _USDT_USD_CANDLE_CACHE: dict[tuple[str, int], pd.DataFrame] = {}
@@ -47,7 +50,7 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
     if granularity is None:
         raise ValueError(f"Unsupported Coinbase candle interval: {interval}")
-    end = pd.Timestamp.now(tz="UTC").floor("min")
+    end = pd.Timestamp.now(tz="UTC").floor(f"{granularity}s")
     start = end - pd.Timedelta(days=days)
     # Coinbase caps each response at 300 candles; page through the period.
     rows: list[list[Any]] = []
@@ -83,8 +86,10 @@ def _fetch_coinbase(symbol: str, interval: str, days: int) -> pd.DataFrame:
     for col in ("open", "high", "low", "close", "volume"):
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
     frame = frame.set_index("open_time")
-    closed = frame.loc[frame["close_time"] < pd.Timestamp.now(tz="UTC"),
-                       ["open", "high", "low", "close", "volume", "close_time"]]
+    closed = frame.loc[
+        (frame.index >= start) & (frame.index < end) & (frame["close_time"] <= end),
+        ["open", "high", "low", "close", "volume", "close_time"]
+    ]
     closed.attrs["duplicate_candles_dropped"] = duplicate_candles_dropped
     closed.attrs["conflicting_duplicate_groups"] = conflicting_duplicate_groups
     closed.attrs["response_was_sorted"] = response_was_sorted
@@ -104,60 +109,91 @@ def _max_consecutive_missing_slots(index: pd.Index, granularity: int) -> int:
     return int(max(0, int(slot_counts.max()) - 1))
 
 
+def _aligned_candle_window(interval: str, days: int,
+                           now: pd.Timestamp | None = None) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """Return aligned UTC candle-open boundaries for the requested [start, end) window."""
+    seconds = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
+    if seconds is None or days <= 0:
+        raise ValueError("Unsupported interval or non-positive requested days")
+    current = pd.Timestamp(now or pd.Timestamp.now(tz="UTC"))
+    if current.tzinfo is None:
+        raise ValueError("Candle window clock must be timezone-aware")
+    end = current.tz_convert("UTC").floor(f"{seconds}s")
+    return end - pd.Timedelta(days=days), end
+
+
+def _longest_true_run(values: np.ndarray) -> int:
+    longest = current = 0
+    for missing in values:
+        current = current + 1 if bool(missing) else 0
+        longest = max(longest, current)
+    return longest
+
+
 def candle_quality_report(frame: pd.DataFrame, interval: str = "5m", days: int = 90,
-                          now: pd.Timestamp | None = None) -> dict[str, Any]:
-    """Summarize coverage, timestamp cadence, duplicates, and OHLC integrity."""
+                          now: pd.Timestamp | None = None,
+                          window_start: pd.Timestamp | None = None,
+                          window_end: pd.Timestamp | None = None) -> dict[str, Any]:
+    """Measure coverage against every expected candle in an aligned UTC [start, end) window."""
     granularity = {"1m": 60, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}.get(interval)
     if granularity is None:
         raise ValueError(f"Unsupported candle-quality interval: {interval}")
-    if days <= 0:
-        raise ValueError("days must be positive")
-    expected_slots = int(days * 86400 // granularity)
-    observed_slots = int(len(frame))
-    coverage_pct = min(100.0, observed_slots / expected_slots * 100.0) if expected_slots else 0.0
-    if frame.empty:
-        invalid_ohlc_rows = 0
-    else:
-        values = frame[["open", "high", "low", "close", "volume"]].apply(
-            pd.to_numeric, errors="coerce"
-        )
-        valid_finite = np.isfinite(values.to_numpy()).all(axis=1)
-        positive_prices = (values[["open", "high", "low", "close"]] > 0).all(axis=1).to_numpy()
-        valid_high = values["high"].to_numpy() >= values[["open", "close"]].max(axis=1).to_numpy()
-        valid_low = values["low"].to_numpy() <= values[["open", "close"]].min(axis=1).to_numpy()
-        valid_range = values["high"].to_numpy() >= values["low"].to_numpy()
-        nonnegative_volume = (values["volume"] >= 0).to_numpy()
-        valid_rows = (valid_finite & positive_prices & valid_high & valid_low
-                      & valid_range & nonnegative_volume)
-        invalid_ohlc_rows = int((~valid_rows).sum())
-    duplicate_count = int(frame.attrs.get("duplicate_candles_dropped", 0))
-    conflicting_duplicate_groups = int(frame.attrs.get("conflicting_duplicate_groups", 0))
-    source_was_sorted = bool(frame.attrs.get("source_was_sorted", frame.index.is_monotonic_increasing))
-    unique_timestamps = not frame.index.has_duplicates
-    monotonic_timestamps = bool(frame.index.is_monotonic_increasing)
-    if len(frame) > 1:
-        diffs = pd.DatetimeIndex(frame.index).to_series().diff().dropna().dt.total_seconds().to_numpy()
-        irregular_timestamp_gaps = int(np.count_nonzero(np.abs(diffs / granularity - np.rint(diffs / granularity)) > 1e-6))
-    else:
-        irregular_timestamp_gaps = 0
-    max_consecutive_missing_slots = _max_consecutive_missing_slots(frame.index, granularity)
+    if window_start is None or window_end is None:
+        window_start, window_end = _aligned_candle_window(interval, days, now)
+    start, end = pd.Timestamp(window_start), pd.Timestamp(window_end)
+    if start.tzinfo is None or end.tzinfo is None or start >= end:
+        raise ValueError("Candle quality boundaries must be ordered timezone-aware timestamps")
+    start, end = start.tz_convert("UTC"), end.tz_convert("UTC")
+    if start != start.floor(f"{granularity}s") or end != end.floor(f"{granularity}s"):
+        raise ValueError("Candle quality boundaries must align to candle intervals")
+    expected = pd.date_range(start=start, end=end, freq=f"{granularity}s", inclusive="left")
+    raw_index = pd.DatetimeIndex(frame.index)
+    timezone_aware = raw_index.tz is not None
+    normalized = raw_index.tz_localize("UTC") if raw_index.tz is None else raw_index.tz_convert("UTC")
+    expected_mask = expected.isin(normalized)
+    missing_mask = ~expected_mask
+    expected_slots = len(expected)
+    observed_expected = int(expected_mask.sum())
+    coverage = observed_expected / expected_slots * 100 if expected_slots else 0.0
+    invalid_ohlc_rows = 0
+    if not frame.empty:
+        required = ["open", "high", "low", "close", "volume"]
+        if not set(required).issubset(frame.columns):
+            invalid_ohlc_rows = len(frame)
+        else:
+            values = frame[required].apply(pd.to_numeric, errors="coerce")
+            valid = np.isfinite(values.to_numpy()).all(axis=1)
+            valid &= (values[["open", "high", "low", "close"]] > 0).all(axis=1).to_numpy()
+            valid &= (values["high"].to_numpy() >= values[["open", "close"]].max(axis=1).to_numpy())
+            valid &= (values["low"].to_numpy() <= values[["open", "close"]].min(axis=1).to_numpy())
+            valid &= (values["high"].to_numpy() >= values["low"].to_numpy())
+            valid &= (values["volume"].to_numpy() >= 0)
+            invalid_ohlc_rows = int((~valid).sum())
+    diffs = normalized.to_series().diff().dropna().dt.total_seconds().to_numpy() if len(normalized) > 1 else np.array([])
+    irregular = int(np.count_nonzero(np.abs(diffs / granularity - np.rint(diffs / granularity)) > 1e-6))
+    missing_at_start = 0
+    while missing_at_start < len(missing_mask) and missing_mask[missing_at_start]:
+        missing_at_start += 1
+    missing_at_end = 0
+    while missing_at_end < len(missing_mask) and missing_mask[len(missing_mask) - 1 - missing_at_end]:
+        missing_at_end += 1
+    unaligned = sum(1 for stamp in normalized if stamp < start or stamp >= end or stamp not in expected)
     return {
-        "interval": interval,
-        "requested_days": int(days),
-        "expected_window_slots": expected_slots,
-        "observed_source_candles": observed_slots,
-        "missing_expected_slots": max(0, expected_slots - observed_slots),
-        "source_coverage_pct": round(coverage_pct, 4),
-        "duplicate_candles_dropped": duplicate_count,
-        "conflicting_duplicate_groups": conflicting_duplicate_groups,
-        "response_was_sorted": bool(frame.attrs.get("response_was_sorted", source_was_sorted)),
-        "source_was_sorted": source_was_sorted,
-        "unique_timestamps": unique_timestamps,
-        "monotonic_timestamps": monotonic_timestamps,
-        "irregular_timestamp_gaps": irregular_timestamp_gaps,
-        "max_consecutive_missing_slots": max_consecutive_missing_slots,
+        "interval": interval, "requested_days": int(days),
+        "window_start_utc": start.isoformat(), "window_end_utc_exclusive": end.isoformat(),
+        "expected_window_slots": int(expected_slots), "observed_source_candles": int(len(frame)),
+        "observed_expected_slots": observed_expected, "missing_expected_slots": int(missing_mask.sum()),
+        "missing_at_start_slots": int(missing_at_start), "missing_at_end_slots": int(missing_at_end),
+        "source_coverage_pct": round(coverage, 4),
+        "duplicate_candles_dropped": int(frame.attrs.get("duplicate_candles_dropped", 0)),
+        "conflicting_duplicate_groups": int(frame.attrs.get("conflicting_duplicate_groups", 0)),
+        "response_was_sorted": bool(frame.attrs.get("response_was_sorted", frame.index.is_monotonic_increasing)),
+        "source_was_sorted": bool(frame.attrs.get("source_was_sorted", frame.index.is_monotonic_increasing)),
+        "unique_timestamps": not raw_index.has_duplicates, "monotonic_timestamps": bool(raw_index.is_monotonic_increasing),
+        "timezone_aware_timestamps": timezone_aware, "unaligned_timestamps": int(unaligned),
+        "irregular_timestamp_gaps": irregular, "max_consecutive_missing_slots": _longest_true_run(missing_mask),
         "invalid_ohlc_rows": invalid_ohlc_rows,
-        "coverage_note": "Missing slots are never interpolated; long gaps, no-trade intervals, and unavailable candles are treated as data-quality risk.",
+        "coverage_note": "Coverage is measured against all expected aligned UTC candles; missing candles are never interpolated.",
     }
 
 
@@ -193,16 +229,19 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
     does not require API credentials. USD candles are converted using Coinbase
     USDT-USD candle closes so the simulated USDT ledger uses matching units.
     """
-    frame = _fetch_coinbase(symbol, interval, days)
+    window_start, window_end = _aligned_candle_window(interval, days)
+    frame = _fetch_coinbase(symbol, interval, days, window_start=window_start, window_end=window_end)
     if frame.empty:
         raise RuntimeError(f"Coinbase returned no closed candles for {symbol} {interval}")
-    source_quality = candle_quality_report(frame, interval, days)
+    source_quality = candle_quality_report(frame, interval, days, window_start=window_start, window_end=window_end)
     source_candle_count = len(frame)
     fx_missing_candles = 0
     if symbol != "USDTUSD":
-        cache_key = (interval, days)
+        cache_key = (interval, days, window_start.isoformat(), window_end.isoformat())
         if cache_key not in _USDT_USD_CANDLE_CACHE:
-            _USDT_USD_CANDLE_CACHE[cache_key] = _fetch_coinbase("USDTUSD", interval, days)
+            _USDT_USD_CANDLE_CACHE[cache_key] = _fetch_coinbase(
+                "USDTUSD", interval, days, window_start=window_start, window_end=window_end
+            )
         fx_frame = _USDT_USD_CANDLE_CACHE[cache_key]
         frame = _convert_usd_candles_to_usdt(frame, fx_frame)
         fx_missing_candles = int(frame.attrs.get("fx_missing_candles", 0))
@@ -214,29 +253,39 @@ def fetch_klines(symbol: str, interval: str = "5m", days: int = 90) -> pd.DataFr
                    "15m": 900, "30m": 1800, "1h": 3600}[interval]
     expected_slots = int(days * 86400 // granularity)
     quality = dict(source_quality)
+    converted_quality = candle_quality_report(
+        frame, interval, days, window_start=window_start, window_end=window_end
+    )
     quality.update({
         "source_candle_count": source_candle_count,
         "converted_candle_count": int(len(frame)),
-        "converted_coverage_pct": round(min(100.0, len(frame) / expected_slots * 100.0), 4),
+        "converted_coverage_pct": converted_quality["source_coverage_pct"],
+        "converted_missing_expected_slots": converted_quality["missing_expected_slots"],
+        "converted_invalid_ohlc_rows": converted_quality["invalid_ohlc_rows"],
         "fx_missing_candles": fx_missing_candles,
         "fx_missing_pct_of_source": round(fx_missing_candles / max(source_candle_count, 1) * 100.0, 4),
-        "converted_max_consecutive_missing_slots": _max_consecutive_missing_slots(frame.index, granularity),
-        "converted_unique_timestamps": not frame.index.has_duplicates,
-        "converted_monotonic_timestamps": bool(frame.index.is_monotonic_increasing),
+        "converted_max_consecutive_missing_slots": converted_quality["max_consecutive_missing_slots"],
+        "converted_unique_timestamps": converted_quality["unique_timestamps"],
+        "converted_monotonic_timestamps": converted_quality["monotonic_timestamps"],
+        "converted_unaligned_timestamps": converted_quality["unaligned_timestamps"],
     })
     quality["quality_gate_passed"] = bool(
         quality["source_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
         and quality["converted_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
         and quality["fx_missing_pct_of_source"] <= MAX_FX_MISSING_PCT
         and quality["invalid_ohlc_rows"] == 0
+        and quality["converted_invalid_ohlc_rows"] == 0
         and quality["conflicting_duplicate_groups"] == 0
         and quality["unique_timestamps"]
         and quality["monotonic_timestamps"]
+        and quality["timezone_aware_timestamps"]
+        and quality["unaligned_timestamps"] == 0
         and quality["irregular_timestamp_gaps"] == 0
         and quality["max_consecutive_missing_slots"] <= MAX_CONSECUTIVE_MISSING_SLOTS
         and quality["converted_max_consecutive_missing_slots"] <= MAX_CONSECUTIVE_MISSING_SLOTS
         and quality["converted_unique_timestamps"]
         and quality["converted_monotonic_timestamps"]
+        and quality["converted_unaligned_timestamps"] == 0
     )
     frame.attrs["data_quality"] = quality
     frame.attrs["source"] = "coinbase"
