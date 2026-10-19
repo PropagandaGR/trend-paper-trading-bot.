@@ -19,6 +19,7 @@ def valid_champion(created_at=None):
             "created_at": (created_at or datetime.now(timezone.utc)).isoformat(),
             "status": "validated",
             "test_used_for_selection": False,
+            "oos_evaluation_policy_version": "chronological-oos-v1",
             "validation_score": 1.25,
             "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
             "periods": {
@@ -50,6 +51,11 @@ def valid_champion(created_at=None):
 class PaperTraderChampionGateTests(unittest.TestCase):
     def test_accepts_fresh_versioned_validated_champion(self):
         self.assertIsNone(champion_validation_error(valid_champion()))
+
+    def test_rejects_champion_with_incompatible_oos_policy(self):
+        champion = valid_champion()
+        champion["validation_metadata"]["oos_evaluation_policy_version"] = "chronological-oos-v0"
+        self.assertIn("versioned out-of-sample", champion_validation_error(champion))
 
     def test_rejects_champion_evaluated_under_different_cost_assumptions(self):
         champion = valid_champion()
