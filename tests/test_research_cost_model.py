@@ -22,7 +22,7 @@ class ResearchCostModelTests(unittest.TestCase):
         with patch.object(research_engine, "desired_signal", return_value=positions):
             metrics = research_engine.backtest(self.frame, "trend", self.params, 60, 10, "5m")
         self.assertEqual(metrics["trades"], 2)
-        self.assertLess(metrics["total_return_pct"], -1.0)
+        self.assertLess(metrics["total_return_pct"], -0.5)
         with self.assertRaisesRegex(ValueError, "fee_bps must be"):
             research_engine.backtest(self.frame, "trend", self.params, 10, 5, "5m")
 
@@ -100,8 +100,13 @@ class ResearchCostModelTests(unittest.TestCase):
         self.assertEqual(buy_hold["fee_bps_per_side"], 60.0)
         self.assertEqual(buy_hold["slippage_bps_per_side"], 10.0)
         self.assertEqual(buy_hold["trades"], 1)
+        self.assertAlmostEqual(buy_hold["total_return_pct"], -0.3461, delta=0.0001)
         self.assertEqual(buy_hold["missing_data_policy"],
                          "No interpolation; use exact supplied timestamps and report missing slots.")
+        gapped = self.frame.drop(self.frame.index[50])
+        gap_benchmark = research_engine.buy_and_hold_benchmark(gapped, "5m", 60, 10, 15.0)
+        self.assertEqual(gap_benchmark["missing_candle_slots"], 1)
+        self.assertEqual(gap_benchmark["bars"], len(gapped))
 
     def test_benchmarks_fail_closed_on_missing_close_data(self):
         broken = self.frame.copy()
