@@ -1,24 +1,24 @@
 {
-  "symbol": "SKYUSDT",
+  "symbol": "ETHFIUSDT",
   "interval": "15m",
-  "strategy": "trend",
+  "strategy": "mean_reversion",
   "params": {
-    "fast": 20,
-    "slow": 48,
+    "fast": 8,
+    "slow": 30,
     "momentum": 12,
-    "breakout": 24,
-    "entry_momentum": 0.002,
-    "exit_momentum": -0.01,
+    "breakout": 12,
+    "entry_momentum": 0.0,
+    "exit_momentum": -0.005,
     "rsi_entry": 30,
-    "rsi_exit": 50,
-    "stop_pct": 0.06
+    "rsi_exit": 45,
+    "stop_pct": 0.04
   },
-  "champion_version": "champion-25b9692ed031",
+  "champion_version": "champion-8cba64d6c28e",
   "validation_metadata": {
-    "created_at": "2026-10-19T06:22:05.270058+00:00",
+    "created_at": "2026-10-19T10:52:59.775092+00:00",
     "status": "validated",
     "selection_metric": "validation_score",
-    "validation_score": 20.22675,
+    "validation_score": 5.8009,
     "validation_criteria": {
       "validation_return_positive": true,
       "validation_stress_return_positive": true,
@@ -27,50 +27,50 @@
     },
     "periods": {
       "train": {
-        "start": "2026-07-21T08:00:00+00:00",
-        "end": "2026-09-21T17:30:00+00:00",
-        "bars": 2442
+        "start": "2026-07-21T11:30:00+00:00",
+        "end": "2026-09-18T01:15:00+00:00",
+        "bars": 1897
       },
       "validation": {
-        "start": "2026-09-21T17:45:00+00:00",
-        "end": "2026-10-03T06:30:00+00:00",
-        "bars": 814
+        "start": "2026-09-18T02:00:00+00:00",
+        "end": "2026-09-30T16:45:00+00:00",
+        "bars": 632
       },
       "test": {
-        "start": "2026-10-03T06:45:00+00:00",
-        "end": "2026-10-19T06:15:00+00:00",
-        "bars": 815
+        "start": "2026-09-30T17:00:00+00:00",
+        "end": "2026-10-19T08:15:00+00:00",
+        "bars": 633
       }
     },
     "train_metrics": {
-      "total_return_pct": 2.8423,
-      "max_drawdown_pct": 18.8739,
-      "sharpe": 0.927,
-      "trades": 91
+      "total_return_pct": -18.2398,
+      "max_drawdown_pct": 18.9445,
+      "sharpe": -8.0,
+      "trades": 54
     },
     "validation_metrics": {
-      "total_return_pct": 25.965,
-      "max_drawdown_pct": 7.371,
-      "sharpe": 10.405,
-      "trades": 21
+      "total_return_pct": 6.3159,
+      "max_drawdown_pct": 0.58,
+      "sharpe": 9.229,
+      "trades": 8
     },
     "validation_stress_metrics": {
-      "total_return_pct": 22.0592,
-      "max_drawdown_pct": 8.2009,
-      "sharpe": 9.017,
-      "trades": 21
+      "total_return_pct": 5.0477,
+      "max_drawdown_pct": 0.7292,
+      "sharpe": 7.497,
+      "trades": 8
     },
     "test_metrics": {
-      "total_return_pct": -20.663,
-      "max_drawdown_pct": 27.2751,
-      "sharpe": -15.605,
-      "trades": 28
+      "total_return_pct": 1.3767,
+      "max_drawdown_pct": 4.5934,
+      "sharpe": 1.852,
+      "trades": 46
     },
     "test_stress_metrics": {
-      "total_return_pct": -23.9261,
-      "max_drawdown_pct": 29.9519,
-      "sharpe": -18.253,
-      "trades": 28
+      "total_return_pct": -5.3824,
+      "max_drawdown_pct": 7.7809,
+      "sharpe": -6.207,
+      "trades": 46
     },
     "test_used_for_selection": false,
     "cost_convention": {

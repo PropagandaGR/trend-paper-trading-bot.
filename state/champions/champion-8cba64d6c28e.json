@@ -1,0 +1,92 @@
+{
+  "symbol": "ETHFIUSDT",
+  "interval": "15m",
+  "strategy": "mean_reversion",
+  "params": {
+    "fast": 8,
+    "slow": 30,
+    "momentum": 12,
+    "breakout": 12,
+    "entry_momentum": 0.0,
+    "exit_momentum": -0.005,
+    "rsi_entry": 30,
+    "rsi_exit": 45,
+    "stop_pct": 0.04
+  },
+  "champion_version": "champion-8cba64d6c28e",
+  "validation_metadata": {
+    "created_at": "2026-10-19T10:52:59.775092+00:00",
+    "status": "validated",
+    "selection_metric": "validation_score",
+    "validation_score": 5.8009,
+    "validation_criteria": {
+      "validation_return_positive": true,
+      "validation_stress_return_positive": true,
+      "validation_max_drawdown_below_pct": 25,
+      "minimum_validation_position_changes": 2
+    },
+    "periods": {
+      "train": {
+        "start": "2026-07-21T11:30:00+00:00",
+        "end": "2026-09-18T01:15:00+00:00",
+        "bars": 1897
+      },
+      "validation": {
+        "start": "2026-09-18T02:00:00+00:00",
+        "end": "2026-09-30T16:45:00+00:00",
+        "bars": 632
+      },
+      "test": {
+        "start": "2026-09-30T17:00:00+00:00",
+        "end": "2026-10-19T08:15:00+00:00",
+        "bars": 633
+      }
+    },
+    "train_metrics": {
+      "total_return_pct": -18.2398,
+      "max_drawdown_pct": 18.9445,
+      "sharpe": -8.0,
+      "trades": 54
+    },
+    "validation_metrics": {
+      "total_return_pct": 6.3159,
+      "max_drawdown_pct": 0.58,
+      "sharpe": 9.229,
+      "trades": 8
+    },
+    "validation_stress_metrics": {
+      "total_return_pct": 5.0477,
+      "max_drawdown_pct": 0.7292,
+      "sharpe": 7.497,
+      "trades": 8
+    },
+    "test_metrics": {
+      "total_return_pct": 1.3767,
+      "max_drawdown_pct": 4.5934,
+      "sharpe": 1.852,
+      "trades": 46
+    },
+    "test_stress_metrics": {
+      "total_return_pct": -5.3824,
+      "max_drawdown_pct": 7.7809,
+      "sharpe": -6.207,
+      "trades": 46
+    },
+    "test_used_for_selection": false,
+    "cost_convention": {
+      "fee_bps_per_side": 10.0,
+      "slippage_bps_per_side": 5.0,
+      "stress_fee_bps_per_side": 20,
+      "stress_slippage_bps_per_side": 10,
+      "fill_timing": "closed candle close after one-candle signal shift",
+      "fee_basis": "executed notional",
+      "slippage": "execution price adjusted per side"
+    },
+    "sharpe_annualization": {
+      "bars_per_year": 35040,
+      "interval": "15m",
+      "calendar_days_per_year": 365
+    },
+    "warning": "Test metrics are report-only and were not used to rank, select, or validate this champion."
+  }
+}

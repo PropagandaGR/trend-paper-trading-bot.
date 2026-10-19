@@ -1,74 +1,34 @@
 {
-  "started_at": "2026-10-19T06:22:05.270058+00:00",
-  "completed_at": "2026-10-19T06:31:16.993745+00:00",
+  "started_at": "2026-10-19T10:52:59.775092+00:00",
+  "completed_at": "2026-10-19T10:54:34.086431+00:00",
   "days": 90,
   "run_status": "completed",
   "validation_status": "validated",
   "validation_result": {
     "status": "validated",
-    "evaluations": 2880,
-    "validated_candidates": 256,
-    "champion_version": "champion-25b9692ed031",
+    "evaluations": 432,
+    "validated_candidates": 70,
+    "champion_version": "champion-8cba64d6c28e",
     "reason": null
   },
   "symbols": [
-    "PAXGUSDT",
-    "WLFIUSDT",
-    "MORPHOUSDT",
-    "PEPEUSDT",
-    "SKYUSDT"
+    "ETHFIUSDT"
   ],
   "universe": {
     "source": "CoinGecko market-cap top 100 intersected with online Coinbase USD spot products",
     "market_cap_rank_limit": 100,
     "eligible_coinbase_markets": 51,
     "batch_size": 5,
-    "batch_index": 6,
-    "rotation_hour_utc": 6,
+    "batch_index": 10,
+    "rotation_hour_utc": 10,
     "symbols": [
       {
-        "symbol": "PAXGUSDT",
-        "base": "PAXG",
-        "product_id": "PAXG-USD",
-        "market_cap_rank": 54,
-        "market_cap_usd": 1837431405,
-        "global_24h_volume_usd": 88494152.0,
-        "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
-      },
-      {
-        "symbol": "WLFIUSDT",
-        "base": "WLFI",
-        "product_id": "WLFI-USD",
-        "market_cap_rank": 55,
-        "market_cap_usd": 1810924553,
-        "global_24h_volume_usd": 25070257.0,
-        "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
-      },
-      {
-        "symbol": "MORPHOUSDT",
-        "base": "MORPHO",
-        "product_id": "MORPHO-USD",
-        "market_cap_rank": 58,
-        "market_cap_usd": 1720991385,
-        "global_24h_volume_usd": 22145645.0,
-        "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
-      },
-      {
-        "symbol": "PEPEUSDT",
-        "base": "PEPE",
-        "product_id": "PEPE-USD",
-        "market_cap_rank": 60,
-        "market_cap_usd": 1705205160,
-        "global_24h_volume_usd": 226220249.0,
-        "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
-      },
-      {
-        "symbol": "SKYUSDT",
-        "base": "SKY",
-        "product_id": "SKY-USD",
-        "market_cap_rank": 62,
-        "market_cap_usd": 1645618681,
-        "global_24h_volume_usd": 6485063.0,
+        "symbol": "ETHFIUSDT",
+        "base": "ETHFI",
+        "product_id": "ETHFI-USD",
+        "market_cap_rank": 96,
+        "market_cap_usd": 672272464,
+        "global_24h_volume_usd": 42133824.0,
         "source": "CoinGecko top-100 market-cap ranking intersected with Coinbase USD spot markets"
       }
     ]
@@ -80,29 +40,29 @@
     "30m"
   ],
   "candidate_count": 48,
-  "evaluations": 2880,
-  "validated_count": 256,
+  "evaluations": 432,
+  "validated_count": 70,
   "champion": {
-    "symbol": "SKYUSDT",
+    "symbol": "ETHFIUSDT",
     "interval": "15m",
-    "strategy": "trend",
+    "strategy": "mean_reversion",
     "params": {
-      "fast": 20,
-      "slow": 48,
+      "fast": 8,
+      "slow": 30,
       "momentum": 12,
-      "breakout": 24,
-      "entry_momentum": 0.002,
-      "exit_momentum": -0.01,
+      "breakout": 12,
+      "entry_momentum": 0.0,
+      "exit_momentum": -0.005,
       "rsi_entry": 30,
-      "rsi_exit": 50,
-      "stop_pct": 0.06
+      "rsi_exit": 45,
+      "stop_pct": 0.04
     },
-    "champion_version": "champion-25b9692ed031",
+    "champion_version": "champion-8cba64d6c28e",
     "validation_metadata": {
-      "created_at": "2026-10-19T06:22:05.270058+00:00",
+      "created_at": "2026-10-19T10:52:59.775092+00:00",
       "status": "validated",
       "selection_metric": "validation_score",
-      "validation_score": 20.22675,
+      "validation_score": 5.8009,
       "validation_criteria": {
         "validation_return_positive": true,
         "validation_stress_return_positive": true,
@@ -111,50 +71,50 @@
       },
       "periods": {
         "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
         },
         "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
         },
         "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
         }
       },
       "train_metrics": {
-        "total_return_pct": 2.8423,
-        "max_drawdown_pct": 18.8739,
-        "sharpe": 0.927,
-        "trades": 91
+        "total_return_pct": -18.2398,
+        "max_drawdown_pct": 18.9445,
+        "sharpe": -8.0,
+        "trades": 54
       },
       "validation_metrics": {
-        "total_return_pct": 25.965,
-        "max_drawdown_pct": 7.371,
-        "sharpe": 10.405,
-        "trades": 21
+        "total_return_pct": 6.3159,
+        "max_drawdown_pct": 0.58,
+        "sharpe": 9.229,
+        "trades": 8
       },
       "validation_stress_metrics": {
-        "total_return_pct": 22.0592,
-        "max_drawdown_pct": 8.2009,
-        "sharpe": 9.017,
-        "trades": 21
+        "total_return_pct": 5.0477,
+        "max_drawdown_pct": 0.7292,
+        "sharpe": 7.497,
+        "trades": 8
       },
       "test_metrics": {
-        "total_return_pct": -20.663,
-        "max_drawdown_pct": 27.2751,
-        "sharpe": -15.605,
-        "trades": 28
+        "total_return_pct": 1.3767,
+        "max_drawdown_pct": 4.5934,
+        "sharpe": 1.852,
+        "trades": 46
       },
       "test_stress_metrics": {
-        "total_return_pct": -23.9261,
-        "max_drawdown_pct": 29.9519,
-        "sharpe": -18.253,
-        "trades": 28
+        "total_return_pct": -5.3824,
+        "max_drawdown_pct": 7.7809,
+        "sharpe": -6.207,
+        "trades": 46
       },
       "test_used_for_selection": false,
       "cost_convention": {
@@ -177,1069 +137,274 @@
   "selection_policy": "Select only by validation score; require positive validation and validation stress returns, validation drawdown under 25%, and at least two validation position changes. Final test metrics are report-only.",
   "results": [
     {
-      "symbol": "SKYUSDT",
+      "symbol": "ETHFIUSDT",
       "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 24,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 2.8423,
-        "max_drawdown_pct": 18.8739,
-        "sharpe": 0.927,
-        "trades": 91
-      },
-      "validation": {
-        "total_return_pct": 25.965,
-        "max_drawdown_pct": 7.371,
-        "sharpe": 10.405,
-        "trades": 21
-      },
-      "validation_stress": {
-        "total_return_pct": 22.0592,
-        "max_drawdown_pct": 8.2009,
-        "sharpe": 9.017,
-        "trades": 21
-      },
-      "validation_score": 20.22675,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 12,
-        "slow": 30,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 5.8378,
-        "max_drawdown_pct": 17.9333,
-        "sharpe": 1.463,
-        "trades": 105
-      },
-      "validation": {
-        "total_return_pct": 24.4111,
-        "max_drawdown_pct": 8.2548,
-        "sharpe": 9.414,
-        "trades": 21
-      },
-      "validation_stress": {
-        "total_return_pct": 20.5534,
-        "max_drawdown_pct": 9.0768,
-        "sharpe": 8.107,
-        "trades": 21
-      },
-      "validation_score": 18.01,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 12,
-        "slow": 30,
-        "momentum": 12,
-        "breakout": 48,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 1.7213,
-        "max_drawdown_pct": 20.7637,
-        "sharpe": 0.7,
-        "trades": 105
-      },
-      "validation": {
-        "total_return_pct": 24.3495,
-        "max_drawdown_pct": 8.2548,
-        "sharpe": 9.394,
-        "trades": 21
-      },
-      "validation_stress": {
-        "total_return_pct": 20.4938,
-        "max_drawdown_pct": 9.0768,
-        "sharpe": 8.087,
-        "trades": 21
-      },
-      "validation_score": 17.9484,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 30,
-        "momentum": 12,
-        "breakout": 24,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 8.0726,
-        "max_drawdown_pct": 14.1379,
-        "sharpe": 1.89,
-        "trades": 101
-      },
-      "validation": {
-        "total_return_pct": 21.2862,
-        "max_drawdown_pct": 7.7651,
-        "sharpe": 8.634,
-        "trades": 19
-      },
-      "validation_stress": {
-        "total_return_pct": 17.8785,
-        "max_drawdown_pct": 8.5915,
-        "sharpe": 7.409,
-        "trades": 19
-      },
-      "validation_score": 15.272375000000002,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 30,
-        "momentum": 24,
-        "breakout": 12,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 22.0101,
-        "max_drawdown_pct": 13.4569,
-        "sharpe": 4.192,
-        "trades": 69
-      },
-      "validation": {
-        "total_return_pct": 20.5271,
-        "max_drawdown_pct": 7.0198,
-        "sharpe": 8.381,
-        "trades": 19
-      },
-      "validation_stress": {
-        "total_return_pct": 17.1408,
-        "max_drawdown_pct": 7.8529,
-        "sharpe": 7.167,
-        "trades": 19
-      },
-      "validation_score": 15.072250000000002,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 12,
-        "slow": 30,
-        "momentum": 24,
-        "breakout": 48,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 22.7105,
-        "max_drawdown_pct": 15.8549,
-        "sharpe": 4.22,
-        "trades": 81
-      },
-      "validation": {
-        "total_return_pct": 21.0008,
-        "max_drawdown_pct": 7.7267,
-        "sharpe": 8.233,
-        "trades": 23
-      },
-      "validation_stress": {
-        "total_return_pct": 16.8977,
-        "max_drawdown_pct": 8.5534,
-        "sharpe": 6.823,
-        "trades": 23
-      },
-      "validation_score": 14.975775000000002,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
-      "strategy": "breakout",
-      "params": {
-        "fast": 20,
-        "slow": 72,
-        "momentum": 12,
-        "breakout": 48,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -10.202,
-        "max_drawdown_pct": 16.1294,
-        "sharpe": -1.726,
-        "trades": 42
-      },
-      "validation": {
-        "total_return_pct": 18.5506,
-        "max_drawdown_pct": 5.5124,
-        "sharpe": 7.192,
-        "trades": 10
-      },
-      "validation_stress": {
-        "total_return_pct": 16.7857,
-        "max_drawdown_pct": 6.359,
-        "sharpe": 6.586,
-        "trades": 10
-      },
-      "validation_score": 14.3163,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
-        },
-        "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
-        },
-        "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 48,
-        "momentum": 24,
-        "breakout": 24,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 27.0828,
-        "max_drawdown_pct": 13.6537,
-        "sharpe": 5.203,
-        "trades": 61
-      },
-      "validation": {
-        "total_return_pct": 19.417,
-        "max_drawdown_pct": 7.1078,
-        "sharpe": 8.069,
-        "trades": 21
-      },
-      "validation_stress": {
-        "total_return_pct": 15.7142,
-        "max_drawdown_pct": 7.9401,
-        "sharpe": 6.705,
-        "trades": 21
-      },
-      "validation_score": 13.87615,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "30m",
-      "strategy": "breakout",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 24,
-        "breakout": 12,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 19.1144,
-        "max_drawdown_pct": 9.4678,
-        "sharpe": 5.624,
-        "trades": 33
-      },
-      "validation": {
-        "total_return_pct": 17.4371,
-        "max_drawdown_pct": 4.8074,
-        "sharpe": 10.319,
-        "trades": 9
-      },
-      "validation_stress": {
-        "total_return_pct": 15.8625,
-        "max_drawdown_pct": 5.0925,
-        "sharpe": 9.463,
-        "trades": 9
-      },
-      "validation_score": 13.74155,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T10:00:00+00:00",
-          "end": "2026-09-24T20:30:00+00:00",
-          "bars": 819
-        },
-        "validation": {
-          "start": "2026-09-24T21:00:00+00:00",
-          "end": "2026-10-04T01:00:00+00:00",
-          "bars": 273
-        },
-        "test": {
-          "start": "2026-10-04T01:30:00+00:00",
-          "end": "2026-10-18T20:00:00+00:00",
-          "bars": 273
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "30m",
-      "strategy": "breakout",
-      "params": {
-        "fast": 12,
-        "slow": 72,
-        "momentum": 24,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 19.1144,
-        "max_drawdown_pct": 9.4678,
-        "sharpe": 5.624,
-        "trades": 33
-      },
-      "validation": {
-        "total_return_pct": 17.4371,
-        "max_drawdown_pct": 4.8074,
-        "sharpe": 10.319,
-        "trades": 9
-      },
-      "validation_stress": {
-        "total_return_pct": 15.8625,
-        "max_drawdown_pct": 5.0925,
-        "sharpe": 9.463,
-        "trades": 9
-      },
-      "validation_score": 13.74155,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T10:00:00+00:00",
-          "end": "2026-09-24T20:30:00+00:00",
-          "bars": 819
-        },
-        "validation": {
-          "start": "2026-09-24T21:00:00+00:00",
-          "end": "2026-10-04T01:00:00+00:00",
-          "bars": 273
-        },
-        "test": {
-          "start": "2026-10-04T01:30:00+00:00",
-          "end": "2026-10-18T20:00:00+00:00",
-          "bars": 273
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "30m",
-      "strategy": "breakout",
-      "params": {
-        "fast": 12,
-        "slow": 72,
-        "momentum": 12,
-        "breakout": 24,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 14.7137,
-        "max_drawdown_pct": 11.3616,
-        "sharpe": 4.695,
-        "trades": 29
-      },
-      "validation": {
-        "total_return_pct": 17.1599,
-        "max_drawdown_pct": 4.8074,
-        "sharpe": 10.215,
-        "trades": 7
-      },
-      "validation_stress": {
-        "total_return_pct": 15.9364,
-        "max_drawdown_pct": 5.0925,
-        "sharpe": 9.544,
-        "trades": 7
-      },
-      "validation_score": 13.48435,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T10:00:00+00:00",
-          "end": "2026-09-24T20:30:00+00:00",
-          "bars": 819
-        },
-        "validation": {
-          "start": "2026-09-24T21:00:00+00:00",
-          "end": "2026-10-04T01:00:00+00:00",
-          "bars": 273
-        },
-        "test": {
-          "start": "2026-10-04T01:30:00+00:00",
-          "end": "2026-10-18T20:00:00+00:00",
-          "bars": 273
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 1.2825,
-        "max_drawdown_pct": 18.7892,
-        "sharpe": 0.612,
-        "trades": 99
-      },
-      "validation": {
-        "total_return_pct": 18.9569,
-        "max_drawdown_pct": 9.4108,
-        "sharpe": 7.76,
-        "trades": 21
-      },
-      "validation_stress": {
-        "total_return_pct": 15.2684,
-        "max_drawdown_pct": 10.4914,
-        "sharpe": 6.423,
-        "trades": 21
-      },
-      "validation_score": 11.6888,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "10m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 48,
-        "momentum": 24,
-        "breakout": 24,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -7.29,
-        "max_drawdown_pct": 22.4554,
-        "sharpe": -1.001,
-        "trades": 122
-      },
-      "validation": {
-        "total_return_pct": 18.5748,
-        "max_drawdown_pct": 9.622,
-        "sharpe": 6.825,
-        "trades": 40
-      },
-      "validation_stress": {
-        "total_return_pct": 11.6696,
-        "max_drawdown_pct": 10.5348,
-        "sharpe": 4.568,
-        "trades": 40
-      },
-      "validation_score": 10.9583,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T06:40:00+00:00",
-          "end": "2026-09-19T22:40:00+00:00",
-          "bars": 4435
-        },
-        "validation": {
-          "start": "2026-09-19T22:50:00+00:00",
-          "end": "2026-10-03T01:10:00+00:00",
-          "bars": 1478
-        },
-        "test": {
-          "start": "2026-10-03T01:20:00+00:00",
-          "end": "2026-10-19T06:10:00+00:00",
-          "bars": 1479
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
+      "strategy": "mean_reversion",
       "params": {
         "fast": 8,
-        "slow": 30,
-        "momentum": 12,
-        "breakout": 24,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -2.6117,
-        "max_drawdown_pct": 21.7962,
-        "sharpe": -0.126,
-        "trades": 121
-      },
-      "validation": {
-        "total_return_pct": 19.1283,
-        "max_drawdown_pct": 10.5753,
-        "sharpe": 7.511,
-        "trades": 31
-      },
-      "validation_stress": {
-        "total_return_pct": 13.7159,
-        "max_drawdown_pct": 12.4336,
-        "sharpe": 5.635,
-        "trades": 31
-      },
-      "validation_score": 10.886824999999998,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "15m",
-      "strategy": "trend",
-      "params": {
-        "fast": 8,
-        "slow": 30,
-        "momentum": 24,
-        "breakout": 24,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 18.8589,
-        "max_drawdown_pct": 16.1369,
-        "sharpe": 3.587,
-        "trades": 99
-      },
-      "validation": {
-        "total_return_pct": 17.8856,
-        "max_drawdown_pct": 8.9373,
-        "sharpe": 7.072,
-        "trades": 33
-      },
-      "validation_stress": {
-        "total_return_pct": 12.1926,
-        "max_drawdown_pct": 10.8297,
-        "sharpe": 5.09,
-        "trades": 33
-      },
-      "validation_score": 10.852625,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T08:00:00+00:00",
-          "end": "2026-09-21T17:30:00+00:00",
-          "bars": 2442
-        },
-        "validation": {
-          "start": "2026-09-21T17:45:00+00:00",
-          "end": "2026-10-03T06:30:00+00:00",
-          "bars": 814
-        },
-        "test": {
-          "start": "2026-10-03T06:45:00+00:00",
-          "end": "2026-10-19T06:15:00+00:00",
-          "bars": 815
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "5m",
-      "strategy": "trend",
-      "params": {
-        "fast": 20,
-        "slow": 48,
-        "momentum": 6,
-        "breakout": 48,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -39.5546,
-        "max_drawdown_pct": 40.8366,
-        "sharpe": -8.107,
-        "trades": 291
-      },
-      "validation": {
-        "total_return_pct": 21.677,
-        "max_drawdown_pct": 12.8124,
-        "sharpe": 6.046,
-        "trades": 141
-      },
-      "validation_stress": {
-        "total_return_pct": -1.5182,
-        "max_drawdown_pct": 19.7727,
-        "sharpe": 0.058,
-        "trades": 141
-      },
-      "validation_score": 10.657699999999998,
-      "passed_validation": false,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T06:30:00+00:00",
-          "end": "2026-09-17T01:30:00+00:00",
-          "bars": 11548
-        },
-        "validation": {
-          "start": "2026-09-17T01:35:00+00:00",
-          "end": "2026-10-02T09:40:00+00:00",
-          "bars": 3849
-        },
-        "test": {
-          "start": "2026-10-02T09:45:00+00:00",
-          "end": "2026-10-19T06:25:00+00:00",
-          "bars": 3851
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "10m",
-      "strategy": "trend",
-      "params": {
-        "fast": 8,
-        "slow": 30,
-        "momentum": 24,
-        "breakout": 24,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": -24.6733,
-        "max_drawdown_pct": 34.4896,
-        "sharpe": -4.391,
-        "trades": 178
-      },
-      "validation": {
-        "total_return_pct": 21.2796,
-        "max_drawdown_pct": 13.849,
-        "sharpe": 7.304,
-        "trades": 48
-      },
-      "validation_stress": {
-        "total_return_pct": 12.8544,
-        "max_drawdown_pct": 16.3952,
-        "sharpe": 4.744,
-        "trades": 48
-      },
-      "validation_score": 10.412849999999999,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T06:40:00+00:00",
-          "end": "2026-09-19T22:40:00+00:00",
-          "bars": 4435
-        },
-        "validation": {
-          "start": "2026-09-19T22:50:00+00:00",
-          "end": "2026-10-03T01:10:00+00:00",
-          "bars": 1478
-        },
-        "test": {
-          "start": "2026-10-03T01:20:00+00:00",
-          "end": "2026-10-19T06:10:00+00:00",
-          "bars": 1479
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "30m",
-      "strategy": "breakout",
-      "params": {
-        "fast": 12,
-        "slow": 30,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 27.5468,
-        "max_drawdown_pct": 10.5885,
-        "sharpe": 7.068,
-        "trades": 43
-      },
-      "validation": {
-        "total_return_pct": 15.3563,
-        "max_drawdown_pct": 6.7023,
-        "sharpe": 8.9,
-        "trades": 13
-      },
-      "validation_stress": {
-        "total_return_pct": 13.1289,
-        "max_drawdown_pct": 7.2604,
-        "sharpe": 7.726,
-        "trades": 13
-      },
-      "validation_score": 10.199574999999998,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T10:00:00+00:00",
-          "end": "2026-09-24T20:30:00+00:00",
-          "bars": 819
-        },
-        "validation": {
-          "start": "2026-09-24T21:00:00+00:00",
-          "end": "2026-10-04T01:00:00+00:00",
-          "bars": 273
-        },
-        "test": {
-          "start": "2026-10-04T01:30:00+00:00",
-          "end": "2026-10-18T20:00:00+00:00",
-          "bars": 273
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "30m",
-      "strategy": "breakout",
-      "params": {
-        "fast": 12,
-        "slow": 48,
-        "momentum": 12,
-        "breakout": 12,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 27.5468,
-        "max_drawdown_pct": 10.5885,
-        "sharpe": 7.068,
-        "trades": 43
-      },
-      "validation": {
-        "total_return_pct": 15.3563,
-        "max_drawdown_pct": 6.7023,
-        "sharpe": 8.9,
-        "trades": 13
-      },
-      "validation_stress": {
-        "total_return_pct": 13.1289,
-        "max_drawdown_pct": 7.2604,
-        "sharpe": 7.726,
-        "trades": 13
-      },
-      "validation_score": 10.199574999999998,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T10:00:00+00:00",
-          "end": "2026-09-24T20:30:00+00:00",
-          "bars": 819
-        },
-        "validation": {
-          "start": "2026-09-24T21:00:00+00:00",
-          "end": "2026-10-04T01:00:00+00:00",
-          "bars": 273
-        },
-        "test": {
-          "start": "2026-10-04T01:30:00+00:00",
-          "end": "2026-10-18T20:00:00+00:00",
-          "bars": 273
-        }
-      }
-    },
-    {
-      "symbol": "SKYUSDT",
-      "interval": "30m",
-      "strategy": "breakout",
-      "params": {
-        "fast": 12,
         "slow": 30,
         "momentum": 12,
         "breakout": 12,
         "entry_momentum": 0.0,
         "exit_momentum": -0.005,
         "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
+        "rsi_exit": 45,
+        "stop_pct": 0.04
       },
       "train": {
-        "total_return_pct": 28.1318,
-        "max_drawdown_pct": 10.5885,
-        "sharpe": 7.2,
-        "trades": 43
+        "total_return_pct": -18.2398,
+        "max_drawdown_pct": 18.9445,
+        "sharpe": -8.0,
+        "trades": 54
       },
       "validation": {
-        "total_return_pct": 15.3563,
-        "max_drawdown_pct": 6.7023,
-        "sharpe": 8.9,
-        "trades": 13
+        "total_return_pct": 6.3159,
+        "max_drawdown_pct": 0.58,
+        "sharpe": 9.229,
+        "trades": 8
       },
       "validation_stress": {
-        "total_return_pct": 13.1289,
-        "max_drawdown_pct": 7.2604,
-        "sharpe": 7.726,
-        "trades": 13
+        "total_return_pct": 5.0477,
+        "max_drawdown_pct": 0.7292,
+        "sharpe": 7.497,
+        "trades": 8
       },
-      "validation_score": 10.199574999999998,
+      "validation_score": 5.8009,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T10:00:00+00:00",
-          "end": "2026-09-24T20:30:00+00:00",
-          "bars": 819
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
         },
         "validation": {
-          "start": "2026-09-24T21:00:00+00:00",
-          "end": "2026-10-04T01:00:00+00:00",
-          "bars": 273
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
         },
         "test": {
-          "start": "2026-10-04T01:30:00+00:00",
-          "end": "2026-10-18T20:00:00+00:00",
-          "bars": 273
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
         }
       }
     },
     {
-      "symbol": "SKYUSDT",
-      "interval": "30m",
-      "strategy": "breakout",
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 12,
+        "slow": 30,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 30,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -18.2398,
+        "max_drawdown_pct": 18.9445,
+        "sharpe": -8.0,
+        "trades": 54
+      },
+      "validation": {
+        "total_return_pct": 6.3159,
+        "max_drawdown_pct": 0.58,
+        "sharpe": 9.229,
+        "trades": 8
+      },
+      "validation_stress": {
+        "total_return_pct": 5.0477,
+        "max_drawdown_pct": 0.7292,
+        "sharpe": 7.497,
+        "trades": 8
+      },
+      "validation_score": 5.8009,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -6.8032,
+        "max_drawdown_pct": 10.7426,
+        "sharpe": -3.785,
+        "trades": 22
+      },
+      "validation": {
+        "total_return_pct": 3.0687,
+        "max_drawdown_pct": 1.2214,
+        "sharpe": 7.657,
+        "trades": 2
+      },
+      "validation_stress": {
+        "total_return_pct": 2.76,
+        "max_drawdown_pct": 1.2214,
+        "sharpe": 6.873,
+        "trades": 2
+      },
+      "validation_score": 2.1326500000000004,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 12,
+        "slow": 30,
+        "momentum": 6,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -6.8032,
+        "max_drawdown_pct": 10.7426,
+        "sharpe": -3.785,
+        "trades": 22
+      },
+      "validation": {
+        "total_return_pct": 3.0687,
+        "max_drawdown_pct": 1.2214,
+        "sharpe": 7.657,
+        "trades": 2
+      },
+      "validation_stress": {
+        "total_return_pct": 2.76,
+        "max_drawdown_pct": 1.2214,
+        "sharpe": 6.873,
+        "trades": 2
+      },
+      "validation_score": 2.1326500000000004,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "5m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "momentum": 12,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -23.0377,
+        "max_drawdown_pct": 25.4699,
+        "sharpe": -8.868,
+        "trades": 102
+      },
+      "validation": {
+        "total_return_pct": 2.9154,
+        "max_drawdown_pct": 1.9115,
+        "sharpe": 5.002,
+        "trades": 14
+      },
+      "validation_stress": {
+        "total_return_pct": 0.7768,
+        "max_drawdown_pct": 2.2173,
+        "sharpe": 1.441,
+        "trades": 14
+      },
+      "validation_score": 1.3417750000000002,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:00:00+00:00",
+          "end": "2026-09-16T13:30:00+00:00",
+          "bars": 9916
+        },
+        "validation": {
+          "start": "2026-09-16T13:35:00+00:00",
+          "end": "2026-10-01T04:00:00+00:00",
+          "bars": 3305
+        },
+        "test": {
+          "start": "2026-10-01T04:05:00+00:00",
+          "end": "2026-10-19T10:45:00+00:00",
+          "bars": 3307
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "5m",
+      "strategy": "mean_reversion",
       "params": {
         "fast": 12,
         "slow": 48,
@@ -1252,210 +417,210 @@
         "stop_pct": 0.04
       },
       "train": {
-        "total_return_pct": 28.1318,
-        "max_drawdown_pct": 10.5885,
-        "sharpe": 7.2,
-        "trades": 43
+        "total_return_pct": -23.0377,
+        "max_drawdown_pct": 25.4699,
+        "sharpe": -8.868,
+        "trades": 102
       },
       "validation": {
-        "total_return_pct": 15.3563,
-        "max_drawdown_pct": 6.7023,
-        "sharpe": 8.9,
-        "trades": 13
+        "total_return_pct": 2.9154,
+        "max_drawdown_pct": 1.9115,
+        "sharpe": 5.002,
+        "trades": 14
       },
       "validation_stress": {
-        "total_return_pct": 13.1289,
-        "max_drawdown_pct": 7.2604,
-        "sharpe": 7.726,
-        "trades": 13
+        "total_return_pct": 0.7768,
+        "max_drawdown_pct": 2.2173,
+        "sharpe": 1.441,
+        "trades": 14
       },
-      "validation_score": 10.199574999999998,
+      "validation_score": 1.3417750000000002,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T10:00:00+00:00",
-          "end": "2026-09-24T20:30:00+00:00",
-          "bars": 819
+          "start": "2026-07-21T11:00:00+00:00",
+          "end": "2026-09-16T13:30:00+00:00",
+          "bars": 9916
         },
         "validation": {
-          "start": "2026-09-24T21:00:00+00:00",
-          "end": "2026-10-04T01:00:00+00:00",
-          "bars": 273
+          "start": "2026-09-16T13:35:00+00:00",
+          "end": "2026-10-01T04:00:00+00:00",
+          "bars": 3305
         },
         "test": {
-          "start": "2026-10-04T01:30:00+00:00",
-          "end": "2026-10-18T20:00:00+00:00",
-          "bars": 273
+          "start": "2026-10-01T04:05:00+00:00",
+          "end": "2026-10-19T10:45:00+00:00",
+          "bars": 3307
         }
       }
     },
     {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
+      "symbol": "ETHFIUSDT",
+      "interval": "5m",
       "strategy": "mean_reversion",
       "params": {
         "fast": 8,
         "slow": 30,
         "momentum": 6,
         "breakout": 12,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
-      },
-      "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
-      },
-      "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
-      },
-      "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
-      },
-      "validation_score": 9.4605,
-      "passed_validation": true,
-      "periods": {
-        "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
-        },
-        "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
-        },
-        "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
-        }
-      }
-    },
-    {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
-      "strategy": "mean_reversion",
-      "params": {
-        "fast": 8,
-        "slow": 30,
-        "momentum": 6,
-        "breakout": 48,
         "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
       },
       "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
+        "total_return_pct": -13.7094,
+        "max_drawdown_pct": 18.6463,
+        "sharpe": -4.205,
+        "trades": 76
       },
       "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
+        "total_return_pct": 2.8561,
+        "max_drawdown_pct": 3.0361,
+        "sharpe": 3.861,
+        "trades": 14
       },
       "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
+        "total_return_pct": 0.7186,
+        "max_drawdown_pct": 3.0361,
+        "sharpe": 1.066,
+        "trades": 14
       },
-      "validation_score": 9.4605,
+      "validation_score": 0.4390250000000001,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
+          "start": "2026-07-21T11:00:00+00:00",
+          "end": "2026-09-16T13:30:00+00:00",
+          "bars": 9916
         },
         "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
+          "start": "2026-09-16T13:35:00+00:00",
+          "end": "2026-10-01T04:00:00+00:00",
+          "bars": 3305
         },
         "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
+          "start": "2026-10-01T04:05:00+00:00",
+          "end": "2026-10-19T10:45:00+00:00",
+          "bars": 3307
         }
       }
     },
     {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
+      "symbol": "ETHFIUSDT",
+      "interval": "10m",
       "strategy": "mean_reversion",
       "params": {
         "fast": 8,
         "slow": 30,
         "momentum": 12,
-        "breakout": 24,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
         "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
+        "rsi_exit": 45,
+        "stop_pct": 0.04
       },
       "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
+        "total_return_pct": -16.7885,
+        "max_drawdown_pct": 18.8962,
+        "sharpe": -6.184,
+        "trades": 100
       },
       "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
+        "total_return_pct": 3.3604,
+        "max_drawdown_pct": 3.7598,
+        "sharpe": 4.122,
+        "trades": 12
       },
       "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
+        "total_return_pct": 1.5165,
+        "max_drawdown_pct": 4.1917,
+        "sharpe": 1.984,
+        "trades": 12
       },
-      "validation_score": 9.4605,
+      "validation_score": 0.4205500000000001,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
+          "start": "2026-07-21T11:20:00+00:00",
+          "end": "2026-09-17T19:20:00+00:00",
+          "bars": 3522
         },
         "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
+          "start": "2026-09-17T19:30:00+00:00",
+          "end": "2026-09-30T19:30:00+00:00",
+          "bars": 1174
         },
         "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
+          "start": "2026-09-30T19:40:00+00:00",
+          "end": "2026-10-19T08:30:00+00:00",
+          "bars": 1175
         }
       }
     },
     {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
+      "symbol": "ETHFIUSDT",
+      "interval": "10m",
       "strategy": "mean_reversion",
       "params": {
-        "fast": 8,
+        "fast": 12,
         "slow": 30,
-        "momentum": 24,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 30,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -16.7885,
+        "max_drawdown_pct": 18.8962,
+        "sharpe": -6.184,
+        "trades": 100
+      },
+      "validation": {
+        "total_return_pct": 3.3604,
+        "max_drawdown_pct": 3.7598,
+        "sharpe": 4.122,
+        "trades": 12
+      },
+      "validation_stress": {
+        "total_return_pct": 1.5165,
+        "max_drawdown_pct": 4.1917,
+        "sharpe": 1.984,
+        "trades": 12
+      },
+      "validation_score": 0.4205500000000001,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:20:00+00:00",
+          "end": "2026-09-17T19:20:00+00:00",
+          "bars": 3522
+        },
+        "validation": {
+          "start": "2026-09-17T19:30:00+00:00",
+          "end": "2026-09-30T19:30:00+00:00",
+          "bars": 1174
+        },
+        "test": {
+          "start": "2026-09-30T19:40:00+00:00",
+          "end": "2026-10-19T08:30:00+00:00",
+          "bars": 1175
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "breakout",
+      "params": {
+        "fast": 12,
+        "slow": 72,
+        "momentum": 12,
         "breakout": 24,
         "entry_momentum": -0.002,
         "exit_momentum": -0.01,
@@ -1464,259 +629,630 @@
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
+        "total_return_pct": -9.8113,
+        "max_drawdown_pct": 21.839,
+        "sharpe": -1.693,
+        "trades": 84
       },
       "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
+        "total_return_pct": 7.4493,
+        "max_drawdown_pct": 9.324,
+        "sharpe": 4.836,
+        "trades": 36
       },
       "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
+        "total_return_pct": 1.8009,
+        "max_drawdown_pct": 12.7923,
+        "sharpe": 1.541,
+        "trades": 36
       },
-      "validation_score": 9.4605,
+      "validation_score": 0.09629999999999972,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
         },
         "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
         },
         "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
         }
       }
     },
     {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
+      "symbol": "ETHFIUSDT",
+      "interval": "10m",
       "strategy": "mean_reversion",
       "params": {
         "fast": 8,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 20,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -2.8222,
+        "max_drawdown_pct": 3.0318,
+        "sharpe": -7.67,
+        "trades": 12
+      },
+      "validation": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_stress": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_score": 0.0,
+      "passed_validation": false,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:20:00+00:00",
+          "end": "2026-09-17T19:20:00+00:00",
+          "bars": 3522
+        },
+        "validation": {
+          "start": "2026-09-17T19:30:00+00:00",
+          "end": "2026-09-30T19:30:00+00:00",
+          "bars": 1174
+        },
+        "test": {
+          "start": "2026-09-30T19:40:00+00:00",
+          "end": "2026-10-19T08:30:00+00:00",
+          "bars": 1175
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "10m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "momentum": 12,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 20,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 1.3411,
+        "max_drawdown_pct": 3.2539,
+        "sharpe": 1.031,
+        "trades": 10
+      },
+      "validation": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_stress": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_score": 0.0,
+      "passed_validation": false,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:20:00+00:00",
+          "end": "2026-09-17T19:20:00+00:00",
+          "bars": 3522
+        },
+        "validation": {
+          "start": "2026-09-17T19:30:00+00:00",
+          "end": "2026-09-30T19:30:00+00:00",
+          "bars": 1174
+        },
+        "test": {
+          "start": "2026-09-30T19:40:00+00:00",
+          "end": "2026-10-19T08:30:00+00:00",
+          "bars": 1175
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "10m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 12,
         "slow": 48,
         "momentum": 6,
         "breakout": 12,
         "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
+        "exit_momentum": -0.005,
+        "rsi_entry": 20,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
       },
       "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
+        "total_return_pct": -2.8222,
+        "max_drawdown_pct": 3.0318,
+        "sharpe": -7.67,
+        "trades": 12
       },
       "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
       },
       "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
       },
-      "validation_score": 9.4605,
-      "passed_validation": true,
+      "validation_score": 0.0,
+      "passed_validation": false,
       "periods": {
         "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
+          "start": "2026-07-21T11:20:00+00:00",
+          "end": "2026-09-17T19:20:00+00:00",
+          "bars": 3522
         },
         "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
+          "start": "2026-09-17T19:30:00+00:00",
+          "end": "2026-09-30T19:30:00+00:00",
+          "bars": 1174
         },
         "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
+          "start": "2026-09-30T19:40:00+00:00",
+          "end": "2026-10-19T08:30:00+00:00",
+          "bars": 1175
         }
       }
     },
     {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
+      "symbol": "ETHFIUSDT",
+      "interval": "10m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 12,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 20,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": 1.3411,
+        "max_drawdown_pct": 3.2539,
+        "sharpe": 1.031,
+        "trades": 10
+      },
+      "validation": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_stress": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_score": 0.0,
+      "passed_validation": false,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:20:00+00:00",
+          "end": "2026-09-17T19:20:00+00:00",
+          "bars": 3522
+        },
+        "validation": {
+          "start": "2026-09-17T19:30:00+00:00",
+          "end": "2026-09-30T19:30:00+00:00",
+          "bars": 1174
+        },
+        "test": {
+          "start": "2026-09-30T19:40:00+00:00",
+          "end": "2026-10-19T08:30:00+00:00",
+          "bars": 1175
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
       "strategy": "mean_reversion",
       "params": {
         "fast": 8,
         "slow": 48,
         "momentum": 6,
-        "breakout": 48,
-        "entry_momentum": 0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 20,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
       },
       "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
+        "total_return_pct": -3.4719,
+        "max_drawdown_pct": 4.2511,
+        "sharpe": -5.941,
+        "trades": 12
       },
       "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
       },
       "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
       },
-      "validation_score": 9.4605,
-      "passed_validation": true,
+      "validation_score": 0.0,
+      "passed_validation": false,
       "periods": {
         "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
         },
         "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
         },
         "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
         }
       }
     },
     {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
       "strategy": "mean_reversion",
       "params": {
         "fast": 8,
         "slow": 48,
         "momentum": 12,
-        "breakout": 48,
-        "entry_momentum": -0.002,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 20,
         "rsi_exit": 50,
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
+        "total_return_pct": -1.3985,
+        "max_drawdown_pct": 4.2511,
+        "sharpe": -1.539,
+        "trades": 12
       },
       "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
       },
       "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
       },
-      "validation_score": 9.4605,
-      "passed_validation": true,
+      "validation_score": 0.0,
+      "passed_validation": false,
       "periods": {
         "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
         },
         "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
         },
         "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
         }
       }
     },
     {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 12,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 20,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -3.4719,
+        "max_drawdown_pct": 4.2511,
+        "sharpe": -5.941,
+        "trades": 12
+      },
+      "validation": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_stress": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_score": 0.0,
+      "passed_validation": false,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 12,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 20,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -1.3985,
+        "max_drawdown_pct": 4.2511,
+        "sharpe": -1.539,
+        "trades": 12
+      },
+      "validation": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_stress": {
+        "total_return_pct": 0.0,
+        "max_drawdown_pct": 0.0,
+        "sharpe": 0.0,
+        "trades": 0
+      },
+      "validation_score": 0.0,
+      "passed_validation": false,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "momentum": 6,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -6.0951,
+        "max_drawdown_pct": 7.7822,
+        "sharpe": -4.424,
+        "trades": 22
+      },
+      "validation": {
+        "total_return_pct": -0.4512,
+        "max_drawdown_pct": 0.4512,
+        "sharpe": -9.994,
+        "trades": 2
+      },
+      "validation_stress": {
+        "total_return_pct": -0.7494,
+        "max_drawdown_pct": 0.7494,
+        "sharpe": -10.336,
+        "trades": 2
+      },
+      "validation_score": -0.8096,
+      "passed_validation": false,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
       "strategy": "mean_reversion",
       "params": {
         "fast": 8,
         "slow": 48,
-        "momentum": 24,
+        "momentum": 12,
         "breakout": 24,
         "entry_momentum": 0.0,
-        "exit_momentum": -0.01,
-        "rsi_entry": 30,
-        "rsi_exit": 50,
-        "stop_pct": 0.06
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
       },
       "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
+        "total_return_pct": -1.1459,
+        "max_drawdown_pct": 3.498,
+        "sharpe": -1.062,
+        "trades": 24
       },
       "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
+        "total_return_pct": -0.4512,
+        "max_drawdown_pct": 0.4512,
+        "sharpe": -9.994,
+        "trades": 2
       },
       "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
+        "total_return_pct": -0.7494,
+        "max_drawdown_pct": 0.7494,
+        "sharpe": -10.336,
+        "trades": 2
       },
-      "validation_score": 9.4605,
-      "passed_validation": true,
+      "validation_score": -0.8096,
+      "passed_validation": false,
       "periods": {
         "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
         },
         "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
         },
         "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
         }
       }
     },
     {
-      "symbol": "MORPHOUSDT",
-      "interval": "30m",
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
       "strategy": "mean_reversion",
+      "params": {
+        "fast": 12,
+        "slow": 48,
+        "momentum": 12,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.005,
+        "rsi_entry": 25,
+        "rsi_exit": 45,
+        "stop_pct": 0.04
+      },
+      "train": {
+        "total_return_pct": -1.1459,
+        "max_drawdown_pct": 3.498,
+        "sharpe": -1.062,
+        "trades": 24
+      },
+      "validation": {
+        "total_return_pct": -0.4512,
+        "max_drawdown_pct": 0.4512,
+        "sharpe": -9.994,
+        "trades": 2
+      },
+      "validation_stress": {
+        "total_return_pct": -0.7494,
+        "max_drawdown_pct": 0.7494,
+        "sharpe": -10.336,
+        "trades": 2
+      },
+      "validation_score": -0.8096,
+      "passed_validation": false,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "breakout",
       "params": {
         "fast": 12,
         "slow": 30,
@@ -1729,44 +1265,474 @@
         "stop_pct": 0.06
       },
       "train": {
-        "total_return_pct": 16.1376,
-        "max_drawdown_pct": 4.8481,
-        "sharpe": 5.09,
-        "trades": 30
+        "total_return_pct": -5.77,
+        "max_drawdown_pct": 20.7389,
+        "sharpe": -0.811,
+        "trades": 84
       },
       "validation": {
-        "total_return_pct": 11.2575,
-        "max_drawdown_pct": 2.316,
-        "sharpe": 8.858,
-        "trades": 6
+        "total_return_pct": 6.0025,
+        "max_drawdown_pct": 9.5093,
+        "sharpe": 4.092,
+        "trades": 38
       },
       "validation_stress": {
-        "total_return_pct": 10.2607,
-        "max_drawdown_pct": 2.4623,
-        "sharpe": 8.263,
-        "trades": 6
+        "total_return_pct": 0.1293,
+        "max_drawdown_pct": 12.9405,
+        "sharpe": 0.522,
+        "trades": 38
       },
-      "validation_score": 9.4605,
+      "validation_score": -1.5094749999999992,
       "passed_validation": true,
       "periods": {
         "train": {
-          "start": "2026-07-21T07:00:00+00:00",
-          "end": "2026-09-16T21:30:00+00:00",
-          "bars": 2028
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
         },
         "validation": {
-          "start": "2026-09-16T22:00:00+00:00",
-          "end": "2026-10-01T11:00:00+00:00",
-          "bars": 676
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
         },
         "test": {
-          "start": "2026-10-01T11:30:00+00:00",
-          "end": "2026-10-19T06:00:00+00:00",
-          "bars": 677
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "breakout",
+      "params": {
+        "fast": 12,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -5.77,
+        "max_drawdown_pct": 20.7389,
+        "sharpe": -0.811,
+        "trades": 84
+      },
+      "validation": {
+        "total_return_pct": 6.0025,
+        "max_drawdown_pct": 9.5093,
+        "sharpe": 4.092,
+        "trades": 38
+      },
+      "validation_stress": {
+        "total_return_pct": 0.1293,
+        "max_drawdown_pct": 12.9405,
+        "sharpe": 0.522,
+        "trades": 38
+      },
+      "validation_score": -1.5094749999999992,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "breakout",
+      "params": {
+        "fast": 12,
+        "slow": 72,
+        "momentum": 6,
+        "breakout": 24,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -5.77,
+        "max_drawdown_pct": 20.7389,
+        "sharpe": -0.811,
+        "trades": 84
+      },
+      "validation": {
+        "total_return_pct": 6.0025,
+        "max_drawdown_pct": 9.5093,
+        "sharpe": 4.092,
+        "trades": 38
+      },
+      "validation_stress": {
+        "total_return_pct": 0.1293,
+        "max_drawdown_pct": 12.9405,
+        "sharpe": 0.522,
+        "trades": 38
+      },
+      "validation_score": -1.5094749999999992,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "momentum": 6,
+        "breakout": 12,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -14.125,
+        "max_drawdown_pct": 18.4156,
+        "sharpe": -4.902,
+        "trades": 38
+      },
+      "validation": {
+        "total_return_pct": 1.3917,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.937,
+        "trades": 4
+      },
+      "validation_stress": {
+        "total_return_pct": 0.7852,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.193,
+        "trades": 4
+      },
+      "validation_score": -1.5833500000000005,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "momentum": 6,
+        "breakout": 48,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -14.125,
+        "max_drawdown_pct": 18.4156,
+        "sharpe": -4.902,
+        "trades": 38
+      },
+      "validation": {
+        "total_return_pct": 1.3917,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.937,
+        "trades": 4
+      },
+      "validation_stress": {
+        "total_return_pct": 0.7852,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.193,
+        "trades": 4
+      },
+      "validation_score": -1.5833500000000005,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "momentum": 12,
+        "breakout": 24,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -14.125,
+        "max_drawdown_pct": 18.4156,
+        "sharpe": -4.902,
+        "trades": 38
+      },
+      "validation": {
+        "total_return_pct": 1.3917,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.937,
+        "trades": 4
+      },
+      "validation_stress": {
+        "total_return_pct": 0.7852,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.193,
+        "trades": 4
+      },
+      "validation_score": -1.5833500000000005,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 30,
+        "momentum": 24,
+        "breakout": 24,
+        "entry_momentum": -0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -14.125,
+        "max_drawdown_pct": 18.4156,
+        "sharpe": -4.902,
+        "trades": 38
+      },
+      "validation": {
+        "total_return_pct": 1.3917,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.937,
+        "trades": 4
+      },
+      "validation_stress": {
+        "total_return_pct": 0.7852,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.193,
+        "trades": 4
+      },
+      "validation_score": -1.5833500000000005,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 12,
+        "entry_momentum": 0.0,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -14.8666,
+        "max_drawdown_pct": 18.4156,
+        "sharpe": -5.253,
+        "trades": 40
+      },
+      "validation": {
+        "total_return_pct": 1.3917,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.937,
+        "trades": 4
+      },
+      "validation_stress": {
+        "total_return_pct": 0.7852,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.193,
+        "trades": 4
+      },
+      "validation_score": -1.5833500000000005,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
+        }
+      }
+    },
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "15m",
+      "strategy": "mean_reversion",
+      "params": {
+        "fast": 8,
+        "slow": 48,
+        "momentum": 6,
+        "breakout": 48,
+        "entry_momentum": 0.002,
+        "exit_momentum": -0.01,
+        "rsi_entry": 30,
+        "rsi_exit": 50,
+        "stop_pct": 0.06
+      },
+      "train": {
+        "total_return_pct": -14.8666,
+        "max_drawdown_pct": 18.4156,
+        "sharpe": -5.253,
+        "trades": 40
+      },
+      "validation": {
+        "total_return_pct": 1.3917,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.937,
+        "trades": 4
+      },
+      "validation_stress": {
+        "total_return_pct": 0.7852,
+        "max_drawdown_pct": 3.9134,
+        "sharpe": 1.193,
+        "trades": 4
+      },
+      "validation_score": -1.5833500000000005,
+      "passed_validation": true,
+      "periods": {
+        "train": {
+          "start": "2026-07-21T11:30:00+00:00",
+          "end": "2026-09-18T01:15:00+00:00",
+          "bars": 1897
+        },
+        "validation": {
+          "start": "2026-09-18T02:00:00+00:00",
+          "end": "2026-09-30T16:45:00+00:00",
+          "bars": 632
+        },
+        "test": {
+          "start": "2026-09-30T17:00:00+00:00",
+          "end": "2026-10-19T08:15:00+00:00",
+          "bars": 633
         }
       }
     }
   ],
-  "errors": [],
+  "errors": [
+    {
+      "symbol": "ETHFIUSDT",
+      "interval": "30m",
+      "error": "Insufficient bars for independent train/validation/test evaluation"
+    }
+  ],
   "warning": "Test metrics are not used for selection. Repeated runs over the same dates can still contaminate broader research decisions."
 }
