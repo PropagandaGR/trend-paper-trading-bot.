@@ -35,7 +35,8 @@ python paper_trader.py --once
 - `reports/paper_status.json`: latest paper portfolio status
 - `reports/research_latest.json`: latest search and validation summary
 - `reports/experiments.jsonl`: append-only research experiment log
-- `state/paper_state.json`: simulated portfolio and candle cursors
+- `reports/paper_events.jsonl`: append-only, idempotent paper run/action/error audit journal
+- `state/paper_state.json`: simulated portfolio and candle cursors; malformed or inconsistent existing state fails closed rather than resetting to 15 USDT
 - `state/champion.json`: latest fresh candidate that passed validation, including `champion_version` and `validation_metadata`
 
 All generated state is simulated. Do not add exchange credentials. The system deliberately has no real-order code. Coinbase public candles are the only market-data source; if Coinbase data or the USDT-USD conversion candles are unavailable, the run should fail rather than silently switch providers.
