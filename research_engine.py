@@ -936,6 +936,11 @@ def record_oos_test_result(passed: bool, window_id: str | None = None) -> None:
 def run_research(days: int = 90) -> dict[str, Any]:
     REPORTS.mkdir(exist_ok=True)
     STATE.mkdir(exist_ok=True)
+    # The most recent held-out period is permanently excluded from all later
+    # training/validation. Only newly arrived candles after this boundary may
+    # enter the next optimization cycle.
+    initial_oos_ledger = _load_local_oos_ledger()
+    previous_test_end = _ledger_last_test_end(initial_oos_ledger)
     started = utc_now()
     results: list[dict[str, Any]] = []
     candidates = candidate_params()
@@ -957,6 +962,60 @@ def run_research(days: int = 90) -> dict[str, Any]:
     for symbol in research_symbols:
         try:
             raw = fetch_klines(symbol, "5m", days).sort_index()
+            if previous_test_end is not None:
+                raw = raw.loc[raw.index > previous_test_end].copy()
+                if raw.empty:
+                    errors.append({
+                        "symbol": symbol,
+                        "error": "No new candles exist after the previously consumed OOS boundary; historical test data is excluded.",
+                    })
+                    continue
+                # Recompute quality on the post-test slice, including missing
+                # candles immediately after the consumed boundary.
+                post_start = previous_test_end + pd.Timedelta(minutes=5)
+                post_end = raw.index[-1] + pd.Timedelta(minutes=5)
+                post_quality = candle_quality_report(
+                    raw, "5m", days=1, window_start=post_start, window_end=post_end
+                )
+                original_quality = raw.attrs.get("data_quality")
+                if isinstance(original_quality, dict):
+                    quality = dict(original_quality)
+                    post_coverage = post_quality["source_coverage_pct"]
+                    quality.update({
+                        "source_coverage_pct": min(float(quality.get("source_coverage_pct", 0)), post_coverage),
+                        "converted_coverage_pct": post_coverage,
+                        "missing_expected_slots": post_quality["missing_expected_slots"],
+                        "converted_missing_expected_slots": post_quality["missing_expected_slots"],
+                        "missing_at_start_slots": post_quality["missing_at_start_slots"],
+                        "missing_at_end_slots": post_quality["missing_at_end_slots"],
+                        "invalid_ohlc_rows": post_quality["invalid_ohlc_rows"],
+                        "converted_invalid_ohlc_rows": post_quality["invalid_ohlc_rows"],
+                        "unique_timestamps": post_quality["unique_timestamps"],
+                        "monotonic_timestamps": post_quality["monotonic_timestamps"],
+                        "timezone_aware_timestamps": post_quality["timezone_aware_timestamps"],
+                        "unaligned_timestamps": post_quality["unaligned_timestamps"],
+                        "irregular_timestamp_gaps": post_quality["irregular_timestamp_gaps"],
+                        "max_consecutive_missing_slots": post_quality["max_consecutive_missing_slots"],
+                        "converted_max_consecutive_missing_slots": post_quality["max_consecutive_missing_slots"],
+                        "converted_unique_timestamps": post_quality["unique_timestamps"],
+                        "converted_monotonic_timestamps": post_quality["monotonic_timestamps"],
+                        "converted_unaligned_timestamps": post_quality["unaligned_timestamps"],
+                        "optimization_history_start": post_start.isoformat(),
+                        "previous_oos_test_end_exclusive_boundary": previous_test_end.isoformat(),
+                    })
+                    quality["quality_gate_passed"] = bool(
+                        quality["source_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
+                        and quality["converted_coverage_pct"] >= MIN_CANDLE_COVERAGE_PCT
+                        and quality.get("fx_missing_pct_of_source", 100) <= MAX_FX_MISSING_PCT
+                        and quality["invalid_ohlc_rows"] == 0
+                        and quality["converted_invalid_ohlc_rows"] == 0
+                        and quality.get("conflicting_duplicate_groups", 1) == 0
+                        and quality["unique_timestamps"] and quality["monotonic_timestamps"]
+                        and quality["timezone_aware_timestamps"] and quality["unaligned_timestamps"] == 0
+                        and quality["irregular_timestamp_gaps"] == 0
+                        and quality["max_consecutive_missing_slots"] <= MAX_CONSECUTIVE_MISSING_SLOTS
+                    )
+                    raw.attrs["data_quality"] = quality
             quality = raw.attrs.get("data_quality")
             if not isinstance(quality, dict):
                 data_quality[symbol] = {"status": "missing_quality_report"}
@@ -1088,7 +1147,7 @@ def run_research(days: int = 90) -> dict[str, Any]:
                 "test_benchmarks": test_benchmarks, "test_stress_benchmarks": test_stress_benchmarks,
                 "selection_note": "Candidate was fixed by validation score before test evaluation; test failure does not trigger selection of another candidate.",
             }
-            record_oos_test_result(not test_gate_failures)
+            record_oos_test_result(not test_gate_failures, window_id=test_window["id"])
         selected["test_deployment_gate"] = {
             "passed": not test_gate_failures, "failures": test_gate_failures
         }
@@ -1136,6 +1195,9 @@ def run_research(days: int = 90) -> dict[str, Any]:
                     "test_used_for_selection": False,
                     "oos_evaluation_policy_version": OOS_POLICY_VERSION,
                     "oos_test_window": selected_test_gate.get("test_window") if selected_test_gate else None,
+                    "previous_test_end_excluded_from_optimization": (
+                        previous_test_end.isoformat() if previous_test_end is not None else None
+                    ),
                     "cost_convention": {
                         "fee_bps_per_side": DEFAULT_FEE_BPS,
                         "slippage_bps_per_side": DEFAULT_SLIPPAGE_BPS,
@@ -1215,7 +1277,13 @@ def run_research(days: int = 90) -> dict[str, Any]:
             "rejected_windows_are_consumed": True,
             "candidate_ranking_uses": ["train", "validation"],
             "test_failure_feedback_to_optimizer": False,
-            "ledger": str(OOS_LEDGER_FILE.relative_to(ROOT)),
+            "ledger": f"refs/heads/{os.environ.get('OOS_LEDGER_BRANCH', 'local-state')}",
+            "previous_test_end_excluded_from_optimization": (
+                previous_test_end.isoformat() if previous_test_end is not None else None
+            ),
+            "test_history_excluded_from_training_validation": True,
+            "new_windows_require_strictly_later_data": True,
+            "reservation_persisted_before_test_evaluation": True,
         },
         "results": sorted(results, key=lambda r: r["validation_score"], reverse=True)[:30],
         "errors": errors,
