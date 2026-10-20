@@ -1,7 +1,7 @@
 import json
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -24,6 +24,7 @@ def make_champion():
             "selection_metric": "validation_score",
             "validation_score": 1.0,
             "test_used_for_selection": False,
+            "oos_evaluation_policy_version": "chronological-oos-v2",
             "train_metrics": {"total_return_pct": 5.0, "max_drawdown_pct": 10.0, "sharpe": 0.5, "trades": 12},
             "periods": {
                 "train": {"start": "2026-01-01T00:00:00+00:00", "end": "2026-01-02T00:00:00+00:00"},
@@ -32,8 +33,13 @@ def make_champion():
             },
             "validation_metrics": {"total_return_pct": 1.0, "max_drawdown_pct": 2.0, "sharpe": 0.5, "trades": 3},
             "validation_stress_metrics": {"total_return_pct": 0.5, "max_drawdown_pct": 3.0, "sharpe": 0.2, "trades": 3},
-            "test_metrics": {"total_return_pct": -1.0, "max_drawdown_pct": 4.0, "sharpe": -0.5, "trades": 2},
-            "test_stress_metrics": {"total_return_pct": -2.0, "max_drawdown_pct": 5.0, "sharpe": -0.8, "trades": 2},
+            "test_metrics": {"total_return_pct": 1.0, "max_drawdown_pct": 4.0, "sharpe": 0.5, "trades": 2},
+            "test_stress_metrics": {"total_return_pct": 0.5, "max_drawdown_pct": 5.0, "sharpe": 0.2, "trades": 2},
+            "validation_benchmarks": {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -0.5}},
+            "validation_stress_benchmarks": {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -1.0}},
+            "test_benchmarks": {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -0.5}},
+            "test_stress_benchmarks": {"cash": {"total_return_pct": 0.0}, "buy_and_hold": {"total_return_pct": -1.0}},
+            "test_deployment_gate": {"passed": True, "failures": []},
             "cost_convention": {
                 "fee_basis": "executed notional",
                 "fill_timing": "closed candle close after one-candle signal shift",
@@ -142,6 +148,44 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         self.assertEqual(status["cash_usdt"], round(final_state["cash"], 8))
         self.assertEqual(final_state["quantity"], 0.0)
         self.assertIsNone(final_state["symbol"])
+
+    def test_stale_champion_cannot_trigger_simulated_buy(self):
+        champion = make_champion()
+        champion["validation_metadata"]["created_at"] = (
+            datetime.now(timezone.utc) - timedelta(hours=25)
+        ).isoformat()
+        status, state = self._run_in_temp_repo(
+            {"cash": 15.0, "quantity": 0.0, "symbol": None, "entry_price": None,
+             "last_processed_bars": {}, "starting_cash": 15.0},
+            champion, {"BTCUSDT": make_frame(100.0)}, signal_value=1.0,
+        )
+        self.assertEqual(status["actions"], [])
+        self.assertEqual(state["cash"], 15.0)
+        self.assertEqual(state["quantity"], 0.0)
+
+    def test_test_rejected_champion_cannot_trigger_simulated_buy(self):
+        champion = make_champion()
+        champion["validation_metadata"]["test_deployment_gate"] = {"passed": False, "failures": ["test loss"]}
+        status, state = self._run_in_temp_repo(
+            {"cash": 15.0, "quantity": 0.0, "symbol": None, "entry_price": None,
+             "last_processed_bars": {}, "starting_cash": 15.0},
+            champion, {"BTCUSDT": make_frame(100.0)}, signal_value=1.0,
+        )
+        self.assertEqual(status["actions"], [])
+        self.assertEqual(state["cash"], 15.0)
+        self.assertEqual(state["quantity"], 0.0)
+
+    def test_incompatible_oos_policy_champion_cannot_trigger_simulated_buy(self):
+        champion = make_champion()
+        champion["validation_metadata"]["oos_evaluation_policy_version"] = "chronological-oos-v0"
+        status, state = self._run_in_temp_repo(
+            {"cash": 15.0, "quantity": 0.0, "symbol": None, "entry_price": None,
+             "last_processed_bars": {}, "starting_cash": 15.0},
+            champion, {"BTCUSDT": make_frame(100.0)}, signal_value=1.0,
+        )
+        self.assertEqual(status["actions"], [])
+        self.assertEqual(state["cash"], 15.0)
+        self.assertEqual(state["quantity"], 0.0)
 
     def test_new_position_uses_at_most_half_of_equity(self):
         champion = make_champion()

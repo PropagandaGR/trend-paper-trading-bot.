@@ -19,7 +19,8 @@ from portfolio_accounting import (DEFAULT_FEE_BPS, DEFAULT_SLIPPAGE_BPS,
                                   mark_to_market, sell_with_costs)
 
 from research_engine import (
-    INTERVALS, REPORTS, STATE, SYMBOLS, fetch_klines, desired_signal, add_features, resample_ohlcv, utc_now
+    INTERVALS, REPORTS, STATE, SYMBOLS, OOS_POLICY_VERSION, fetch_klines, desired_signal, add_features,
+    resample_ohlcv, utc_now, candidate_passes_gates, deployment_gate_failures
 )
 
 STARTING_CASH = 15.0
@@ -83,6 +84,8 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
         return "Champion has no explicit validation metadata."
     if metadata.get("test_used_for_selection") is not False:
         return "Champion metadata does not confirm final-test isolation."
+    if metadata.get("oos_evaluation_policy_version") != OOS_POLICY_VERSION:
+        return "Champion is incompatible with the current versioned out-of-sample evaluation policy."
     for field in ("train_metrics", "validation_metrics", "validation_stress_metrics", "test_metrics", "test_stress_metrics"):
         metrics = metadata.get(field)
         if not isinstance(metrics, dict):
@@ -92,12 +95,32 @@ def champion_validation_error(champion: Any, now: datetime | None = None) -> str
                 return f"Champion {field}.{metric} must be a finite number."
         if float(metrics["max_drawdown_pct"]) < 0 or float(metrics["trades"]) < 0:
             return f"Champion {field} contains invalid drawdown/trade metrics."
-    # Reject strategies that only look good in validation after collapsing in training.
-    # The final test is deliberately not an acceptance criterion to preserve its isolation.
+    # Reject obvious training collapse before checking benchmark metadata.
     if float(metadata["train_metrics"]["total_return_pct"]) <= 0:
         return "Champion failed training robustness gate: training return must be positive."
     if float(metadata["train_metrics"]["max_drawdown_pct"]) >= 35:
         return "Champion failed training robustness gate: training drawdown must be below 35%."
+    # Recompute validation benchmark gates independently instead of trusting a status flag.
+    validation_benchmarks = metadata.get("validation_benchmarks")
+    validation_stress_benchmarks = metadata.get("validation_stress_benchmarks")
+    if not isinstance(validation_benchmarks, dict) or not isinstance(validation_stress_benchmarks, dict):
+        return "Champion is missing validation cash/buy-and-hold benchmark comparisons."
+    if not candidate_passes_gates(
+        metadata["train_metrics"], metadata["validation_metrics"],
+        metadata["validation_stress_metrics"], validation_benchmarks,
+        validation_stress_benchmarks,
+    ):
+        return "Champion failed training/validation benchmark gates."
+    test_benchmarks = metadata.get("test_benchmarks")
+    test_stress_benchmarks = metadata.get("test_stress_benchmarks")
+    if not isinstance(metadata.get("test_deployment_gate"), dict) or metadata["test_deployment_gate"].get("passed") is not True:
+        return "Champion did not pass the held-out test deployment gate."
+    test_gate_failures = deployment_gate_failures(
+        metadata["test_metrics"], metadata["test_stress_metrics"],
+        test_benchmarks, test_stress_benchmarks,
+    )
+    if test_gate_failures:
+        return "Champion failed held-out deployment gate: " + "; ".join(test_gate_failures)
     validation_score = metadata.get("validation_score")
     if not finite_number(validation_score):
         return "Champion validation_score must be finite."

@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from research_engine import _convert_usd_candles_to_usdt, candle_quality_report, fetch_klines
+from research_engine import (_aligned_candle_window, _convert_usd_candles_to_usdt,
+                             candle_quality_report, fetch_klines)
 
 
 def candle_frame(index, close):
@@ -54,16 +55,52 @@ class CoinbaseDataSourceTests(unittest.TestCase):
     def test_quality_report_flags_invalid_ohlc(self):
         asset = candle_frame(self.index, 100.0)
         asset.loc[self.index[0], "high"] = 98.0
-        report = candle_quality_report(asset, "5m", days=1)
+        start = pd.Timestamp("2026-01-01T00:00:00Z")
+        end = start + pd.Timedelta(minutes=15)
+        report = candle_quality_report(asset, "5m", days=1, window_start=start, window_end=end)
         self.assertEqual(report["invalid_ohlc_rows"], 1)
-        self.assertLess(report["source_coverage_pct"], 1.0)
+        self.assertAlmostEqual(report["source_coverage_pct"], 100.0 / 3.0, places=3)
+        self.assertEqual(report["missing_at_start_slots"], 0)
+        self.assertEqual(report["missing_at_end_slots"], 2)
+
+    def test_aligned_utc_window_and_edge_gap_coverage_are_exact(self):
+        now = pd.Timestamp("2026-01-01T00:17:00Z")
+        start, end = _aligned_candle_window("5m", 1, now)
+        self.assertEqual(end, pd.Timestamp("2026-01-01T00:15:00Z"))
+        self.assertEqual(start, end - pd.Timedelta(days=1))
+        window_start = end - pd.Timedelta(minutes=30)
+        index = pd.date_range(window_start + pd.Timedelta(minutes=10), periods=4, freq="5min")
+        frame = pd.DataFrame({
+            "open": [100.0] * 4, "high": [101.0] * 4, "low": [99.0] * 4,
+            "close": [100.0] * 4, "volume": [1.0] * 4,
+        }, index=index)
+        report = candle_quality_report(frame, "5m", days=1, window_start=window_start, window_end=end)
+        self.assertEqual(report["expected_window_slots"], 6)
+        self.assertEqual(report["observed_expected_slots"], 4)
+        self.assertEqual(report["missing_expected_slots"], 2)
+        self.assertEqual(report["missing_at_start_slots"], 2)
+        self.assertEqual(report["missing_at_end_slots"], 0)
+        self.assertAlmostEqual(report["source_coverage_pct"], 400.0 / 6.0, places=3)
+
+    def test_conflicting_duplicate_groups_are_reported(self):
+        stamp = pd.Timestamp("2026-01-01T00:00:00Z")
+        frame = pd.DataFrame({
+            "open": [99.0, 100.0], "high": [102.0, 103.0], "low": [98.0, 99.0],
+            "close": [100.0, 101.0], "volume": [3.0, 4.0],
+        }, index=pd.DatetimeIndex([stamp, stamp]))
+        frame.attrs["conflicting_duplicate_groups"] = 1
+        report = candle_quality_report(
+            frame, "5m", days=1, window_start=stamp, window_end=stamp + pd.Timedelta(minutes=10)
+        )
+        self.assertEqual(report["conflicting_duplicate_groups"], 1)
+        self.assertFalse(report["unique_timestamps"])
 
     def test_usdtusd_symbol_does_not_recursively_convert(self):
         fx = candle_frame(self.index, 0.995)
         with patch("research_engine._fetch_coinbase", return_value=fx) as fetch:
             result = fetch_klines("USDTUSD", "5m", 1)
 
-        fetch.assert_called_once_with("USDTUSD", "5m", 1)
+        self.assertEqual(fetch.call_args.args[:3], ("USDTUSD", "5m", 1))
         self.assertAlmostEqual(result.iloc[0]["close"], 0.995)
 
     def test_missing_same_candle_fx_is_dropped_instead_of_forward_filled(self):
