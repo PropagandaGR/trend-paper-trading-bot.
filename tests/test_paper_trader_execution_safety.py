@@ -157,6 +157,41 @@ class PaperTraderExecutionSafetyTests(unittest.TestCase):
         self.assertLessEqual(exposure_after_fill, paper_trader.MAX_POSITION_FRACTION)
 
 
+    def test_missed_candles_skip_entry_and_advance_cursor_without_backfill(self):
+        champion = make_champion()
+        stale_cursor = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=1)).isoformat()
+        state = {
+            "cash": 15.0, "quantity": 0.0, "symbol": None, "entry_price": None,
+            "last_processed_bars": {"BTCUSDT": stale_cursor}, "starting_cash": 15.0,
+        }
+        status, final_state = self._run_in_temp_repo(
+            state, champion, {"BTCUSDT": make_frame(100.0)}, signal_value=1.0,
+        )
+        self.assertEqual(status["actions"], [])
+        self.assertIn("Missed strategy candles detected", status["message"])
+        self.assertIsNone(status["missed_candles"]["count"])
+        self.assertFalse(status["missed_candles"]["gap_count_known"])
+        self.assertEqual(final_state["cash"], 15.0)
+        self.assertEqual(final_state["quantity"], 0.0)
+        self.assertNotEqual(final_state["last_processed_bars"]["BTCUSDT"], stale_cursor)
+
+    def test_missed_candles_force_close_existing_position_without_reentry(self):
+        champion = make_champion()
+        stale_cursor = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=1)).isoformat()
+        state = {
+            "cash": 10.0, "quantity": 0.05, "symbol": "BTCUSDT", "entry_price": 90.0,
+            "last_processed_bars": {"BTCUSDT": stale_cursor}, "starting_cash": 15.0,
+            "realized_pnl": 0.0, "completed_trades": 0,
+        }
+        status, final_state = self._run_in_temp_repo(
+            state, champion, {"BTCUSDT": make_frame(100.0)}, signal_value=1.0,
+        )
+        self.assertEqual([action["action"] for action in status["actions"]], ["PAPER_SELL"])
+        self.assertIn("missed strategy candles", status["actions"][0]["reason"])
+        self.assertEqual(final_state["quantity"], 0.0)
+        self.assertIsNone(final_state["symbol"])
+        self.assertGreater(final_state["cash"], 10.0)
+
     def test_stale_resampled_signal_candle_cannot_trigger_buy(self):
         champion = make_champion()
         champion["interval"] = "30m"

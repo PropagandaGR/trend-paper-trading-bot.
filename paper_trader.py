@@ -204,6 +204,34 @@ def finite_positive(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value)) and float(value) > 0
 
 
+def missed_candle_count(bars: pd.DataFrame, cursor: str | None) -> int | None:
+    """Count intermediate closed candles since the last processed candle.
+
+    None means the cursor is malformed, in the future, or falls between known
+    candle timestamps, so the caller must fail closed rather than guess.
+    """
+    if cursor is None:
+        return 0
+    cursor_time = pd.to_datetime(cursor, utc=True, errors="coerce")
+    times = pd.to_datetime(bars.index, utc=True, errors="coerce")
+    if pd.isna(cursor_time) or len(times) == 0 or times.isna().any():
+        return None
+    if cursor_time > times[-1]:
+        return None
+    if cursor_time == times[-1]:
+        return 0
+    later_count = int((times > cursor_time).sum())
+    if later_count <= 0:
+        return 0
+    if cursor_time < times[0]:
+        # The cursor fell outside the fetched window. The exact gap is unknown;
+        # do not report an invented count or backfill trades.
+        return None
+    if not bool((times == cursor_time).any()):
+        return None
+    return max(0, later_count - 1)
+
+
 
 def read_json(path: Path, default: Any) -> Any:
     try:
@@ -590,10 +618,14 @@ def run_once() -> dict[str, Any]:
         STATUS_FILE.write_text(json.dumps(status, indent=2))
         return status
 
-    if cursor != latest_time:
-        # One-position, long-only portfolio. All fills are simulated at the latest
-        # closed candle price with a conservative cost haircut.
-        if qty > 0 and (position_symbol != symbol or not target_long):
+    missed = missed_candle_count(bars, cursor)
+    signal_diagnostics["missed_candles_since_last_run"] = missed
+    execution_message = "Simulated portfolio only; fills are estimates, not exchange orders."
+    if cursor is not None and (missed is None or missed > 0):
+        # Never invent retroactive fills after the scheduler/data feed skipped
+        # candles. Close an existing position at the current fresh held-asset
+        # mark, advance the cursor, and wait for the next live decision candle.
+        if qty > 0 and position_symbol in mark_prices:
             held_mark = float(mark_prices[position_symbol])
             entry = float(state.get("entry_price") or held_mark)
             sale = sell_with_costs(qty, held_mark, entry, FEE_BPS, SLIPPAGE_BPS)
@@ -606,29 +638,60 @@ def run_once() -> dict[str, Any]:
                 "fee_usdt": round(sale.fee, 8), "slippage_usdt": round(sale.slippage, 8),
                 "net_proceeds_usdt": round(sale.net_proceeds, 8),
                 "realized_pnl_usdt": round(sale.realized_pnl, 8),
-                "reason": "validated champion exit or symbol change"
+                "reason": "safety exit after missed strategy candles",
             })
             qty, position_symbol = 0.0, None
             state["entry_price"] = None
-        if qty <= 0 and target_long:
-            # Leave a small buffer so fees/slippage do not push post-fill marked
-            # exposure above the circuit-breaker threshold on the next run.
-            spend_cash = min(
-                cash,
-                max(0.0, equity_before * MAX_POSITION_FRACTION * ENTRY_BUDGET_BUFFER),
-            )
-            buy = buy_with_costs(spend_cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
-            qty = max(0.0, buy.quantity)
-            cash = max(0.0, cash - spend_cash + buy.cash_remaining)
-            position_symbol = symbol
-            state["entry_price"] = buy.entry_cost_per_unit
-            status["actions"].append({
-                "action": "PAPER_BUY", "symbol": symbol,
-                "price": round(buy.execution_price, 8), "quantity": qty,
-                "fee_usdt": round(buy.fee, 8), "slippage_usdt": round(buy.slippage, 8),
-                "reason": "validated champion entry"
-            })
         state.setdefault("last_processed_bars", {})[symbol] = latest_time
+        status["missed_candles"] = {
+            "symbol": symbol, "count": missed, "gap_count_known": missed is not None,
+            "last_processed_bar": cursor, "resumed_at_bar": latest_time,
+        }
+        execution_message = (
+            "Missed strategy candles detected; skipped entries and closed any open paper position for safety. "
+            "No retroactive simulated orders were created."
+        )
+    else:
+        if cursor != latest_time:
+            # One-position, long-only portfolio. All fills are simulated at the latest
+            # closed candle price with a conservative cost haircut.
+            if qty > 0 and (position_symbol != symbol or not target_long):
+                held_mark = float(mark_prices[position_symbol])
+                entry = float(state.get("entry_price") or held_mark)
+                sale = sell_with_costs(qty, held_mark, entry, FEE_BPS, SLIPPAGE_BPS)
+                cash += sale.net_proceeds
+                state["realized_pnl"] = float(state.get("realized_pnl", 0.0)) + sale.realized_pnl
+                state["completed_trades"] = int(state.get("completed_trades", 0)) + 1
+                status["actions"].append({
+                    "action": "PAPER_SELL", "symbol": position_symbol,
+                    "price": round(sale.execution_price, 8), "quantity": qty,
+                    "fee_usdt": round(sale.fee, 8), "slippage_usdt": round(sale.slippage, 8),
+                    "net_proceeds_usdt": round(sale.net_proceeds, 8),
+                    "realized_pnl_usdt": round(sale.realized_pnl, 8),
+                    "reason": "validated champion exit or symbol change"
+                })
+                qty, position_symbol = 0.0, None
+                state["entry_price"] = None
+            if qty <= 0 and target_long:
+                # Leave a small buffer so fees/slippage do not push post-fill marked
+                # exposure above the circuit-breaker threshold on the next run.
+                spend_cash = min(
+                    cash,
+                    max(0.0, equity_before * MAX_POSITION_FRACTION * ENTRY_BUDGET_BUFFER),
+                )
+                buy = buy_with_costs(spend_cash, latest_price, FEE_BPS, SLIPPAGE_BPS)
+                qty = max(0.0, buy.quantity)
+                cash = max(0.0, cash - spend_cash + buy.cash_remaining)
+                position_symbol = symbol
+                state["entry_price"] = buy.entry_cost_per_unit
+                status["actions"].append({
+                    "action": "PAPER_BUY", "symbol": symbol,
+                    "price": round(buy.execution_price, 8), "quantity": qty,
+                    "fee_usdt": round(buy.fee, 8), "slippage_usdt": round(buy.slippage, 8),
+                    "reason": "validated champion entry"
+                })
+            state.setdefault("last_processed_bars", {})[symbol] = latest_time
+
     state.update({"cash": cash, "quantity": qty, "symbol": position_symbol,
                   "last_checked_at": utc_now()})
     equity, position_mark = mark_to_market(cash, qty, position_symbol, mark_prices)
@@ -647,7 +710,7 @@ def run_once() -> dict[str, Any]:
         "last_processed_bar": latest_time,
         "signal_diagnostics": signal_diagnostics,
         "risk": update_risk_metrics(state, equity),
-        "message": "Simulated portfolio only; fills are estimates, not exchange orders."
+        "message": execution_message
     })
     STATE_FILE.write_text(json.dumps(state, indent=2))
     _sync_ledger_status(status, state)
